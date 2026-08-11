@@ -1,0 +1,47 @@
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.idea/
+
+# Licensed local SDK installers remain available to Docker but are not source.
+docker/cache/
+
+# User-supplied/copyrighted and machine-specific model artifacts.
+models/*
+!models/README.md
+!models/person.labels.txt
+!models/face.labels.txt
+!models/yolo11n-coco.labels.txt
+*.engine
+*.plan
+*.onnx
+*.pt
+*.pth
+*.calib
+*.cache
+
+# Test media and generated results.
+videos/*
+!videos/README.md
+output/*
+!output/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# Local database exports and editor state.
+database/backups/
+*.dump
+*.sql.gz
+.vscode/.ropeproject

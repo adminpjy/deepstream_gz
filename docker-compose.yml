@@ -1,0 +1,114 @@
+name: ${COMPOSE_PROJECT_NAME:-deepstream-ai}
+
+services:
+  postgres:
+    image: ${PGVECTOR_IMAGE:-pgvector/pgvector:pg16}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-deepstream}
+      POSTGRES_USER: ${POSTGRES_USER:-deepstream}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-local-password}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" &&
+          psql -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -tAc
+          "SELECT 1 FROM pg_extension WHERE extname='vector'" | grep -q 1
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  app:
+    image: ${APP_IMAGE:-deepstream-ai-platform:dev}
+    build:
+      context: .
+      dockerfile: ${APP_DOCKERFILE:-docker/Dockerfile}
+      args:
+        DEEPSTREAM_IMAGE: ${DEEPSTREAM_IMAGE:-nvcr.io/nvidia/deepstream:9.0-triton-multiarch}
+        CUDA_IMAGE: ${CUDA_IMAGE:-nvidia/cuda:13.0.2-base-ubuntu24.04}
+        UBUNTU_MIRROR: ${UBUNTU_MIRROR:-https://archive.ubuntu.com/ubuntu}
+        NVIDIA_CUDA_MIRROR: ${NVIDIA_CUDA_MIRROR:-https://developer.download.nvidia.com}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    # The image entrypoint already uses tini; a second Compose init process
+    # would leave the image's tini unable to act as PID 1/subreaper.
+    # Covers 20s Pipeline EOS plus up to 60s analytics evidence drain.
+    stop_grace_period: 95s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DS_CONFIG: /workspace/configs/config.yaml
+      DATABASE_DSN: ${DATABASE_DSN:-postgresql://deepstream:change-this-local-password@postgres:5432/deepstream}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-INFO}
+      APP_HEALTH_FILE: ${APP_HEALTH_FILE:-/tmp/deepstream-ai.ready}
+      GST_DEBUG: ${GST_DEBUG:-2}
+      CUDA_CACHE_DISABLE: ${CUDA_CACHE_DISABLE:-0}
+      NVIDIA_VISIBLE_DEVICES: ${NVIDIA_VISIBLE_DEVICES:-all}
+      NVIDIA_DRIVER_CAPABILITIES: ${NVIDIA_DRIVER_CAPABILITIES:-compute,utility,video}
+      PYTHONPATH: /workspace/src
+      PYTHONFAULTHANDLER: "1"
+      SERVICE_UPLOADS_ROOT: ${SERVICE_UPLOADS_ROOT:-/workspace/uploads}
+      SERVICE_TASKS_ROOT: ${SERVICE_TASKS_ROOT:-/workspace/output/tasks}
+    command:
+      - python3
+      - -m
+      - deepstream_ai
+      - serve
+      - --config
+      - /workspace/configs/config.yaml
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --uploads-root
+      - ${SERVICE_UPLOADS_ROOT:-/workspace/uploads}
+      - --tasks-root
+      - ${SERVICE_TASKS_ROOT:-/workspace/output/tasks}
+      - --idle-timeout-sec
+      - ${SERVICE_IDLE_TIMEOUT_SEC:-10}
+      - --max-upload-mb
+      - ${SERVICE_MAX_UPLOAD_MB:-2048}
+      - --max-tasks
+      - ${SERVICE_MAX_TASKS:-2}
+      - --preview-fps
+      - ${SERVICE_PREVIEW_FPS:-5}
+      - --preview-width
+      - ${SERVICE_PREVIEW_WIDTH:-960}
+    volumes:
+      - ./configs:/workspace/configs:ro
+      - ./models:/workspace/models
+      - ./videos:/workspace/videos:ro
+      - ./uploads:/workspace/uploads
+      - ./output:/workspace/output
+      - ./scripts:/workspace/scripts:ro
+      - ./src:/workspace/src:ro
+    ports:
+      - "127.0.0.1:${SERVICE_PORT:-8080}:8080"
+      - "127.0.0.1:5678:5678"
+    shm_size: "2gb"
+    healthcheck:
+      test: ["CMD", "/workspace/scripts/healthcheck.sh"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      # First boot may spend several minutes building the person and face
+      # TensorRT engines; keep this aligned with runtime.startup_timeout_sec.
+      start_period: 600s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: ${APP_RESTART_POLICY:-no}
+
+volumes:
+  postgres-data:

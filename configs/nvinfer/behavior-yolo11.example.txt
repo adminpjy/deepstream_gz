@@ -1,0 +1,32 @@
+# Reference output for behavior.metadata.example.json schema v2.
+# Do not hand-copy this into production: scripts/convert-model.sh atomically
+# generates the labels and SGIE config from the reviewed metadata after it has
+# verified the exported dynamic ONNX contract and built the matching engine.
+[property]
+gpu-id=0
+net-scale-factor=0.00392156862745098
+model-color-format=0
+onnx-file=../../models/smoking.onnx
+model-engine-file=../../models/smoking.engine
+labelfile-path=../../models/smoking.labels.txt
+infer-dims=3;640;640
+batch-size=16
+network-mode=2
+num-detected-classes=1
+gie-unique-id=11
+network-type=0
+process-mode=2
+operate-on-gie-id=1
+operate-on-class-ids=0
+cluster-mode=2
+maintain-aspect-ratio=1
+symmetric-padding=1
+scaling-filter=1
+parse-bbox-func-name=NvDsInferParseCustomYoloDynamic
+disable-output-host-copy=0
+custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_yolo_dynamic.so
+
+[class-attrs-all]
+nms-iou-threshold=0.65
+pre-cluster-threshold=0.5
+topk=100

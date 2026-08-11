@@ -1,0 +1,45 @@
+.git
+.github
+.idea
+.vscode
+.env
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov
+dist
+build
+*.egg-info
+
+# Runtime data is mounted by Compose and must not be baked into the image.
+models/*
+!models/README.md
+!models/person.labels.txt
+!models/face.labels.txt
+!models/yolo11n-coco.labels.txt
+videos/*
+!videos/README.md
+output/*
+!output/.gitkeep
+uploads/*
+!uploads/.gitkeep
+
+# TensorRT engines are GPU/TensorRT-version specific.
+*.engine
+*.plan
+*.onnx
+*.pt
+*.pth
+*.calib
+*.cache
+
+# The alternate SDK build exposes this audited package through a read-only
+# BuildKit mount. It is available to the install step but never copied into a
+# permanent image layer.
+docker/cache/*
+!docker/cache/deepstream-9.0_9.0.0-1_amd64.deb

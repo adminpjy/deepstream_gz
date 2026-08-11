@@ -1,0 +1,34 @@
+# Ultralytics YOLO11n COCO person detector used for the local single-source
+# validation run. The bundled parser decodes the raw [4+C,8400] output.
+[property]
+gpu-id=0
+net-scale-factor=0.00392156862745098
+onnx-file=/workspace/models/person.onnx
+model-engine-file=/workspace/models/person.engine
+labelfile-path=/workspace/models/yolo11n-coco.labels.txt
+infer-dims=3;640;640
+batch-size=1
+network-mode=2
+process-mode=1
+network-type=0
+num-detected-classes=80
+model-color-format=0
+cluster-mode=2
+maintain-aspect-ratio=1
+symmetric-padding=1
+interval=0
+gie-unique-id=1
+custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_yolo_dynamic.so
+parse-bbox-func-name=NvDsInferParseCustomYoloDynamic
+
+# Suppress non-person COCO classes before tracker allocation. Class 0 overrides
+# this value below.
+[class-attrs-all]
+pre-cluster-threshold=0.99
+nms-iou-threshold=0.45
+topk=300
+
+[class-attrs-0]
+pre-cluster-threshold=0.25
+nms-iou-threshold=0.45
+topk=100

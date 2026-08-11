@@ -1,0 +1,11 @@
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Initialized
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+0:00:00.475030857  1391     0x254b7c80 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+
+0:00:00.475073045  1391     0x254b7c80 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:00.479230627  1391     0x254b7c80 INFO                 nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector> [UID 1]: Load new model:/audit/.runtime/nvinfer/person-detector.txt sucessfully
+Opening in BLOCKING MODE 
+~~ CLOG[src/modules/DataAssociator/DataAssociator.cpp, initializeSimilarityParams() @line 76]: [NvMultiObjectTracker][DataAssociator][Warning] Visual tracker enabled, but matchingScoreWeight4VisualSimilarity is not set. Using 1.0 by default
+nvstreammux: Successfully handled EOS for source_id=0
+FRAME_AUDIT=[]

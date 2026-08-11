@@ -1,0 +1,51 @@
+2026-08-11 07:49:01 | INFO     | deepstream_ai.app | 模型预检通过 config=/audit/person.txt engine=/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine source_models=['/workspace/models/peoplenet/resnet34_peoplenet.onnx']
+2026-08-11 07:49:01 | INFO     | deepstream_ai.app | [DETECTOR] PeopleNet
+2026-08-11 07:49:01 | INFO     | deepstream_ai.app | [TRACKER] NvDCF
+2026-08-11 07:49:01 | INFO     | deepstream_ai.app | [TRACKER_CONFIG] /workspace/configs/tracker/nvdcf.yml
+2026-08-11 07:49:01 | INFO     | deepstream_ai.app | [PEOPLENET_CLASSES] person=0, bag=1, face=2
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:01.878: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_logger.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:01.895: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_inferserver.so': libtritonserver.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:01.909: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_nvmultiurisrcbin.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:01.910: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:01.921: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_ucx.so': libucs.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:02.726: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_logger.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:02.726: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_inferserver.so': libtritonserver.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:02.727: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_nvmultiurisrcbin.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:02.727: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 07:49:02.727: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_ucx.so': libucs.so.0: cannot open shared object file: No such file or directory
+2026-08-11 07:49:03 | INFO     | deepstream_ai.app | DeepStream Python runtime 已加载: {'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+2026-08-11 07:49:03 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=4 runtime_config=/audit/.runtime/nvinfer/person-detector.txt
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Initialized
+0:00:01.834257001     7     0x3817cd70 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+0:00:01.834303442     7     0x3817cd70 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+
+0:00:01.839514188     7     0x3817cd70 INFO                 nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector> [UID 1]: Load new model:/audit/.runtime/nvinfer/person-detector.txt sucessfully
+Opening in BLOCKING MODE 
+2026-08-11 07:49:03 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=audit uri=vsrc_0
+~~ CLOG[src/modules/DataAssociator/DataAssociator.cpp, initializeSimilarityParams() @line 76]: [NvMultiObjectTracker][DataAssociator][Warning] Visual tracker enabled, but matchingScoreWeight4VisualSimilarity is not set. Using 1.0 by default
+2026-08-11 07:49:06 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=1
+nvstreammux: Successfully handled EOS for source_id=0
+2026-08-11 07:49:10 | INFO     | deepstream_ai.pipeline.runner | 所有文件源处理完成 (EOS)
+2026-08-11 07:49:10 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              750
+Probe Frames:                 750
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      1.758
+P95 Probe Time (ms):          4.000
+Max Probe Time (ms):          14.570
+=======================================
+2026-08-11 07:49:10 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止

@@ -1,0 +1,46 @@
+# Conservative NvDCF defaults for people tracking. Tune against site footage.
+BaseConfig:
+  minDetectorConfidence: 0.0
+
+TargetManagement:
+  enableBboxUnClipping: 0
+  preserveStreamUpdateOrder: 0
+  maxTargetsPerStream: 150
+  minIouDiff4NewTarget: 0.5
+  minTrackerConfidence: 0.2
+  probationAge: 5
+  maxShadowTrackingAge: 75
+  earlyTerminationAge: 1
+
+TrajectoryManagement:
+  useUniqueID: 0
+  enableReAssoc: 1
+
+DataAssociator:
+  dataAssociatorType: 0
+  associationMatcherType: 0
+  checkClassMatch: 1
+  minMatchingScore4Overall: 0.0
+  minMatchingScore4SizeSimilarity: 0.5
+  minMatchingScore4Iou: 0.1
+  minMatchingScore4VisualSimilarity: 0.2
+
+StateEstimator:
+  stateEstimatorType: 2
+  processNoiseVar4Loc: 2.0
+  processNoiseVar4Size: 1.0
+  processNoiseVar4Vel: 0.1
+  measurementNoiseVar4Detector: 4.0
+  measurementNoiseVar4Tracker: 16.0
+
+VisualTracker:
+  visualTrackerType: 1
+  useColorNames: 1
+  useHog: 1
+  featureImgSizeLevel: 2
+  featureFocusOffsetFactor_y: -0.2
+  filterLr: 0.075
+  filterChannelWeightsLr: 0.1
+  gaussianSigma: 0.75
+
+

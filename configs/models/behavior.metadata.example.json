@@ -1,0 +1,55 @@
+{
+  "schema_version": 2,
+  "name": "replace-me",
+  "architecture": "yolo11",
+  "task": "detect",
+  "checkpoint": {
+    "sha256": "replace-with-reviewed-lowercase-64-character-sha256"
+  },
+  "exporter": {
+    "name": "ultralytics",
+    "version": "replace-with-reviewed-exact-version"
+  },
+  "input": {
+    "name": "images",
+    "shape": [-1, 3, 640, 640],
+    "layout": "NCHW",
+    "color_format": "RGB",
+    "scale_factor": 0.00392156862745098,
+    "dynamic_batch": true,
+    "profile": {
+      "min": [1, 3, 640, 640],
+      "opt": [8, 3, 640, 640],
+      "max": [16, 3, 640, 640]
+    }
+  },
+  "onnx": {
+    "opset": 17,
+    "raw_output": true
+  },
+  "labels": ["replace-me"],
+  "deepstream": {
+    "network_type": 0,
+    "cluster_mode": 2,
+    "process_mode": 2,
+    "operate_on_gie_id": 1,
+    "operate_on_class_ids": [0],
+    "batch_size": 16,
+    "num_detected_classes": 1,
+    "gie_unique_id": 11,
+    "maintain_aspect_ratio": true,
+    "symmetric_padding": true,
+    "pre_cluster_threshold": 0.5,
+    "nms_iou_threshold": 0.65,
+    "topk": 100,
+    "parser_contract": "ultralytics-yolo8-9-11-detect-raw-v1",
+    "custom_lib_path": "/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_yolo_dynamic.so",
+    "parse_bbox_func_name": "NvDsInferParseCustomYoloDynamic"
+  },
+  "calibration": {
+    "required_for_int8": true,
+    "cache_file": "/workspace/models/replace-me.calib",
+    "dataset_id": "replace-me-with-approved-dataset-version",
+    "preprocessing_id": "replace-me-with-preprocessing-version-or-sha256"
+  }
+}

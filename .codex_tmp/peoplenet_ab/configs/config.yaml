@@ -1,0 +1,55 @@
+version: 1
+source:
+  type: file
+  camera_id: audit
+  path: /audit/input.mp4
+  enabled: true
+  nominal_fps: 18.0
+inference:
+  person_fps: 5.0
+  face_fps: 2.0
+  behavior_fps: 1.0
+pipeline:
+  streammux:
+    width: 1920
+    height: 1080
+    batch_timeout_us: 40000
+    gpu_id: 0
+    attach_system_timestamp: true
+    sync_inputs: false
+person:
+  enabled: true
+  type: peoplenet
+  config_file: /audit/person.txt
+  unique_id: 1
+  person_class_ids: [0]
+  people_classes:
+    person: 0
+    bag: 1
+    face: 2
+face:
+  enabled: false
+tracker:
+  backend: nvdcf
+  config_file: /workspace/configs/tracker/nvdcf.yml
+  library_file: /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+  width: 960
+  height: 544
+  gpu_id: 0
+face_recognition:
+  enabled: false
+database:
+  enabled: false
+snapshot:
+  enabled: false
+output:
+  enabled: false
+  path: /audit/result.mp4
+  events_enabled: true
+  events_path: /audit/events.jsonl
+runtime:
+  strict_assets: true
+  headless: true
+  log_level: INFO
+  analytics_queue_size: 64
+

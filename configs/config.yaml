@@ -1,0 +1,203 @@
+version: 1
+
+# Single-source local development input. When `sources` contains entries it
+# takes precedence. File paths are container paths under the Compose bind mount.
+source:
+  type: file
+  camera_id: local-file-01
+  path: /workspace/videos/test2.mp4
+  enabled: true
+  # The shipped H.264 validation clip is 10 fps. Keep this equal to the
+  # real source rate so nvinfer interval calculations preserve requested FPS.
+  nominal_fps: 10.0
+  latency_ms: 200
+  reconnect_interval_sec: 10
+
+# Production multi-source example (empty by default). Each entry is file/RTSP.
+sources: []
+# sources:
+#   - camera_id: gate-01
+#     type: rtsp
+#     url: ${GATE_01_RTSP_URL}
+#     enabled: true
+#     nominal_fps: 25.0
+#     latency_ms: 300
+#     reconnect_interval_sec: 10
+#   - camera_id: gate-02
+#     type: file
+#     path: /workspace/videos/test-2.mp4
+#     enabled: true
+#     nominal_fps: 25.0
+
+# Analysis rates are converted to nvinfer interval values from nominal_fps.
+inference:
+  person_fps: 5.0
+  face_fps: 2.0
+  behavior_fps: 1.0
+
+pipeline:
+  streammux:
+    width: 1920
+    height: 1080
+    batch_timeout_us: 40000
+    gpu_id: 0
+    attach_system_timestamp: true
+    sync_inputs: false
+  tiler_width: 1920
+  tiler_height: 1080
+
+# Person is the mandatory primary GIE. This deployment uses NVIDIA PeopleNet
+# deployable_quantized_onnx_v2.6.3; class IDs below come from its labels.txt.
+person:
+  enabled: true
+  type: peoplenet
+  config_file: /workspace/configs/nvinfer/person-peoplenet.txt
+  unique_id: 1
+  person_class_ids: [0]
+  people_classes:
+    person: 0
+    bag: 1
+    face: 2
+  label: person
+
+# Disabled means the nvinfer element is not created and its config/model is not
+# opened. Enabled + missing/incompatible assets fails startup clearly.
+face:
+  enabled: true
+  config_file: /workspace/configs/nvinfer/face.example.txt
+  unique_id: 2
+  person_class_ids: [0]
+  label: face
+  # Standard SCRFD 9-output tensors are read from NvDsInferTensorMeta on the
+  # parent person object and matched to each face child. See model integration.
+  landmark_source: tensor
+  landmark_coordinates: absolute
+  landmark_scale: 1.0
+  # Must equal the nvinfer pre-cluster-threshold below the face parser.
+  landmark_threshold: 0.50
+
+# The business layer sees only this adapter key, never tracker implementation APIs.
+tracker:
+  backend: nvdcf                 # nvdcf | nvsort | deepsort
+  config_file: /workspace/configs/tracker/nvdcf.yml
+  library_file: /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+  width: 960
+  height: 544
+  gpu_id: 0
+  display_tracking_id: true
+
+face_recognition:
+  enabled: true
+  backend: onnxruntime           # tensorrt | onnxruntime
+  model: /workspace/models/adaface_ir50.onnx
+  input_name: input.1
+  output_name: "730"
+  embedding_size: 512
+  match_threshold: 0.40
+  min_candidates: 3
+  max_candidates: 8
+  decision_timeout_sec: 2.0
+  input_width: 112
+  input_height: 112
+  require_landmarks: true
+
+# behavior.<name>.enabled is the authoritative load switch. Disabled models are
+# absent from the pipeline and consume no model GPU memory. Arbitrary YOLO .pt
+# files are not DeepStream-compatible until explicitly exported and paired with
+# the correct parser; see configs/models/behavior.metadata.example.json.
+behavior:
+  smoking:
+    enabled: false
+    config_file: /workspace/configs/nvinfer/smoking.txt
+    model: /workspace/models/smoking.engine
+    unique_id: 11
+    labels: [smoking]
+    threshold: 0.50
+  eating:
+    enabled: false
+    config_file: /workspace/configs/nvinfer/eating.txt
+    model: /workspace/models/eating.engine
+    unique_id: 12
+    labels: [eating]
+    threshold: 0.50
+  drinking:
+    enabled: false
+    config_file: /workspace/configs/nvinfer/drinking.txt
+    model: /workspace/models/drinking.engine
+    unique_id: 13
+    labels: [drinking]
+    threshold: 0.50
+  carrying:
+    enabled: false
+    config_file: /workspace/configs/nvinfer/carrying.txt
+    model: /workspace/models/carrying.engine
+    unique_id: 14
+    labels: [carrying]
+    threshold: 0.50
+
+# Logical model catalog for deployment inventory. Runtime switches above remain
+# authoritative; this node never makes a disabled model load implicitly.
+models:
+  person:
+    architecture: peoplenet-resnet34-detectnet-v2
+    source: nvidia/tao/peoplenet:deployable_quantized_onnx_v2.6.3
+    onnx: /workspace/models/peoplenet/resnet34_peoplenet.onnx
+    engine: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+    labels: /workspace/models/peoplenet/labels.txt
+    calibration: /workspace/models/peoplenet/resnet34_peoplenet_int8.txt
+  face:
+    architecture: scrfd
+    onnx: /workspace/models/face-deepstream.onnx
+    engine: /workspace/models/face.engine
+  adaface:
+    architecture: adaface-ir50-onnx
+    onnx: /workspace/models/adaface_ir50.onnx
+  behaviors:
+    metadata_template: /workspace/configs/models/behavior.metadata.example.json
+
+snapshot:
+  enabled: true
+  root: /workspace/output/snapshot
+  image_format: jpg
+  jpeg_quality: 95
+  person_decision_delay_sec: 2.5
+  behavior_cooldown_sec: 10.0
+  max_pending_tracks: 10000
+
+person_crop:
+  padding_x_ratio: 0.20
+  padding_top_ratio: 0.20
+  upper_body_height_ratio: 0.75
+  min_crop_width: 16
+  min_crop_height: 32
+  min_visible_ratio: 0.50
+
+output:
+  enabled: true
+  path: /workspace/output/result.mp4
+  codec: h264
+  # nvidia 保持 GPU 零拷贝编码；无 NVIDIA 视频编码能力的主机可改为 x264。
+  encoder: nvidia
+  bitrate: 8000000
+  sync: false
+  events_enabled: true
+  events_path: /workspace/output/events.jsonl
+
+database:
+  enabled: true
+  dsn: ""
+  dsn_env: DATABASE_DSN
+  min_similarity: 0.40
+  pool_min_size: 1
+  pool_max_size: 8
+  connect_timeout_sec: 5
+
+runtime:
+  strict_assets: true
+  headless: true
+  health_file: ${APP_HEALTH_FILE:-/tmp/deepstream-ai.ready}
+  log_level: ${APP_LOG_LEVEL:-INFO}
+  json_logs: false
+  startup_timeout_sec: 600
+  shutdown_timeout_sec: 20
+  analytics_queue_size: 64

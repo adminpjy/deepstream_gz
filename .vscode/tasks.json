@@ -1,0 +1,85 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "preflight: Windows",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/scripts/preflight.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: build",
+      "type": "shell",
+      "command": "docker compose build app",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: up",
+      "type": "shell",
+      "command": "docker compose up --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "compose: down",
+      "type": "shell",
+      "command": "docker compose down",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "logs: app",
+      "type": "shell",
+      "command": "docker compose logs --follow --tail=200 app",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "test: container",
+      "type": "shell",
+      "command": "docker compose run --rm --no-deps app python3 -m pytest -q",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "debug: container",
+      "type": "shell",
+      "command": "docker compose run --rm --service-ports app python3 -m debugpy --log-to-stderr --listen 0.0.0.0:5678 --wait-for-client -m deepstream_ai --config /workspace/configs/config.yaml",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "deepstream-debug",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*debugpy.*|.*Adapter.*",
+          "endsPattern": ".*accepting incoming client connections.*|.*Waiting for client.*"
+        }
+      }
+    }
+  ]
+}
+

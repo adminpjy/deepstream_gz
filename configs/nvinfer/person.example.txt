@@ -1,0 +1,33 @@
+# PeopleNet deployment template. Obtain the licensed ONNX/calibration/labels
+# from the reviewed NGC model version and verify its tensor names before use.
+# Keep the Hybrid parameters together; replacing them with one NMS threshold
+# caused both occluded-person misses and a repeatable empty-scene false track.
+[property]
+gpu-id=0
+net-scale-factor=0.0039215697906911373
+onnx-file=/workspace/models/person.onnx
+int8-calib-file=/workspace/models/person.calib
+model-engine-file=/workspace/models/person.engine
+labelfile-path=/workspace/models/person.labels.txt
+infer-dims=3;544;960
+uff-input-blob-name=input_1
+batch-size=1
+process-mode=1
+model-color-format=0
+network-mode=2
+network-type=0
+num-detected-classes=3
+cluster-mode=3
+maintain-aspect-ratio=1
+interval=0
+gie-unique-id=1
+output-blob-names=output_cov/Sigmoid:0;output_bbox/BiasAdd:0
+
+[class-attrs-all]
+pre-cluster-threshold=0.1037
+nms-iou-threshold=0.4842
+minBoxes=4
+dbscan-min-score=1.1845
+eps=0.3207
+detected-min-w=20
+detected-min-h=20
