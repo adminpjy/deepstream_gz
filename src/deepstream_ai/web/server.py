@@ -20,6 +20,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from deepstream_ai.config import AppConfig
 from deepstream_ai.doctor import run_doctor
+from deepstream_ai.manual_task_service import ManualRecognitionTaskService
 from deepstream_ai.preflight import validate_assets
 from deepstream_ai.task_service import RecognitionTaskService, TaskProcess
 
@@ -192,6 +193,15 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
             self._send_json(self.server.service.restart())
             return
         match = _TASK_PATH.fullmatch(path)
+        if match and match.group(2) == "start":
+            self._require_optional_json_content_type()
+            self._read_json(optional=True)
+            starter = getattr(self.server.service, "start_existing", None)
+            if not callable(starter):
+                raise ApiError(HTTPStatus.CONFLICT, "当前服务不支持从历史任务手动启动")
+            task = starter(match.group(1))
+            self._send_json(task, status=HTTPStatus.ACCEPTED)
+            return
         if match and match.group(2) == "stop":
             self._require_optional_json_content_type()
             self._read_json(optional=True)
@@ -328,7 +338,7 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", content_type)
             self.send_header(
                 "Cache-Control",
-                "public, max-age=300"
+                "no-cache, must-revalidate"
                 if static
                 else "no-store"
                 if no_store
@@ -405,6 +415,9 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
         elif isinstance(exc, KeyError):
             status = HTTPStatus.NOT_FOUND
             message = "资源不存在"
+        elif isinstance(exc, FileNotFoundError):
+            status = HTTPStatus.CONFLICT
+            message = str(exc)
         elif isinstance(exc, ValueError):
             status = HTTPStatus.UNPROCESSABLE_ENTITY
             message = str(exc)
@@ -464,7 +477,7 @@ def run_web_service(
     if failed_checks:
         detail = "; ".join(f"{check.name}: {check.detail}" for check in failed_checks)
         raise RuntimeError(f"识别服务运行环境检查失败: {detail}")
-    service = RecognitionTaskService(
+    service = ManualRecognitionTaskService(
         config.config_path,
         uploads_root=uploads_root,
         tasks_root=tasks_root,
