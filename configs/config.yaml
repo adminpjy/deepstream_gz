@@ -174,14 +174,18 @@ snapshot:
   root: /workspace/output/snapshot
   image_format: jpg
   jpeg_quality: 95
-  person_decision_delay_sec: 2.5
+  # Evidence is written immediately, so this value only controls lifecycle
+  # cleanup. Keep state through short NvDCF shadow/re-association gaps.
+  person_decision_delay_sec: 10.0
   behavior_cooldown_sec: 10.0
   max_pending_tracks: 10000
 
 person_crop:
-  padding_x_ratio: 0.20
-  padding_top_ratio: 0.20
-  upper_body_height_ratio: 0.75
+  # These ratios are also reused for the user-facing face alarm crop. They give
+  # the face image more head/neck/shoulder context instead of a tiny detector ROI.
+  padding_x_ratio: 0.35
+  padding_top_ratio: 0.25
+  upper_body_height_ratio: 0.85
   min_crop_width: 16
   min_crop_height: 32
   min_visible_ratio: 0.50
