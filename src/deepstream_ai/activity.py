@@ -7,6 +7,7 @@ from threading import Event, RLock
 from typing import Protocol
 
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
+from deepstream_ai.track_continuity import TrackContinuityConfig, TrackContinuityResolver
 
 _NANOSECONDS = 1_000_000_000
 
@@ -98,25 +99,38 @@ class PersonActivityTracker:
 
 
 class ActivityAwareConsumer:
-    """Observe activity and fan out preview without adding blocking work."""
+    """Resolve short ID glitches, then fan out activity/preview/business work."""
 
     def __init__(
         self,
         delegate: FramePacketConsumer,
         activity: PersonActivityTracker,
         preview: PreviewSink | None = None,
+        continuity: TrackContinuityResolver | None = None,
     ) -> None:
         self.delegate = delegate
         self.activity = activity
         self.preview = preview
+        if continuity is None:
+            app_config = getattr(delegate, "config", None)
+            config_path = getattr(app_config, "config_path", None)
+            if config_path is not None:
+                continuity = TrackContinuityResolver(
+                    TrackContinuityConfig.from_file(config_path)
+                )
+        self.continuity = continuity
 
     def submit(self, packet: FramePacket) -> bool:
+        if self.continuity is not None:
+            packet = self.continuity.resolve(packet)
         self.activity.observe(packet)
         if self.preview is not None:
             self.preview.submit(packet)
         return self.delegate.submit(packet)
 
     def identity_label(self, camera_id: str, track_id: int | str) -> str | None:
+        if self.continuity is not None:
+            track_id = self.continuity.logical_id(camera_id, track_id)
         return self.delegate.identity_label(camera_id, track_id)
 
 
