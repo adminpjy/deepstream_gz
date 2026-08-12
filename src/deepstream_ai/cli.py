@@ -62,7 +62,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="serve command per-task output directory",
     )
     parser.add_argument("--max-upload-mb", type=int, default=2048)
-    parser.add_argument("--max-tasks", type=int, default=2)
+    parser.add_argument("--max-tasks", type=int, default=4)
     parser.add_argument("--preview-fps", type=float, default=5.0)
     parser.add_argument("--preview-width", type=int, default=960)
     return parser
@@ -81,8 +81,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "ok": not failures,
                 "config": str(config.config_path),
                 "sources": [source.camera_id for source in config.enabled_sources],
-                # Kept for automation compatibility; this now includes semantic
-                # config/parser mismatches as well as absent files.
                 "missing": list(failures),
                 "nvinfer": [
                     {
