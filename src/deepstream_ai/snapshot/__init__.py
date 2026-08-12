@@ -15,7 +15,7 @@ from deepstream_ai.snapshot.manager import (
     SnapshotWriteError,
     TrackEvidenceState,
 )
-from deepstream_ai.snapshot.rolling_manager import EventSnapshotManager
+from deepstream_ai.snapshot.alarm_manager import EventSnapshotManager
 
 __all__ = [
     "EvidenceCandidate",
