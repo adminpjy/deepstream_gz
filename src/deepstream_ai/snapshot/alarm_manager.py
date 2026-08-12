@@ -4,6 +4,12 @@ This keeps the existing rolling evidence lifecycle intact, but changes the face
 snapshot that is written for users: AdaFace quality is still calculated from the
 raw face ROI, while the persisted face evidence includes surrounding head/neck/
 shoulder context. Person and face evidence always come from the same frame.
+
+Person-only evidence is deliberately anchored to the first valid tracked-person
+bbox. NvDCF shadow tracking can briefly drift onto a textured background after a
+person becomes occluded or leaves the frame. Such tracker-only geometry must not
+replace an already valid person snapshot merely because the rack/cabinet crop is
+larger and has a higher Laplacian sharpness score.
 """
 
 from __future__ import annotations
@@ -21,7 +27,75 @@ LOGGER = logging.getLogger(__name__)
 
 
 class EventSnapshotManager(RollingEventSnapshotManager):
-    """Rolling manager with a larger user-facing face evidence crop."""
+    """Rolling manager with stable person evidence and larger face display crops."""
+
+    def observe_person(
+        self,
+        frame: np.ndarray,
+        track: Track,
+        *,
+        has_face: bool = False,
+        quality: float | None = None,
+    ) -> bool:
+        """Persist the first person immediately, but do not let NvDCF drift overwrite it.
+
+        The base rolling manager continuously replaces ``best_person`` using a
+        score that rewards image sharpness and bbox area. In a server-room scene
+        a cabinet/rack is both very sharp and very large, so a shadow-tracked box
+        that drifts from the person onto the rack can incorrectly become the
+        highest-quality person snapshot.
+
+        Keep zero-miss behavior for a new track by delegating the first frame to
+        the base manager. Later person-only updates are allowed only while their
+        bbox remains geometrically consistent with the original fallback bbox.
+        As soon as a face is detected, ``observe_face`` is authoritative and may
+        replace both person and face evidence from that same winning frame.
+        """
+
+        key = track.key
+        with self._lock:
+            state = self._states.get(key)
+            if state is not None:
+                state.last_seen = track.timestamp
+                # Once face evidence exists, only a better face may replace the
+                # synchronized person/face pair.
+                if state.face_fallback is not None or state.best_face is not None:
+                    return False
+                anchor = state.person_fallback
+            else:
+                anchor = None
+
+        # First observation for this track: preserve the existing zero-miss rule
+        # and write it immediately.
+        if state is None or anchor is None:
+            return super().observe_person(
+                frame,
+                track,
+                has_face=has_face,
+                quality=quality,
+            )
+
+        # Subsequent person-only frames may improve the original evidence, but
+        # must stay close in scale/location to the first valid person bbox. This
+        # prevents gradual shadow-tracker drift from replacing a human with a
+        # rack/cabinet image while still allowing normal small movements.
+        if not _person_geometry_consistent(anchor.person_bbox, track.bbox):
+            LOGGER.info(
+                "[PERSON_EVIDENCE_HOLD] camera=%s track=%s reason=geometry_drift "
+                "anchor=%s current=%s",
+                track.camera_id,
+                track.track_id,
+                anchor.person_bbox.as_tuple(),
+                track.bbox.as_tuple(),
+            )
+            return False
+
+        return super().observe_person(
+            frame,
+            track,
+            has_face=has_face,
+            quality=quality,
+        )
 
     def observe_face(
         self,
@@ -131,6 +205,31 @@ class EventSnapshotManager(RollingEventSnapshotManager):
             computed_quality,
         )
         return True
+
+
+def _person_geometry_consistent(anchor: BoundingBox, current: BoundingBox) -> bool:
+    """Conservative evidence-only drift guard; it never changes tracker IDs.
+
+    The guard compares every person-only replacement to the *first* valid bbox,
+    not to the previous replacement, so a shadow target cannot slowly ratchet
+    its way across a rack. Face evidence bypasses this guard because a detected
+    face provides the stronger same-frame human cue and replaces the pair in
+    ``observe_face``.
+    """
+
+    area_ratio = current.area / max(anchor.area, 1.0)
+    if not 0.45 <= area_ratio <= 2.25:
+        return False
+
+    anchor_x, anchor_y = anchor.center
+    current_x, current_y = current.center
+    max_dx = 0.90 * max(anchor.width, current.width)
+    max_dy = 0.90 * max(anchor.height, current.height)
+    if abs(current_x - anchor_x) > max_dx:
+        return False
+    if abs(current_y - anchor_y) > max_dy:
+        return False
+    return True
 
 
 def _alarm_face_pair_crop(
