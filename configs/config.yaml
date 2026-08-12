@@ -21,7 +21,10 @@ sources: []
 #     url: ${GATE_01_RTSP_URL}
 #     enabled: true
 #     nominal_fps: 25.0
-#     latency_ms: 300
+#     # Prefer tracking continuity over ultra-low latency. The source adapter
+#     # also protects RTSP with a 500 ms minimum jitter buffer and keeps late
+#     # packets instead of forcing a one-frame visual discontinuity.
+#     latency_ms: 500
 #     reconnect_interval_sec: 10
 #   - camera_id: gate-02
 #     type: file
@@ -92,6 +95,21 @@ tracker:
     source: nvidia/tao/reidentificationnet:deployable_v1.2
     onnx_sha256: 0e21d09278508ec835955f422a9fdd3cd59b2a6ecdef98d705f388f33cebac2b
     require_prebuilt_engine: true
+
+# NvDCF remains the tracker of record. This lightweight business-layer bridge
+# only reconnects a brand-new raw NvDCF ID to one clearly matching recently-lost
+# logical track. It is designed for a brief RTSP flash/drop or one association
+# failure and never merges two tracks that are simultaneously present.
+track_continuity:
+  enabled: true
+  max_gap_sec: 8.0
+  min_iou: 0.10
+  max_center_distance_ratio: 0.75
+  min_area_ratio: 0.40
+  max_area_ratio: 2.50
+  min_match_score: 0.55
+  ambiguity_margin: 0.15
+  stale_retention_sec: 30.0
 
 face_recognition:
   enabled: true
