@@ -76,7 +76,7 @@ services:
       - --max-upload-mb
       - ${SERVICE_MAX_UPLOAD_MB:-2048}
       - --max-tasks
-      - ${SERVICE_MAX_TASKS:-2}
+      - ${SERVICE_MAX_TASKS:-4}
       - --preview-fps
       - ${SERVICE_PREVIEW_FPS:-5}
       - --preview-width
