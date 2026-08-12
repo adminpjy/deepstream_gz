@@ -2,7 +2,10 @@
 
 const API = Object.freeze({ service: "/api/service", tasks: "/api/tasks", uploads: "/api/uploads", restart: "/api/service/restart" });
 const POLL_INTERVAL_MS = 3000;
-const MAX_PREVIEW_TILES = 8;
+// The service defaults to four concurrent pipelines. Keep the browser preview
+// wall at the same bound so persistent MJPEG connections never starve normal
+// API requests on browsers with conservative per-origin connection limits.
+const MAX_PREVIEW_TILES = 4;
 
 const state = {
   sourceMode: "file",
@@ -11,6 +14,7 @@ const state = {
   submitting: false,
   refreshing: false,
   stoppingTaskIds: new Set(),
+  startingTaskIds: new Set(),
   pollingTimer: null,
   previewNodes: new Map(),
 };
@@ -21,6 +25,7 @@ document.addEventListener("DOMContentLoaded", initialize);
 function initialize() {
   collectElements();
   bindEvents();
+  // Page load is read-only. No historical task is started from initialize().
   void refreshDashboard({ surfaceErrors: true });
   schedulePolling();
 }
@@ -119,17 +124,17 @@ async function handleTaskSubmit(event) {
   if (state.submitting) return;
   clearError();
   clearSubmissionStatus();
-  setSubmitting(true, state.sourceMode === "file" && state.selectedFile ? `正在上传 ${shortMessage(state.selectedFile.name, 24)}…` : "正在创建任务…");
+  setSubmitting(true, state.sourceMode === "file" && state.selectedFile ? `正在上传 ${shortMessage(state.selectedFile.name, 24)}…` : "正在准备启动…");
   try {
     const payload = await buildTaskPayload();
-    setSubmitting(true, "正在创建任务…");
+    setSubmitting(true, "正在启动分析…");
     await requestJson(API.tasks, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setSubmissionStatus("任务已创建，可继续添加下一路视频。", "success");
-    showToast("任务创建成功");
+    setSubmissionStatus("已手动启动，可继续添加下一路视频。", "success");
+    showToast("分析任务已启动");
     if (state.sourceMode === "file") clearSelectedFile();
     incrementCameraId();
     await refreshDashboard({ surfaceErrors: false, force: true });
@@ -185,6 +190,30 @@ async function uploadFile(file) {
   });
 }
 
+async function startExistingTask(taskId) {
+  const id = String(taskId || "");
+  if (!id || state.startingTaskIds.has(id)) return;
+  clearError();
+  state.startingTaskIds.add(id);
+  renderTasks();
+  try {
+    const created = await requestJson(`${API.tasks}/${encodeURIComponent(id)}/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}",
+    });
+    showToast(`已启动 ${created.camera_id || "历史视频源"}`);
+    await refreshDashboard({ surfaceErrors: false, force: true });
+  } catch (error) {
+    const message = errorMessage(error);
+    showError(message);
+    showToast(message, "error");
+  } finally {
+    state.startingTaskIds.delete(id);
+    renderTasks();
+  }
+}
+
 async function stopTask(taskId) {
   const id = String(taskId || "");
   if (!id || state.stoppingTaskIds.has(id)) return;
@@ -211,13 +240,13 @@ async function stopTask(taskId) {
 }
 
 async function restartService() {
-  if (!window.confirm("确定要重启 DeepStream 分析服务吗？运行中的任务可能会被中断。")) return;
+  if (!window.confirm("确定要重启 DeepStream 分析服务吗？运行中的任务可能会被中断。历史任务不会自动重新启动。")) return;
   elements.restartServiceButton.disabled = true;
   elements.servicePill.dataset.state = "warning";
   elements.serviceStatusText.textContent = "正在重启服务";
   try {
     await requestJson(API.restart, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-    showToast("服务重启请求已发送");
+    showToast("服务已重启；历史任务保持停止状态");
     window.setTimeout(() => void refreshDashboard({ surfaceErrors: false, force: true }), 1200);
   } catch (error) {
     showError(errorMessage(error));
@@ -272,7 +301,9 @@ function renderServiceOffline(error) {
 }
 
 function renderPreviewWall() {
-  const activeTasks = state.tasks.filter((task) => isActiveStatus(task.status)).slice(0, MAX_PREVIEW_TILES);
+  // Only a pipeline that has reached RUNNING gets an MJPEG connection. A stale
+  // STARTING history row must never open a long-lived stream on page load.
+  const activeTasks = state.tasks.filter((task) => isPreviewStatus(task.status)).slice(0, MAX_PREVIEW_TILES);
   const activeIds = new Set(activeTasks.map((task) => task.id));
 
   for (const [taskId, entry] of state.previewNodes.entries()) {
@@ -443,13 +474,23 @@ function actionCell(task) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "button button-danger button-compact row-action";
-    button.disabled = state.stoppingTaskIds.has(task.id);
+    button.disabled = state.stoppingTaskIds.has(task.id) || canonicalStatus(task.status) === "stopping";
     button.textContent = button.disabled ? "停止中" : "停止";
     button.addEventListener("click", () => void stopTask(task.id));
     cell.append(button);
-  } else {
-    cell.textContent = "—";
+    return cell;
   }
+  if (isStartableStatus(task.status) && task.restartable !== false) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "button button-primary button-compact row-action";
+    button.disabled = state.startingTaskIds.has(task.id);
+    button.textContent = button.disabled ? "启动中" : "启动";
+    button.addEventListener("click", () => void startExistingTask(task.id));
+    cell.append(button);
+    return cell;
+  }
+  cell.textContent = "—";
   return cell;
 }
 
@@ -478,6 +519,8 @@ function normalizeTask(raw) {
     createdAt: raw?.created_at ?? raw?.createdAt ?? null,
     updatedAt: raw?.updated_at ?? raw?.updatedAt ?? raw?.finished_at ?? raw?.started_at ?? null,
     previewUrl: raw?.preview_url ?? raw?.stream_url ?? null,
+    historical: Boolean(raw?.historical),
+    restartable: raw?.restartable !== false,
   };
 }
 
@@ -493,13 +536,14 @@ function canonicalStatus(value) {
 }
 
 function statusLabel(value) {
-  const labels = { online: "在线", ready: "就绪", healthy: "正常", busy: "繁忙", degraded: "降级", restarting: "重启中", pending: "等待中", starting: "启动中", running: "运行中", stopping: "停止中", stopped: "已停止", succeeded: "已完成", failed: "失败", offline: "离线", unknown: "未知" };
+  const labels = { online: "在线", ready: "就绪", healthy: "正常", busy: "繁忙", degraded: "降级", restarting: "重启中", pending: "等待手动启动", starting: "启动中", running: "运行中", stopping: "停止中", stopped: "已停止", succeeded: "已完成", failed: "失败", offline: "离线", unknown: "未知" };
   const canonical = canonicalStatus(value);
   return labels[canonical] || String(value || "未知");
 }
 
-function isActiveStatus(value) { return ["starting", "running"].includes(canonicalStatus(value)); }
-function isStoppableStatus(value) { return ["pending", "starting", "running"].includes(canonicalStatus(value)); }
+function isPreviewStatus(value) { return canonicalStatus(value) === "running"; }
+function isStoppableStatus(value) { return ["starting", "running", "stopping"].includes(canonicalStatus(value)); }
+function isStartableStatus(value) { return ["pending", "stopped", "succeeded", "failed"].includes(canonicalStatus(value)); }
 
 function safePreviewUrl(task) {
   const fallback = `${API.tasks}/${encodeURIComponent(task.id)}/stream.mjpg`;
