@@ -71,12 +71,13 @@ def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
     snapshot = replace(base.output.snapshot, root=str(output_dir / "snapshot"))
     output = replace(
         base.output,
-        # File jobs produce a finalized MP4. An unbounded RTSP recording would
-        # eventually fill the host volume, so live jobs publish preview/events
-        # and snapshots without a monolithic result file.
-        enabled=source.type == "file",
+        # Test/production tasks only need live preview, events and evidence
+        # snapshots. Do not encode a monolithic result.mp4 for every input;
+        # those files consumed large amounts of disk space and are not part of
+        # the required evidence workflow.
+        enabled=False,
         path=str(output_dir / "result.mp4"),
-        sync=source.type == "file",
+        sync=False,
         events_enabled=True,
         events_path=str(output_dir / "events.jsonl"),
         snapshot=snapshot,
