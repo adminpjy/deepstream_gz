@@ -1,0 +1,483 @@
+2026-08-12 08:02:07 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/person-peoplenet.txt engine=/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine source_models=['/workspace/models/peoplenet/resnet34_peoplenet.onnx']
+2026-08-12 08:02:07 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/face.example.txt engine=/workspace/models/face.engine source_models=['/workspace/models/face-deepstream.onnx']
+2026-08-12 08:02:07 | INFO     | __main__ | [DETECTOR] PeopleNet
+2026-08-12 08:02:07 | INFO     | __main__ | [TRACKER] NvDCF
+2026-08-12 08:02:07 | INFO     | __main__ | [TRACKER_CONFIG] /workspace/configs/tracker/nvdcf.yml
+2026-08-12 08:02:07 | INFO     | __main__ | [PEOPLENET_CLASSES] person=0, bag=1, face=2
+2026-08-12 08:02:07 | INFO     | __main__ | DeepStream Python runtime 已加载: {'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-12 08:02:07.452465971 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=4 runtime_config=/workspace/output/tasks/bba8e9f180a74074/.runtime/nvinfer/person-detector.txt
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=5 runtime_config=/workspace/output/tasks/bba8e9f180a74074/.runtime/nvinfer/face-detector.txt
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: smoking
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: eating
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: drinking
+2026-08-12 08:02:09 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: carrying
+Protocol set: 0x4
+0:00:02.049625367 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:02.050826393 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:02.069912945 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/tasks/bba8e9f180a74074/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+0:00:04.090247881 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:04.091611344 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:04.101623293 [36m37079[00m     0x1eab6b20 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector>[00m [UID 1]: Load new model:/workspace/output/tasks/bba8e9f180a74074/.runtime/nvinfer/person-detector.txt sucessfully
+2026-08-12 08:02:12 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=camera-02 uri=vsrc_0
+Opening in BLOCKING MODE 
+0:00:05.172323252 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.172820360 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:00:05.173133922 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.173749466 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:00:05.174332483 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.174844079 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:00:05.175303018 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.175697936 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:00:05.175979337 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.176500827 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:00:05.176950475 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.177320453 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:00:05.177827504 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.178229485 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:00:05.178699050 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.179379765 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:00:05.180473745 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.180993855 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:00:05.182677370 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.183335237 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:00:05.184006446 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.184661866 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:00:05.185006070 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.185268506 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:00:05.185531215 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.185760982 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:00:05.186048972 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.186457281 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:00:05.187033599 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.187642602 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:00:05.187953374 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.188274126 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:00:05.188642329 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.189027390 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:00:05.189626785 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.190121017 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:00:05.190922184 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.191968317 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:00:05.192391003 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.192648102 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:00:05.193135547 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.193422587 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:00:05.193765393 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.194005261 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:00:05.194339304 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.195083166 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P216
+0:00:05.195508421 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.195843273 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P216
+0:00:05.196211481 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.196654044 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:00:05.196965666 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.197521624 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:00:05.197817186 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.198121261 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P412
+0:00:05.198448143 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.198713993 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P412
+0:00:05.199129595 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.199632693 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P410
+0:00:05.199873062 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.200259854 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P410
+0:00:05.200836048 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.201262308 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:00:05.201900847 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.202406410 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:00:05.202875747 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.203292276 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:00:05.203754474 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.204665562 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM12
+0:00:05.342835579 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0>[00m Duration invalid, not setting latency
+0:00:05.362143385 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:00:05.366664628 [36m37079[00m 0x7f90c80024e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+2026-08-12 08:02:15 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=1
+2026-08-12 08:02:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=0 person_conf=0.965 quality=0.783
+2026-08-12 08:02:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=0 source=person_fallback quality=0.783
+2026-08-12 08:02:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=0 face_conf=0.737 quality=0.615 display=327x486
+2026-08-12 08:02:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=face_fallback quality=0.615
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=1 person_conf=0.979 quality=0.786
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=1 source=person_fallback quality=0.786
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=1 face_conf=0.690 quality=0.603 display=335x488
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=face_fallback quality=0.603
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.603 new_quality=0.608 display=334x479
+2026-08-12 08:02:25 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.608
+2026-08-12 08:02:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:25 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.608 new_quality=0.613 display=329x479
+2026-08-12 08:02:25 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.613
+2026-08-12 08:02:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:28 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=0 source=face_fallback identity=unknown similarity=-1.000 quality=0.615
+2026-08-12 08:02:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:29 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.613 new_quality=0.622 display=328x518
+2026-08-12 08:02:29 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.622
+2026-08-12 08:02:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:38 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.622 new_quality=0.623 display=329x496
+2026-08-12 08:02:38 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.623
+2026-08-12 08:02:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.623 new_quality=0.627 display=332x527
+2026-08-12 08:02:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.627
+2026-08-12 08:02:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:46 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.627 new_quality=0.636 display=331x545
+2026-08-12 08:02:46 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.636
+2026-08-12 08:02:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=1 old_quality=0.636 new_quality=0.642 display=336x552
+2026-08-12 08:02:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=1 source=best_face quality=0.642
+2026-08-12 08:02:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=2 person_conf=0.269 quality=0.593
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=2 source=person_fallback quality=0.593
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=2 face_conf=0.833 quality=0.609 display=405x661
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=face_fallback quality=0.609
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=2 old_quality=0.609 new_quality=0.614 display=399x649
+2026-08-12 08:03:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=best_face quality=0.614
+2026-08-12 08:03:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=1 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:06 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=2 old_quality=0.614 new_quality=0.625 display=403x664
+2026-08-12 08:03:06 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=best_face quality=0.625
+2026-08-12 08:03:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=2 old_quality=0.625 new_quality=0.625 display=402x647
+2026-08-12 08:03:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=best_face quality=0.625
+2026-08-12 08:03:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=2 old_quality=0.625 new_quality=0.632 display=401x639
+2026-08-12 08:03:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=best_face quality=0.632
+2026-08-12 08:03:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=2 old_quality=0.632 new_quality=0.639 display=396x642
+2026-08-12 08:03:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=2 source=best_face quality=0.639
+2026-08-12 08:03:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:19 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=1 source=best_face identity=unknown similarity=-1.000 quality=0.642
+2026-08-12 08:03:19 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:20 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:20 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:20 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=2 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:59 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=2 source=best_face identity=unknown similarity=-1.000 quality=0.639
+2026-08-12 08:04:01 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=3 person_conf=0.448 quality=0.645
+2026-08-12 08:04:01 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=3 source=person_fallback quality=0.645
+2026-08-12 08:04:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=3 face_conf=0.712 quality=0.575 display=390x592
+2026-08-12 08:04:01 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=face_fallback quality=0.575
+2026-08-12 08:04:02 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=3 old_quality=0.575 new_quality=0.613 display=437x741
+2026-08-12 08:04:02 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=best_face quality=0.613
+2026-08-12 08:04:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:02 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=3 old_quality=0.613 new_quality=0.636 display=431x728
+2026-08-12 08:04:02 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=best_face quality=0.636
+2026-08-12 08:04:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:03 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=3 old_quality=0.636 new_quality=0.642 display=409x661
+2026-08-12 08:04:03 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=best_face quality=0.642
+2026-08-12 08:04:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=3 old_quality=0.642 new_quality=0.672 display=360x617
+2026-08-12 08:04:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=best_face quality=0.672
+2026-08-12 08:04:13 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=3 old_quality=0.672 new_quality=0.692 display=360x581
+2026-08-12 08:04:13 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=3 source=best_face quality=0.692
+2026-08-12 08:04:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=3 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:27 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=4 person_conf=0.745 quality=0.697
+2026-08-12 08:04:27 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=4 source=person_fallback quality=0.697
+2026-08-12 08:04:27 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=4 face_conf=0.759 quality=0.570 display=391x645
+2026-08-12 08:04:27 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=4 source=face_fallback quality=0.570
+2026-08-12 08:04:27 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=3 source=best_face identity=unknown similarity=-1.000 quality=0.692
+2026-08-12 08:04:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=4 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=4 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:44 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=5 person_conf=0.739 quality=0.693
+2026-08-12 08:04:44 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=5 source=person_fallback quality=0.693
+2026-08-12 08:04:44 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=5 face_conf=0.735 quality=0.569 display=384x631
+2026-08-12 08:04:44 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=5 source=face_fallback quality=0.569
+2026-08-12 08:04:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:47 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=4 source=face_fallback identity=unknown similarity=-1.000 quality=0.570
+2026-08-12 08:04:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=5 old_quality=0.569 new_quality=0.570 display=394x468
+2026-08-12 08:04:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=5 source=best_face quality=0.570
+2026-08-12 08:04:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=5 old_quality=0.570 new_quality=0.574 display=382x582
+2026-08-12 08:04:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=5 source=best_face quality=0.574
+2026-08-12 08:04:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:54 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=5 old_quality=0.574 new_quality=0.589 display=390x587
+2026-08-12 08:04:54 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=5 source=best_face quality=0.589
+2026-08-12 08:04:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=5 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:55 | INFO     | deepstream_ai.pipeline.runner | 收到停止请求
+0:02:58.427191699 [36m37079[00m     0x1eab6b20 [33;01mWARN   [00m [00m         nvurisrcbin gstdsnvurisrcbin.cpp:1710:watch_source_status:<uri-source-00>[00m warning: No data from source since last 10 sec. Trying reconnection
+0:02:58.428076946 [36m37079[00m 0x7f90c8000d80 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+0:02:58.428789973 [36m37079[00m 0x7f90c8000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6874:gst_rtspsrc_try_send:<src>[00m error: Could not send message. (Received end-of-file)
+0:02:58.429453412 [36m37079[00m 0x7f90c8000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:9345:gst_rtspsrc_pause:<src>[00m error: Could not send message. (Received end-of-file)
+Resetting source -1, attempts: 1
+2026-08-12 08:05:05 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=uri-source-00: gst-stream-error-quark: No data from source since last 10 sec. Trying reconnection (1); debug=gstdsnvurisrcbin.cpp(1710): watch_source_status (): /GstPipeline:deepstream-ai-platform/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00
+2026-08-12 08:05:05 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(6874): gst_rtspsrc_try_send (): /GstPipeline:deepstream-ai-platform/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+2026-08-12 08:05:05 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(9345): gst_rtspsrc_pause (): /GstPipeline:deepstream-ai-platform/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+Opening in BLOCKING MODE 
+0:02:59.506073593 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.506438812 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:02:59.506825902 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.507449753 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:02:59.508007645 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.508542702 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:02:59.508806740 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.509289402 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:02:59.509707981 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.510226695 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:02:59.510657854 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.511094655 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:02:59.511561638 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.511976601 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:02:59.512466352 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.512941665 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:02:59.513654776 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.514174285 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:02:59.514617910 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.515075767 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:02:59.515581713 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.516071436 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:02:59.516520111 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.516977600 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:02:59.517330656 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.517882282 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:02:59.518360891 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.518917291 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:02:59.519627683 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.519900008 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:02:59.520238559 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.520531955 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:02:59.520946645 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.521400875 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:02:59.521842491 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.522380021 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:02:59.522812287 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.523269898 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:02:59.523719718 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:sink>[00m Unable to try format: Unknown error -1
+0:02:59.524240618 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:02:59.524753070 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.525168797 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:02:59.525611199 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.526004099 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:02:59.526539958 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.526999529 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat P216
+0:02:59.527505371 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.527965666 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat P216
+0:02:59.528477800 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.529107608 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:02:59.529668083 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.530202950 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:02:59.530743995 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.531295179 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat P412
+0:02:59.532295039 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.533046925 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat P412
+0:02:59.533696162 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.534145394 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat P410
+0:02:59.534544211 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.535451335 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat P410
+0:02:59.536255105 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.536656949 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:02:59.537010371 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.537469451 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:02:59.538875268 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.539411537 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:02:59.539891566 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder1:src>[00m Unable to try format: Unknown error -1
+0:02:59.540595629 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder1:src>[00m Could not probe maximum capture size for pixelformat NM12
+0:03:00.312076834 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder1>[00m Duration invalid, not setting latency
+0:03:00.329056145 [36m37079[00m 0x7f90c8001520 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder1:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:03:00.334252374 [36m37079[00m 0x7f90c80024e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder1:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+gstnvtracker: Successfully removed stream from low level tracker with Id 0.
+gstnvtracker: Successfully removed stream 0.
+2026-08-12 08:05:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=5 source=best_face identity=unknown similarity=-1.000 quality=0.589
+2026-08-12 08:05:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-02 track=0 person_conf=0.922 quality=0.723
+2026-08-12 08:05:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-02 track=0 source=person_fallback quality=0.723
+2026-08-12 08:05:07 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-02 track=0 face_conf=0.764 quality=0.571 display=404x624
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=face_fallback quality=0.571
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=0 old_quality=0.571 new_quality=0.588 display=410x648
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=best_face quality=0.588
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=0 old_quality=0.588 new_quality=0.590 display=412x648
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=best_face quality=0.590
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=0 old_quality=0.590 new_quality=0.592 display=410x652
+2026-08-12 08:05:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=best_face quality=0.592
+2026-08-12 08:05:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=0 old_quality=0.592 new_quality=0.602 display=416x646
+2026-08-12 08:05:13 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=best_face quality=0.602
+2026-08-12 08:05:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-02 track=0 old_quality=0.602 new_quality=0.607 display=416x652
+2026-08-12 08:05:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-02 track=0 source=best_face quality=0.607
+2026-08-12 08:05:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-02 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:16 | WARNING  | deepstream_ai.pipeline.runner | 等待 EOS 超过 20 秒，强制停止主循环
+2026-08-12 08:05:16 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              4217
+Probe Frames:                 4217
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      24.785
+P95 Probe Time (ms):          39.000
+Max Probe Time (ms):          48.030
+=======================================
+2026-08-12 08:05:16 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止
+2026-08-12 08:05:16 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-02 track=0 source=best_face identity=unknown similarity=-1.000 quality=0.607
+2026-08-12 08:05:16 | INFO     | deepstream_ai.snapshot.rolling_manager | Evidence Summary tracks=7 finalized=7 success=7 failed=0 missing=0 best_face=5 face_fallback=2 best_person=0 person_fallback=0 know=0 unknown=7

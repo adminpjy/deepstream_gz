@@ -1,0 +1,710 @@
+2026-08-12 08:01:46 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/person-peoplenet.txt engine=/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine source_models=['/workspace/models/peoplenet/resnet34_peoplenet.onnx']
+2026-08-12 08:01:46 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/face.example.txt engine=/workspace/models/face.engine source_models=['/workspace/models/face-deepstream.onnx']
+2026-08-12 08:01:46 | INFO     | __main__ | [DETECTOR] PeopleNet
+2026-08-12 08:01:46 | INFO     | __main__ | [TRACKER] NvDCF
+2026-08-12 08:01:46 | INFO     | __main__ | [TRACKER_CONFIG] /workspace/configs/tracker/nvdcf.yml
+2026-08-12 08:01:46 | INFO     | __main__ | [PEOPLENET_CLASSES] person=0, bag=1, face=2
+2026-08-12 08:01:46 | INFO     | __main__ | DeepStream Python runtime 已加载: {'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-12 08:01:46.688113738 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=4 runtime_config=/workspace/output/tasks/191dedc786e946ce/.runtime/nvinfer/person-detector.txt
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=5 runtime_config=/workspace/output/tasks/191dedc786e946ce/.runtime/nvinfer/face-detector.txt
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: smoking
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: eating
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: drinking
+2026-08-12 08:01:50 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: carrying
+0:00:04.521318750 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:04.523909196 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:04.534707264 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/tasks/191dedc786e946ce/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+0:00:06.238747448 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:06.240657439 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:06.248458557 [34m36921[00m     0x35838410 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector>[00m [UID 1]: Load new model:/workspace/output/tasks/191dedc786e946ce/.runtime/nvinfer/person-detector.txt sucessfully
+Opening in BLOCKING MODE 
+0:00:06.349196695 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.350085976 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:00:06.351000413 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.351858994 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:00:06.352804643 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.353547723 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:00:06.354262790 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.354699869 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:00:06.355742201 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.356251459 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:00:06.356803567 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.357678134 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:00:06.358602844 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.359470319 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:00:06.360144304 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.361438777 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:00:06.362145526 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.362870365 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:00:06.363467528 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.364532315 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:00:06.365122164 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.366121802 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:00:06.367010871 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.367619414 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:00:06.368323343 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.369187194 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:00:06.369644650 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.370158650 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:00:06.370552425 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.370953397 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:00:06.371298096 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.371822818 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:00:06.372248259 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.372924199 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:00:06.373385753 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.373712804 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:00:06.374103734 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.374559282 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:00:06.374929646 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.375531141 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:00:06.376381071 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.377011014 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:00:06.377456320 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.377948326 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:00:06.378439166 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.378908260 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P216
+0:00:06.379440215 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.379714029 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P216
+0:00:06.380132371 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.380508310 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:00:06.381075252 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.381419087 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:00:06.381974021 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.382382023 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P412
+0:00:06.382785361 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.383415244 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P412
+0:00:06.383760737 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.384023654 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P410
+0:00:06.384262910 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.384506251 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P410
+0:00:06.384769402 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.385011081 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:00:06.385322692 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.385835455 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:00:06.386358910 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.386726733 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:00:06.387143870 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.387682773 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM12
+2026-08-12 08:01:52 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=camera-01 uri=vsrc_0
+0:00:06.518394194 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0>[00m Duration invalid, not setting latency
+0:00:06.538266983 [34m36921[00m 0x7f2f540014e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:00:06.543096541 [34m36921[00m 0x7f2f540023a0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+2026-08-12 08:01:55 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=1
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=0 person_conf=0.323 quality=0.568
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=0 source=person_fallback quality=0.568
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=0 face_conf=0.515 quality=0.653 display=102x99
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=face_fallback quality=0.653
+2026-08-12 08:01:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.653 new_quality=0.655 display=104x97
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.655
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.655 new_quality=0.676 display=102x97
+2026-08-12 08:01:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.676
+2026-08-12 08:01:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.676 new_quality=0.691 display=106x103
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.691
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.691 new_quality=0.700 display=103x96
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.700
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.700 new_quality=0.717 display=104x101
+2026-08-12 08:01:56 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.717
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.717 new_quality=0.754 display=100x164
+2026-08-12 08:01:58 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.754
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.754 new_quality=0.769 display=111x154
+2026-08-12 08:01:58 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.769
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:01:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:11 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:18 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:18 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:19 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:21 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=1 person_conf=0.209 quality=0.842
+2026-08-12 08:02:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=1 source=person_fallback quality=0.842
+2026-08-12 08:02:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_person quality=0.906
+2026-08-12 08:02:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_person quality=0.924
+2026-08-12 08:02:24 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_person quality=0.924
+2026-08-12 08:02:24 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:24 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:24 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:27 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:34 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=1 source=best_person identity=unknown similarity=-1.000 quality=0.924
+2026-08-12 08:02:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=2 person_conf=0.221 quality=0.844
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=person_fallback quality=0.844
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_person quality=0.888
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_person quality=0.897
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_person quality=0.898
+2026-08-12 08:02:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:49 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_person quality=0.907
+2026-08-12 08:02:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:02:59 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=2 source=best_person identity=unknown similarity=-1.000 quality=0.907
+2026-08-12 08:03:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:06 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:07 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:08 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:09 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:10 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:13 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:14 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:15 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:17 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:18 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:18 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:19 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:19 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:20 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:20 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:21 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:21 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:22 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:23 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:24 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:25 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:26 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:30 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:03:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:03 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:04 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:05 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:12 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:16 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:28 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:29 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:31 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:32 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:33 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:34 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=3 person_conf=0.221 quality=0.844
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=person_fallback quality=0.844
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_person quality=0.886
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_person quality=0.891
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_person quality=0.895
+2026-08-12 08:04:35 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_person quality=0.898
+2026-08-12 08:04:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:35 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:36 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:37 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:38 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:39 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:40 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.769 new_quality=0.786 display=116x188
+2026-08-12 08:04:40 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.786
+2026-08-12 08:04:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:40 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:41 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:42 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:43 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:44 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:45 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:45 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=3 source=best_person identity=unknown similarity=-1.000 quality=0.898
+2026-08-12 08:04:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:46 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:47 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:48 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:49 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:50 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:51 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.786 new_quality=0.788 display=110x173
+2026-08-12 08:04:51 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.788
+2026-08-12 08:04:51 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:52 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:53 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:54 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:55 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:56 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:57 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:58 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:04:59 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:00 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:01 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:02 | INFO     | deepstream_ai.face.service | Face recognition camera=camera-01 track=0 known=False similarity=-1.000 samples=2
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=4 person_conf=0.379 quality=0.876
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=4 source=person_fallback quality=0.876
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=4 source=best_person quality=0.880
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=4 source=best_person quality=0.887
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=4 source=best_person quality=0.889
+2026-08-12 08:05:04 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=4 source=best_person quality=0.896
+2026-08-12 08:05:07 | INFO     | __main__ | 连续 30.000 秒视频时间未检测到人员，自动停止 task_id=191dedc786e946ce
+2026-08-12 08:05:07 | INFO     | deepstream_ai.pipeline.runner | 收到停止请求
+nvstreammux: Successfully handled EOS for source_id=0
+2026-08-12 08:05:07 | INFO     | deepstream_ai.pipeline.runner | 所有文件源处理完成 (EOS)
+2026-08-12 08:05:08 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              10368
+Probe Frames:                 10368
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      7.272
+P95 Probe Time (ms):          30.000
+Max Probe Time (ms):          59.364
+=======================================
+2026-08-12 08:05:08 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=0 source=best_face identity=unknown similarity=-1.000 quality=0.788
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=4 source=best_person identity=unknown similarity=-1.000 quality=0.896
+2026-08-12 08:05:08 | INFO     | deepstream_ai.snapshot.rolling_manager | Evidence Summary tracks=5 finalized=5 success=5 failed=0 missing=0 best_face=1 face_fallback=0 best_person=4 person_fallback=0 know=0 unknown=1
