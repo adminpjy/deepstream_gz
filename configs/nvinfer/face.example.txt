@@ -26,5 +26,8 @@ parse-bbox-func-name=NvDsInferParseCustomSCRFD
 output-tensor-meta=1
 
 [class-attrs-all]
-pre-cluster-threshold=0.50
+# CCTV recall is more important than rejecting every weak face proposal here.
+# Downstream same-track quality selection and AdaFace verification decide which
+# evidence is finally kept.
+pre-cluster-threshold=0.35
 topk=100
