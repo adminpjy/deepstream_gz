@@ -32,7 +32,10 @@ sources: []
 # Analysis rates are converted to nvinfer interval values from nominal_fps.
 inference:
   person_fps: 5.0
-  face_fps: 2.0
+  # Face detection is intentionally sampled at the same 5 FPS as person
+  # tracking during current testing. CCTV faces change quickly with pose/motion;
+  # 2 FPS skipped too many usable frontal frames.
+  face_fps: 5.0
   behavior_fps: 1.0
 
 pipeline:
@@ -74,7 +77,7 @@ face:
   landmark_coordinates: absolute
   landmark_scale: 1.0
   # Must equal the nvinfer pre-cluster-threshold below the face parser.
-  landmark_threshold: 0.50
+  landmark_threshold: 0.35
 
 # The business layer sees only this adapter key, never tracker implementation APIs.
 tracker:
@@ -98,7 +101,9 @@ face_recognition:
   output_name: "730"
   embedding_size: 512
   match_threshold: 0.40
-  min_candidates: 3
+  # Use short rolling windows, then keep observing the same track. This gives
+  # later clearer faces another chance instead of freezing an early poor result.
+  min_candidates: 2
   max_candidates: 8
   decision_timeout_sec: 2.0
   input_width: 112
@@ -182,10 +187,11 @@ person_crop:
   min_visible_ratio: 0.50
 
 output:
-  enabled: true
+  # Result MP4 is disabled. Live preview.jpg/MJPEG and snapshots/events remain
+  # available and do not need a monolithic encoded result video.
+  enabled: false
   path: /workspace/output/result.mp4
   codec: h264
-  # nvidia 保持 GPU 零拷贝编码；无 NVIDIA 视频编码能力的主机可改为 x264。
   encoder: nvidia
   bitrate: 8000000
   sync: false
