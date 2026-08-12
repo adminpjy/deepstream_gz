@@ -1,5 +1,8 @@
-# DeepStream 9 NvDCF accuracy configuration with NVIDIA ReIdentificationNet.
-# PeopleNet still runs at about 5 Hz; NvDCF receives every decoded frame.
+# DeepStream 9 NvDCF accuracy-oriented configuration with NVIDIA ReIdentificationNet.
+# PeopleNet may run below source FPS (for example 5 FPS on a 25 FPS stream),
+# while NvDCF still receives every decoded frame. Tentative/shadow ages must
+# therefore tolerate detector-skip frames or the same stationary person can be
+# repeatedly terminated and recreated with new object IDs.
 BaseConfig:
   minDetectorConfidence: 0.1894
 
@@ -7,17 +10,24 @@ TargetManagement:
   enableBboxUnClipping: 1
   preserveStreamUpdateOrder: 0
   maxTargetsPerStream: 150
-  minIouDiff4NewTarget: 0.3686
+  # Lower values suppress duplicate target creation when a new detector bbox
+  # still overlaps an existing/shadow target.
+  minIouDiff4NewTarget: 0.2500
   minTrackerConfidence: 0.1513
   probationAge: 2
-  # Keep the validated 2.5-3 second shadow window for 25-30 FPS sources.
-  maxShadowTrackingAge: 75
-  earlyTerminationAge: 1
+  # Keep active targets alive through short detector misses/pose changes.
+  maxShadowTrackingAge: 150
+  # IMPORTANT: this must be larger than the number of detector-skipped frames
+  # during tentative activation. With 5 FPS detection on 25-30 FPS input there
+  # are typically 4-5 skipped frames; 1 caused repeated ID churn.
+  earlyTerminationAge: 8
 
 TrajectoryManagement:
   useUniqueID: 0
   enableReAssoc: 1
-  minMatchingScore4Overall: 0.6622
+  # Use a less restrictive overall re-association threshold so recently-lost
+  # stationary/slow targets can reclaim the previous ID.
+  minMatchingScore4Overall: 0.4000
   minTrackletMatchingScore: 0.2940
   minMatchingScore4ReidSimilarity: 0.0771
   matchingScoreWeight4TrackletSimilarity: 0.7981
@@ -31,7 +41,9 @@ TrajectoryManagement:
   maxTrackletMatchingTimeSearchRange: 27
   trajectoryProjectionProcessNoiseScale: 0.0100
   trajectoryProjectionMeasurementNoiseScale: 100
-  trackletSpacialSearchRegionScale: 0.0100
+  # 0.01 was too restrictive for re-association after bbox/pose changes. This
+  # value follows NVIDIA's PeopleNet-oriented re-association example scale.
+  trackletSpacialSearchRegionScale: 0.2598
   reidExtractionInterval: 8
 
 DataAssociator:
@@ -47,8 +59,6 @@ DataAssociator:
   matchingScoreWeight4VisualSimilarity: 0.3951
   matchingScoreWeight4SizeSimilarity: 0.6003
   matchingScoreWeight4Iou: 0.4033
-  # Keep low-confidence detections available. Raising this to 0.30 reduced the
-  # validated occluded-person recall and was rejected by A/B testing.
   tentativeDetectorConfidence: 0.1024
   minMatchingScore4TentativeIou: 0.2852
 
