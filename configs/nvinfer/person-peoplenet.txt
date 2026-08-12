@@ -31,3 +31,9 @@ dbscan-min-score=1.1845
 eps=0.3207
 detected-min-w=20
 detected-min-h=20
+
+[class-attrs-0]
+# NVIDIA's DS9 NvDCF accuracy profile uses 0.1894 at the tracker boundary.
+# Apply the equivalent person-only cutoff here so rejected proposals never
+# escape as UNTRACKED_OBJECT_ID and cannot create one-frame business tracks.
+post-cluster-threshold=0.1894

@@ -85,6 +85,10 @@ tracker:
   height: 544
   gpu_id: 0
   display_tracking_id: true
+  reid_assets:
+    source: nvidia/tao/reidentificationnet:deployable_v1.2
+    onnx_sha256: 0e21d09278508ec835955f422a9fdd3cd59b2a6ecdef98d705f388f33cebac2b
+    require_prebuilt_engine: true
 
 face_recognition:
   enabled: true
@@ -145,6 +149,11 @@ models:
     engine: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
     labels: /workspace/models/peoplenet/labels.txt
     calibration: /workspace/models/peoplenet/resnet34_peoplenet_int8.txt
+  tracker_reid:
+    architecture: resnet50-market1501-aicity156
+    source: nvidia/tao/reidentificationnet:deployable_v1.2
+    onnx: /workspace/models/tracker/resnet50_market1501_aicity156.onnx
+    engine: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
   face:
     architecture: scrfd
     onnx: /workspace/models/face-deepstream.onnx

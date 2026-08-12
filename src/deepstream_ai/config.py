@@ -214,6 +214,26 @@ class BehaviorModelConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class TrackerReidAssetsConfig:
+    """Provenance and startup policy for a tracker Re-ID model."""
+
+    source: str = ""
+    onnx_sha256: str = ""
+    require_prebuilt_engine: bool = True
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, Any]) -> TrackerReidAssetsConfig:
+        digest = str(data.get("onnx_sha256", "")).strip().lower()
+        if digest and not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ConfigurationError("tracker.reid_assets.onnx_sha256 必须是 64 位 SHA256")
+        return cls(
+            source=str(data.get("source", "")).strip(),
+            onnx_sha256=digest,
+            require_prebuilt_engine=bool(data.get("require_prebuilt_engine", True)),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class TrackerConfig:
     backend: str = "nvdcf"
     config_file: str = ""
@@ -222,6 +242,7 @@ class TrackerConfig:
     height: int = 544
     gpu_id: int = 0
     display_tracking_id: bool = True
+    reid_assets: TrackerReidAssetsConfig = field(default_factory=TrackerReidAssetsConfig)
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> TrackerConfig:
@@ -238,6 +259,9 @@ class TrackerConfig:
             height=int(data.get("height", 544)),
             gpu_id=int(data.get("gpu_id", 0)),
             display_tracking_id=bool(data.get("display_tracking_id", True)),
+            reid_assets=TrackerReidAssetsConfig.from_mapping(
+                _mapping(data.get("reid_assets"), "tracker.reid_assets")
+            ),
         )
         if result.backend not in {"nvdcf", "nvsort", "deepsort"}:
             raise ConfigurationError("tracker.backend 仅支持 nvdcf、nvsort 或 deepsort")

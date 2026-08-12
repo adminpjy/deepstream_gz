@@ -31,3 +31,6 @@ dbscan-min-score=1.1845
 eps=0.3207
 detected-min-w=20
 detected-min-h=20
+
+[class-attrs-0]
+post-cluster-threshold=0.1894

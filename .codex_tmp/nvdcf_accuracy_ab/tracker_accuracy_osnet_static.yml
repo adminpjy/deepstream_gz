@@ -1,0 +1,86 @@
+%YAML:1.0
+# Isolated DeepStream 9 NvDCF accuracy + custom OSNet ReID smoke-test config.
+# Production config is intentionally not referenced or modified.
+BaseConfig:
+  minDetectorConfidence: 0.1894
+
+TargetManagement:
+  enableBboxUnClipping: 1
+  preserveStreamUpdateOrder: 0
+  maxTargetsPerStream: 150
+  minIouDiff4NewTarget: 0.3686
+  minTrackerConfidence: 0.1513
+  probationAge: 2
+  maxShadowTrackingAge: 42
+  earlyTerminationAge: 1
+
+TrajectoryManagement:
+  useUniqueID: 0
+  enableReAssoc: 1
+  minMatchingScore4Overall: 0.6622
+  minTrackletMatchingScore: 0.2940
+  minMatchingScore4ReidSimilarity: 0.0771
+  matchingScoreWeight4TrackletSimilarity: 0.7981
+  matchingScoreWeight4ReidSimilarity: 0.3848
+  minTrajectoryLength4Projection: 34
+  prepLength4TrajectoryProjection: 58
+  trajectoryProjectionLength: 33
+  maxAngle4TrackletMatching: 67
+  minSpeedSimilarity4TrackletMatching: 0.0574
+  minBboxSizeSimilarity4TrackletMatching: 0.1013
+  maxTrackletMatchingTimeSearchRange: 27
+  trajectoryProjectionProcessNoiseScale: 0.0100
+  trajectoryProjectionMeasurementNoiseScale: 100
+  trackletSpacialSearchRegionScale: 0.0100
+  reidExtractionInterval: 8
+
+DataAssociator:
+  dataAssociatorType: 0
+  associationMatcherType: 1
+  checkClassMatch: 1
+  minMatchingScore4Overall: 0.0222
+  minMatchingScore4SizeSimilarity: 0.3552
+  minMatchingScore4Iou: 0.0548
+  minMatchingScore4VisualSimilarity: 0.5043
+  matchingScoreWeight4VisualSimilarity: 0.3951
+  matchingScoreWeight4SizeSimilarity: 0.6003
+  matchingScoreWeight4Iou: 0.4033
+  tentativeDetectorConfidence: 0.1024
+  minMatchingScore4TentativeIou: 0.2852
+
+StateEstimator:
+  stateEstimatorType: 1
+  processNoiseVar4Loc: 6810.8668
+  processNoiseVar4Size: 1541.8647
+  processNoiseVar4Vel: 1348.4874
+  measurementNoiseVar4Detector: 100.0000
+  measurementNoiseVar4Tracker: 293.3238
+
+VisualTracker:
+  visualTrackerType: 2
+  useColorNames: 1
+  useHog: 1
+  featureImgSizeLevel: 3
+  featureFocusOffsetFactor_y: -0.1054
+  filterLr: 0.0767
+  filterChannelWeightsLr: 0.0339
+  gaussianSigma: 0.5687
+
+ReID:
+  reidType: 2
+  batchSize: 16
+  workspaceSize: 512
+  reidFeatureSize: 512
+  reidHistorySize: 100
+  inferDims: [3, 256, 128]
+  networkMode: 1
+  inputOrder: 0
+  colorFormat: 0
+  offsets: [123.6750, 116.2800, 103.5300]
+  netScaleFactor: 0.01735207
+  keepAspc: 1
+  useVPICropScaler: 1
+  addFeatureNormalization: 1
+  minVisibility4GalleryUpdate: 0.6
+  onnxFile: "/audit/osnet_dynamic.onnx"
+  modelEngineFile: "/audit/osnet_dynamic_b1-16_fp16.engine"

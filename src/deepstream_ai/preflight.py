@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import configparser
+import hashlib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -145,17 +146,7 @@ def _tracker_int(section: Mapping[str, Any], name: str, default: int = 0) -> int
         return default
 
 
-def validate_tracker_backend(config: AppConfig) -> str | None:
-    """Ensure the declarative backend agrees with NvMultiObjectTracker YAML.
-
-    DeepStream uses one low-level library for NvDCF, NvSORT and NvDeepSORT;
-    the YAML modules select the actual algorithm. Treating ``backend`` as a
-    runtime switch without checking that file would therefore be misleading.
-    """
-
-    path = config.resolve_path(config.pipeline.tracker.config_file)
-    if not path.is_file():
-        return None  # The ordinary required-assets check reports this case.
+def _read_tracker_yaml(path: Path) -> Mapping[str, Any]:
     try:
         text = path.read_text(encoding="utf-8")
         # NVIDIA sample files commonly start with the OpenCV-style
@@ -165,9 +156,16 @@ def validate_tracker_backend(config: AppConfig) -> str | None:
             text = "\n".join(lines[1:])
         raw = yaml.safe_load(text) or {}
     except (OSError, yaml.YAMLError) as exc:
-        return f"Tracker 配置无法解析 {path}: {exc}"
+        raise ConfigurationError(f"Tracker 配置无法解析 {path}: {exc}") from exc
     if not isinstance(raw, Mapping):
-        return f"Tracker 配置根节点必须是对象: {path}"
+        raise ConfigurationError(f"Tracker 配置根节点必须是对象: {path}")
+    return raw
+
+
+def _validate_tracker_backend_data(
+    config: AppConfig, path: Path, raw: Mapping[str, Any]
+) -> str | None:
+    """Ensure the declared backend agrees with the effective low-level YAML."""
 
     visual_type = _tracker_int(_tracker_section(raw, "VisualTracker"), "visualTrackerType")
     reid_type = _tracker_int(_tracker_section(raw, "ReID"), "reidType")
@@ -185,6 +183,133 @@ def validate_tracker_backend(config: AppConfig) -> str | None:
     if backend == "deepsort" and reid_type not in {1, 3}:
         return f"tracker.backend=deepsort 与 {path} 不一致：ReID.reidType 必须为 1 或 3"
     return None
+
+
+def validate_tracker_backend(config: AppConfig) -> str | None:
+    """Ensure the declarative backend agrees with NvMultiObjectTracker YAML.
+
+    DeepStream uses one low-level library for NvDCF, NvSORT and NvDeepSORT;
+    the YAML modules select the actual algorithm. Treating ``backend`` as a
+    runtime switch without checking that file would therefore be misleading.
+    """
+
+    path = config.resolve_path(config.pipeline.tracker.config_file)
+    if not path.is_file():
+        return None  # The ordinary required-assets check reports this case.
+    try:
+        raw = _read_tracker_yaml(path)
+    except ConfigurationError as exc:
+        return str(exc)
+    return _validate_tracker_backend_data(config, path, raw)
+
+
+def _resolve_tracker_reference(config: AppConfig, tracker_path: Path, value: str) -> Path:
+    value = value.strip().strip('"').strip("'")
+    if value.replace("\\", "/").startswith("/workspace/"):
+        return config.resolve_path(value)
+    candidate = Path(value)
+    if candidate.is_absolute():
+        return candidate
+    return (tracker_path.parent / candidate).resolve()
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validate_tracker_reid_assets(
+    config: AppConfig, tracker_path: Path, raw: Mapping[str, Any]
+) -> tuple[str, ...]:
+    reid = _tracker_section(raw, "ReID")
+    if _tracker_int(reid, "reidType") != 2:
+        return ()
+
+    failures: list[str] = []
+    policy = config.pipeline.tracker.reid_assets
+    if not policy.source:
+        failures.append("tracker.reid_assets.source 不能为空")
+    if not policy.onnx_sha256:
+        failures.append("tracker.reid_assets.onnx_sha256 不能为空")
+    if not policy.require_prebuilt_engine:
+        failures.append("ReID.reidType=2 要求 tracker.reid_assets.require_prebuilt_engine=true")
+
+    expected_integers = {
+        "reidFeatureSize": 256,
+        "networkMode": 1,
+        "inputOrder": 0,
+        "colorFormat": 0,
+        "addFeatureNormalization": 1,
+    }
+    for name, expected in expected_integers.items():
+        if _tracker_int(reid, name, -1) != expected:
+            failures.append(f"ReID.{name} 必须为 {expected}，当前值为 {reid.get(name)!r}")
+
+    infer_dims = reid.get("inferDims")
+    try:
+        normalized_dims = tuple(int(value) for value in infer_dims)
+    except (TypeError, ValueError):
+        normalized_dims = ()
+    if normalized_dims != (3, 256, 128):
+        failures.append(f"ReID.inferDims 必须为 [3, 256, 128]，当前值为 {infer_dims!r}")
+
+    trajectory = _tracker_section(raw, "TrajectoryManagement")
+    if _tracker_int(trajectory, "enableReAssoc") != 1:
+        failures.append("ReID.reidType=2 要求 TrajectoryManagement.enableReAssoc=1")
+    try:
+        reid_weight = float(trajectory.get("matchingScoreWeight4ReidSimilarity", 0.0))
+    except (TypeError, ValueError):
+        reid_weight = 0.0
+    if reid_weight <= 0.0:
+        failures.append("ReID.reidType=2 要求 matchingScoreWeight4ReidSimilarity > 0")
+
+    resolved: dict[str, Path] = {}
+    for key in ("onnxFile", "modelEngineFile"):
+        value = reid.get(key)
+        if not isinstance(value, str) or not value.strip():
+            failures.append(f"ReID.{key} 不能为空")
+            continue
+        path = _resolve_tracker_reference(config, tracker_path, value)
+        resolved[key] = path
+        try:
+            valid = path.is_file() and path.stat().st_size > 0
+        except OSError:
+            valid = False
+        if not valid:
+            failures.append(f"ReID.{key} 不存在、不是文件或为空: {path}")
+
+    onnx_path = resolved.get("onnxFile")
+    if onnx_path is not None and onnx_path.is_file() and onnx_path.stat().st_size > 0:
+        try:
+            actual_digest = _sha256(onnx_path)
+        except OSError as exc:
+            failures.append(f"ReID.onnxFile 无法读取 {onnx_path}: {exc}")
+        else:
+            if policy.onnx_sha256 and actual_digest != policy.onnx_sha256:
+                failures.append(
+                    "ReID ONNX SHA256 不一致: "
+                    f"configured={policy.onnx_sha256} actual={actual_digest} path={onnx_path}"
+                )
+    return tuple(failures)
+
+
+def _validate_tracker_config(config: AppConfig) -> tuple[str, ...]:
+    path = config.resolve_path(config.pipeline.tracker.config_file)
+    if not path.is_file():
+        return ()  # The ordinary required-assets check reports this case.
+    try:
+        raw = _read_tracker_yaml(path)
+    except ConfigurationError as exc:
+        return (str(exc),)
+    failures: list[str] = []
+    backend_error = _validate_tracker_backend_data(config, path, raw)
+    if backend_error:
+        failures.append(backend_error)
+    failures.extend(_validate_tracker_reid_assets(config, path, raw))
+    return tuple(failures)
 
 
 def validate_person_detector(config: AppConfig, report: NvinferAssetReport) -> tuple[str, ...]:
@@ -268,9 +393,7 @@ def inspect_assets(
     """Return all asset and semantic failures without changing strictness."""
 
     failures = [f"{name}: {path}" for name, path in config.required_assets() if not path.exists()]
-    tracker_error = validate_tracker_backend(config)
-    if tracker_error:
-        failures.append(tracker_error)
+    failures.extend(_validate_tracker_config(config))
     reports: list[NvinferAssetReport] = []
     for label, value in iter_enabled_nvinfer_configs(config):
         if not value:

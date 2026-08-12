@@ -47,6 +47,10 @@ class SourceBin:
         set_if_supported(self.decoder, "drop-frame-interval", 0)
         if source.type == "rtsp":
             set_if_supported(self.decoder, "latency", source.latency_ms)
+            # Docker Desktop/WSL cannot reliably receive the UDP RTP ports
+            # negotiated by RTSP. Start directly with interleaved RTP-over-TCP
+            # instead of waiting for rtspsrc's UDP timeout and fallback.
+            set_if_supported(self.decoder, "select-rtp-protocol", 4)
             # DS 9 nvurisrcbin calls this property rtsp-reconnect-interval;
             # rtsp-reconnect-interval-sec is a deepstream-app config key, not
             # a GObject property on this element.

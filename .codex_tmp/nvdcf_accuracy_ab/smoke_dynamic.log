@@ -1,0 +1,133 @@
+0:00:00.025744252    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.166: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_logger.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+0:00:00.034284080    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libtritonserver.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.174: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_inferserver.so': libtritonserver.so: cannot open shared object file: No such file or directory
+0:00:00.037723002    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.178: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_nvmultiurisrcbin.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+0:00:00.037837931    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.178: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+0:00:00.041579824    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libucs.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.182: Failed to load plugin '/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_ucx.so': libucs.so.0: cannot open shared object file: No such file or directory
+0:00:00.108157783    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x120000: 'AVR (Audio Visual Research)' is not mapped
+0:00:00.108180218    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x180000: 'CAF (Apple Core Audio File)' is not mapped
+0:00:00.108182232    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x100000: 'HTK (HMM Tool Kit)' is not mapped
+0:00:00.108184309    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0xc0000: 'MAT4 (GNU Octave 2.0 / Matlab 4.2)' is not mapped
+0:00:00.108185687    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0xd0000: 'MAT5 (GNU Octave 2.1 / Matlab 5.0)' is not mapped
+0:00:00.108187218    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x210000: 'MPC (Akai MPC 2k)' is not mapped
+0:00:00.108188638    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x230000: 'MPEG-1/2 Audio' is not mapped
+0:00:00.108190424    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0xe0000: 'PVF (Portable Voice Format)' is not mapped
+0:00:00.108192097    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x160000: 'SD2 (Sound Designer II)' is not mapped
+0:00:00.108194756    40 0x55e7b6994490 WARN                 default gstsfelement.c:97:gst_sf_create_audio_template_caps: format 0x190000: 'WVE (Psion Series 3)' is not mapped
+0:00:00.114611646    40 0x55e7b6994490 WARN               cudanvrtc gstcudanvrtc.cpp:152:gst_cuda_nvrtc_load_library_once: Could not open nvrtc library libnvrtc.so: cannot open shared object file: No such file or directory
+0:00:00.437643860    40 0x55e7b6994490 WARN                  ladspa gstladspa.c:509:plugin_init:<plugin54> no LADSPA plugins found, check LADSPA_PATH
+0:00:00.474976588    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.615: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_logger.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+0:00:00.478649224     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_logger.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_logger.so)
+0:00:00.475256006    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libtritonserver.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.615: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_inferserver.so': libtritonserver.so: cannot open shared object file: No such file or directory
+0:00:00.478857611     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_inferserver.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_inferserver.so)
+0:00:00.476179959    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.616: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_nvmultiurisrcbin.so': libopentelemetry_metrics.so: cannot open shared object file: No such file or directory
+0:00:00.479774171     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libcustom2d_preprocess.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libcustom2d_preprocess.so)
+0:00:00.476353099    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: librivermax.so.1: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.616: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so': librivermax.so.1: cannot open shared object file: No such file or directory
+0:00:00.479950541     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_nvmultiurisrcbin.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_nvmultiurisrcbin.so)
+0:00:00.479960266     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_udp.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_udp.so)
+0:00:00.477110218    40 0x55e7b6994490 WARN      GST_PLUGIN_LOADING gstplugin.c:883:_priv_gst_plugin_load_file_for_registry: module_open failed: libucs.so.0: cannot open shared object file: No such file or directory
+
+(gst-plugin-scanner:40): GStreamer-WARNING **: 03:45:35.617: Failed to load plugin '/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_ucx.so': libucs.so.0: cannot open shared object file: No such file or directory
+0:00:00.480763100     7     0x313c1320 WARN            GST_REGISTRY gstregistry.c:457:gst_registry_add_plugin:<registry0> Not replacing plugin because new one (/usr/lib/x86_64-linux-gnu/gstreamer-1.0/deepstream/libnvdsgst_ucx.so) is blacklisted but for a different location than existing one (/opt/nvidia/deepstream/deepstream/lib/gst-plugins/libnvdsgst_ucx.so)
+0:00:00.495433770    40 0x55e7b6994490 WARN             msdkcontext gstmsdkcontext.c:176:gst_msdk_context_use_vaapi: Couldn't find a drm device node to open
+0:00:00.627757440    40 0x55e7b6994490 WARN               vadisplay gstvadisplay_drm.c:142:gst_va_display_drm_create_va_display:<vadisplaydrm0> Failed to open /dev/dri/renderD128: No such file or directory
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /audit/osnet_dynamic_b1-16_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+0:00:01.398178821     7     0x313c1320 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:01.398239914     7     0x313c1320 INFO                 nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector> NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:01.403863221     7     0x313c1320 INFO                 nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector> [UID 1]: Load new model:/audit/.runtime/nvinfer/person-detector.txt sucessfully
+Opening in BLOCKING MODE 
+0:00:01.424158767     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424165369     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat MJPG
+0:00:01.424168249     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424170242     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat MJPG
+0:00:01.424177537     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424180856     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat AV10
+0:00:01.424182776     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424195686     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat AV10
+0:00:01.424201075     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424211949     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat DVX5
+0:00:01.424214871     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424217608     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat DVX5
+0:00:01.424222330     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424233726     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat DVX4
+0:00:01.424238202     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424241531     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat DVX4
+0:00:01.424247323     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424260319     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat MPG4
+0:00:01.424263608     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424266391     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat MPG4
+0:00:01.424271498     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424273898     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat MPG2
+0:00:01.424275733     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424277744     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat MPG2
+0:00:01.424281853     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424283961     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat H265
+0:00:01.424285556     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424287355     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat H265
+0:00:01.424290331     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424292302     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat VP90
+0:00:01.424294287     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424296448     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat VP90
+0:00:01.424300038     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424301934     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat VP80
+0:00:01.424303999     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424305862     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat VP80
+0:00:01.424309392     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424311503     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe minimum capture size for pixelformat H264
+0:00:01.424317364     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink> Unable to try format: Unknown error -1
+0:00:01.424319284     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink> Could not probe maximum capture size for pixelformat H264
+0:00:01.424512886     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424527553     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat Y444
+0:00:01.424531099     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424534351     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat Y444
+0:00:01.424541503     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424544203     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat P216
+0:00:01.424545951     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424547987     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat P216
+0:00:01.424553037     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424564898     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat NM16
+0:00:01.424568301     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424571464     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat NM16
+0:00:01.424578001     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424590088     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat P412
+0:00:01.424593759     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424596971     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat P412
+0:00:01.424603492     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424615528     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat P410
+0:00:01.424618835     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424621855     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat P410
+0:00:01.424628477     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424640725     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat PM10
+0:00:01.424644056     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424646834     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat PM10
+0:00:01.424653111     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424655719     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe minimum capture size for pixelformat NM12
+0:00:01.424657913     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src> Unable to try format: Unknown error -1
+0:00:01.424660033     7 0x7fa18c0011f0 WARN                    v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src> Could not probe maximum capture size for pixelformat NM12
+0:00:01.543993675     7 0x7fa18c0011f0 WARN            v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0> Duration invalid, not setting latency
+0:00:01.564676513     7 0x7fa18c0011f0 WARN          v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src> Uncertain or not enough buffers, enabling copy threshold
+0:00:01.568777065     7 0x7fa18c001bb0 WARN          v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src> Driver should never set v4l2_buffer.field to ANY
+nvstreammux: Successfully handled EOS for source_id=0
+SMOKE_AUDIT={"frames":750,"track_frames":740,"track_ids":["0"]}

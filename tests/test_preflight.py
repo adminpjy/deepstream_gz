@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -109,6 +110,115 @@ def test_tracker_backend_must_match_low_level_yaml(tmp_path: Path) -> None:
 
     with pytest.raises(AssetValidationError, match="backend=nvsort"):
         validate_assets(config)
+
+
+def _enable_official_tracker_reid(tmp_path: Path) -> Path:
+    config_path = _project(tmp_path, source_model=True)
+    onnx = tmp_path / "models/tracker/reid.onnx"
+    engine = tmp_path / "models/tracker/reid.engine"
+    onnx.parent.mkdir(parents=True)
+    onnx.write_bytes(b"reviewed official reid onnx")
+    engine.write_bytes(b"target-runtime TensorRT engine")
+    digest = hashlib.sha256(onnx.read_bytes()).hexdigest()
+    (tmp_path / "configs/tracker.yml").write_text(
+        """VisualTracker:
+  visualTrackerType: 1
+TrajectoryManagement:
+  enableReAssoc: 1
+  matchingScoreWeight4ReidSimilarity: 0.5
+ReID:
+  reidType: 2
+  reidFeatureSize: 256
+  inferDims: [3, 256, 128]
+  networkMode: 1
+  inputOrder: 0
+  colorFormat: 0
+  addFeatureNormalization: 1
+  onnxFile: /workspace/models/tracker/reid.onnx
+  modelEngineFile: /workspace/models/tracker/reid.engine
+""",
+        encoding="utf-8",
+    )
+    config_path.write_text(
+        config_path.read_text(encoding="utf-8").replace(
+            "tracker: {config_file: configs/tracker.yml}",
+            f"""tracker:
+  config_file: configs/tracker.yml
+  reid_assets:
+    source: nvidia/tao/reidentificationnet:deployable_v1.2
+    onnx_sha256: {digest}
+    require_prebuilt_engine: true""",
+        ),
+        encoding="utf-8",
+    )
+    return config_path
+
+
+def test_tracker_reid_assets_pass_with_effective_workspace_paths(tmp_path: Path) -> None:
+    validate_assets(load_config(_enable_official_tracker_reid(tmp_path)))
+
+
+@pytest.mark.parametrize("filename", ["reid.onnx", "reid.engine"])
+def test_tracker_reid_rejects_missing_or_empty_asset(tmp_path: Path, filename: str) -> None:
+    config_path = _enable_official_tracker_reid(tmp_path)
+    (tmp_path / "models/tracker" / filename).write_bytes(b"")
+
+    with pytest.raises(AssetValidationError, match="不存在、不是文件或为空"):
+        validate_assets(load_config(config_path))
+
+
+def test_tracker_reid_rejects_onnx_hash_mismatch(tmp_path: Path) -> None:
+    config_path = _enable_official_tracker_reid(tmp_path)
+    (tmp_path / "models/tracker/reid.onnx").write_bytes(b"tampered")
+
+    with pytest.raises(AssetValidationError, match="SHA256 不一致"):
+        validate_assets(load_config(config_path))
+
+
+@pytest.mark.parametrize(
+    ("original", "invalid", "message"),
+    [
+        ("reidFeatureSize: 256", "reidFeatureSize: 512", "reidFeatureSize"),
+        ("inferDims: [3, 256, 128]", "inferDims: [3, 128, 64]", "inferDims"),
+        ("networkMode: 1", "networkMode: 0", "networkMode"),
+        ("inputOrder: 0", "inputOrder: 1", "inputOrder"),
+        ("colorFormat: 0", "colorFormat: 1", "colorFormat"),
+        ("addFeatureNormalization: 1", "addFeatureNormalization: 0", "addFeatureNormalization"),
+        ("enableReAssoc: 1", "enableReAssoc: 0", "enableReAssoc"),
+        (
+            "matchingScoreWeight4ReidSimilarity: 0.5",
+            "matchingScoreWeight4ReidSimilarity: 0",
+            "matchingScoreWeight4ReidSimilarity",
+        ),
+    ],
+)
+def test_tracker_reid_rejects_incompatible_contract(
+    tmp_path: Path, original: str, invalid: str, message: str
+) -> None:
+    config_path = _enable_official_tracker_reid(tmp_path)
+    tracker_path = tmp_path / "configs/tracker.yml"
+    tracker_path.write_text(
+        tracker_path.read_text(encoding="utf-8").replace(original, invalid), encoding="utf-8"
+    )
+
+    with pytest.raises(AssetValidationError, match=message):
+        validate_assets(load_config(config_path))
+
+
+def test_disabled_tracker_reid_does_not_require_assets_or_policy(tmp_path: Path) -> None:
+    config_path = _project(tmp_path, source_model=True)
+    (tmp_path / "configs/tracker.yml").write_text(
+        """VisualTracker:
+  visualTrackerType: 1
+ReID:
+  reidType: 0
+  onnxFile: /workspace/models/tracker/missing.onnx
+  modelEngineFile: /workspace/models/tracker/missing.engine
+""",
+        encoding="utf-8",
+    )
+
+    validate_assets(load_config(config_path))
 
 
 def test_non_strict_inspection_keeps_semantic_failures(tmp_path: Path) -> None:

@@ -56,13 +56,14 @@ output/        结果、事件与截图（Git 忽略）
    notepad .env
    ```
 
-2. `videos/test.mp4` 可做管线测试；精度测试前请确认素材授权和代表性。将模型放入 `models/`。如使用 PeopleNet，可在已安装并认证 NGC CLI 的 WSL/Linux 环境显式下载：
+2. `videos/test.mp4` 可做管线测试；精度测试前请确认素材授权和代表性。将模型放入 `models/`。PeopleNet 和 NvDCF ReID 可在已安装并认证 NGC CLI 的 WSL/Linux 环境显式下载：
 
    ```bash
    scripts/download-models.sh --peoplenet --accept-license
+   scripts/download-models.sh --reid --accept-license
    ```
 
-   脚本不会接收或保存 API key；`--accept-license` 表示操作者已审阅适用条款。下载后仍需核对清单/SHA256，并按 [模型接入](docs/model-integration.md) 指向实际 ONNX、labels、calibration 文件，完成 nvinfer 配置与精度验证。
+   脚本不会接收或保存 API key；`--accept-license` 表示操作者已审阅适用条款。ReID 下载会校验固定文件名、大小和 SHA256，已有错误文件不会被覆盖。下载后仍需按 [模型接入](docs/model-integration.md) 完成模型配置与精度验证；ReID engine 的目标容器构建命令见 [模型目录说明](models/README.md)。TensorRT engine 不可跨平台/GPU/运行时复制，配置引用的必需资产缺失时必须 fail-fast。
 
 3. 在 host Python 环境安装工程依赖（建议 venv），然后运行预检：
 

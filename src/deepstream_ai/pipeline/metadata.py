@@ -137,6 +137,13 @@ def _track_id(obj_meta: Any, frame_number: int, index: int) -> int | str:
     return value
 
 
+def _effective_nvdcf_track_id(obj_meta: Any) -> int | None:
+    """Return only object IDs accepted as effective targets by NvDCF."""
+
+    value = int(getattr(obj_meta, "object_id", _UNTRACKED_ID))
+    return None if value == _UNTRACKED_ID else value
+
+
 def _validate_gpu_surface_layout(
     dtype: Any,
     shape: Sequence[int],
@@ -408,6 +415,14 @@ class MetadataProbe:
                 continue
             if class_id not in self.config.pipeline.person.person_class_ids:
                 continue
+            native_track_id = _effective_nvdcf_track_id(obj_meta)
+            # NvDCF leaves a PGIE proposal as UNTRACKED_OBJECT_ID while the
+            # target is tentative or rejected. It is not an effective Person
+            # Track and must not create a one-frame business lifecycle,
+            # snapshot, or synthetic ID. The established mapping for every
+            # accepted NvDCF object_id remains unchanged.
+            if native_track_id is None:
+                continue
             bbox = _box(obj_meta)
             if bbox is None:
                 continue
@@ -421,9 +436,7 @@ class MetadataProbe:
                 metadata={"class_id": class_id, "component_id": uid},
             )
             tracks.append(track)
-            native_track_id = int(getattr(obj_meta, "object_id", _UNTRACKED_ID))
-            if native_track_id != _UNTRACKED_ID:
-                persons_by_object_id[native_track_id] = track
+            persons_by_object_id[native_track_id] = track
             person_meta.append((obj_meta, track_id))
             behaviors.extend(self._classifier_behaviors(obj_meta, track))
 

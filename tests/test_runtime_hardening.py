@@ -31,6 +31,61 @@ class _Child:
         return self._factory
 
 
+class _SourceElement:
+    def __init__(self) -> None:
+        self.values: dict[str, object] = {}
+
+    def find_property(self, _name: str) -> object:
+        return object()
+
+    def set_property(self, name: str, value: object) -> None:
+        self.values[name] = value
+
+    def connect(self, *_args: object) -> None:
+        return None
+
+
+class _SourceBinContainer:
+    def __init__(self) -> None:
+        self.pads: dict[str, object] = {}
+
+    def add(self, _element: object) -> None:
+        return None
+
+    def add_pad(self, pad: object) -> bool:
+        self.pads["src"] = pad
+        return True
+
+
+def test_rtsp_source_starts_with_interleaved_tcp_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    decoder = _SourceElement()
+    container = _SourceBinContainer()
+    ghost_pad = object()
+    Gst = SimpleNamespace(
+        Bin=SimpleNamespace(new=lambda _name: container),
+        GhostPad=SimpleNamespace(new_no_target=lambda _name, _direction: ghost_pad),
+        PadDirection=SimpleNamespace(SRC=object()),
+    )
+    monkeypatch.setattr(
+        "deepstream_ai.pipeline.source.make_element",
+        lambda _gst, factory, _name: decoder if factory == "nvurisrcbin" else None,
+    )
+    config = SimpleNamespace(
+        pipeline=SimpleNamespace(streammux=SimpleNamespace(gpu_id=0, attach_system_timestamp=True))
+    )
+
+    source = SourceBin(
+        SimpleNamespace(Gst=Gst),
+        config,
+        SourceConfig(camera_id="rtsp-a", type="rtsp", url="rtsp://example.invalid/live"),
+        0,
+    )
+
+    assert source.decoder.values["select-rtp-protocol"] == 4
+
+
 def _source_bin(*, attach_system_timestamp: bool):
     calls: list[int] = []
     source = object.__new__(SourceBin)
@@ -502,7 +557,10 @@ def test_tracker_builder_uses_ds9_plugin_properties_only(monkeypatch: pytest.Mon
         display_tracking_id=True,
     )
     config = SimpleNamespace(
-        pipeline=SimpleNamespace(tracker=tracker),
+        pipeline=SimpleNamespace(
+            tracker=tracker,
+            person=SimpleNamespace(person_class_ids=(7, 3)),
+        ),
         resolve_path=lambda value: Path(value),
     )
     builder = DeepStreamPipelineBuilder(SimpleNamespace(Gst=object()), config, object())
@@ -511,6 +569,7 @@ def test_tracker_builder_uses_ds9_plugin_properties_only(monkeypatch: pytest.Mon
     assert "enable-batch-process" not in element.values
     assert "enable-past-frame" not in element.values
     assert element.values["ll-config-file"] == "tracker.yml"
+    assert element.values["operate-on-class-ids"] == "7;3"
 
 
 def test_compose_grace_period_exceeds_default_runtime_shutdown() -> None:

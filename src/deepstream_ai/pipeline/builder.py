@@ -206,6 +206,9 @@ class DeepStreamPipelineBuilder:
     def _tracker_element(self) -> Any:
         tracker = make_element(self.runtime.Gst, "nvtracker", "person-tracker")
         cfg = self.config.pipeline.tracker
+        person_class_ids = ";".join(
+            str(class_id) for class_id in self.config.pipeline.person.person_class_ids
+        )
         config_path = self.config.resolve_path(cfg.config_file)
         library_path = Path(cfg.library_file)
         for name, value in {
@@ -214,6 +217,10 @@ class DeepStreamPipelineBuilder:
             "gpu-id": cfg.gpu_id,
             "ll-config-file": str(config_path),
             "display-tracking-id": cfg.display_tracking_id,
+            # PeopleNet also emits bag and face. Restrict NvDCF to the class IDs
+            # validated from the deployed labels so auxiliary objects neither
+            # consume tracker IDs nor compete with person association.
+            "operate-on-class-ids": person_class_ids,
         }.items():
             set_if_supported(tracker, name, value)
         if cfg.library_file:

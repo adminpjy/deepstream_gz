@@ -7,9 +7,12 @@ import pytest
 
 from deepstream_ai.domain import BoundingBox, Track
 from deepstream_ai.pipeline.metadata import (
+    _UNTRACKED_ID,
     MetadataProbe,
+    _effective_nvdcf_track_id,
     _face_landmarks,
     _hide_pgie_non_person_osd,
+    _track_id,
     _validate_gpu_surface_layout,
 )
 
@@ -32,6 +35,23 @@ def test_nearest_track_rejects_face_outside_people() -> None:
     tracks = [Track("cam", 1, now, BoundingBox(0, 0, 100, 100))]
 
     assert MetadataProbe._nearest_track(BoundingBox(150, 150, 170, 170), tracks) is None
+
+
+def test_track_id_mapping_remains_native_for_confirmed_nvdcf_tracks() -> None:
+    obj = SimpleNamespace(object_id=42)
+
+    assert _track_id(obj, frame_number=100, index=3) == 42
+
+
+def test_untracked_id_mapping_is_still_available_for_non_person_callers() -> None:
+    obj = SimpleNamespace(object_id=_UNTRACKED_ID)
+
+    assert _track_id(obj, frame_number=100, index=3) == "untracked-100-3"
+
+
+def test_only_confirmed_nvdcf_object_ids_are_effective_tracks() -> None:
+    assert _effective_nvdcf_track_id(SimpleNamespace(object_id=42)) == 42
+    assert _effective_nvdcf_track_id(SimpleNamespace(object_id=_UNTRACKED_ID)) is None
 
 
 def _osd_object(*, component_id: int, class_id: int):
