@@ -1,15 +1,15 @@
 """Alarm-friendly rolling snapshot presentation.
 
-This keeps the existing rolling evidence lifecycle intact, but changes the face
-snapshot that is written for users: AdaFace quality is still calculated from the
-raw face ROI, while the persisted face evidence includes surrounding head/neck/
-shoulder context. Person and face evidence always come from the same frame.
+AdaFace quality is calculated from the raw face ROI, while the persisted face
+snapshot includes surrounding head/neck/shoulder context.  Person and face
+evidence always come from the same frame.
 
-Person-only evidence is deliberately anchored to the first valid tracked-person
-bbox. NvDCF shadow tracking can briefly drift onto a textured background after a
-person becomes occluded or leaves the frame. Such tracker-only geometry must not
-replace an already valid person snapshot merely because the rack/cabinet crop is
-larger and has a higher Laplacian sharpness score.
+Person-only evidence is anchored to the first valid tracked-person bbox so an
+NvDCF shadow box cannot gradually overwrite a human with a sharp rack/cabinet.
+When a face exists, the user-facing person evidence is anchored around that face
+rather than trusting the full current tracker bbox.  This is important when a
+short stream glitch leaves NvDCF attached to background texture while SCRFD
+still finds the actual face near the edge of that box.
 """
 
 from __future__ import annotations
@@ -37,20 +37,7 @@ class EventSnapshotManager(RollingEventSnapshotManager):
         has_face: bool = False,
         quality: float | None = None,
     ) -> bool:
-        """Persist the first person immediately, but do not let NvDCF drift overwrite it.
-
-        The base rolling manager continuously replaces ``best_person`` using a
-        score that rewards image sharpness and bbox area. In a server-room scene
-        a cabinet/rack is both very sharp and very large, so a shadow-tracked box
-        that drifts from the person onto the rack can incorrectly become the
-        highest-quality person snapshot.
-
-        Keep zero-miss behavior for a new track by delegating the first frame to
-        the base manager. Later person-only updates are allowed only while their
-        bbox remains geometrically consistent with the original fallback bbox.
-        As soon as a face is detected, ``observe_face`` is authoritative and may
-        replace both person and face evidence from that same winning frame.
-        """
+        """Persist the first person immediately, but do not let NvDCF drift overwrite it."""
 
         key = track.key
         with self._lock:
@@ -65,8 +52,8 @@ class EventSnapshotManager(RollingEventSnapshotManager):
             else:
                 anchor = None
 
-        # First observation for this track: preserve the existing zero-miss rule
-        # and write it immediately.
+        # First observation for this track: preserve the zero-miss rule and
+        # write it immediately.
         if state is None or anchor is None:
             return super().observe_person(
                 frame,
@@ -76,9 +63,7 @@ class EventSnapshotManager(RollingEventSnapshotManager):
             )
 
         # Subsequent person-only frames may improve the original evidence, but
-        # must stay close in scale/location to the first valid person bbox. This
-        # prevents gradual shadow-tracker drift from replacing a human with a
-        # rack/cabinet image while still allowing normal small movements.
+        # must stay close in scale/location to the first valid person bbox.
         if not _person_geometry_consistent(anchor.person_bbox, track.bbox):
             LOGGER.info(
                 "[PERSON_EVIDENCE_HOLD] camera=%s track=%s reason=geometry_drift "
@@ -172,11 +157,14 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                 state.face_fallback = candidate
                 source = "face_fallback"
                 LOGGER.info(
-                    "[FACE_FALLBACK] camera=%s track=%s face_conf=%.3f quality=%.3f display=%sx%s",
+                    "[FACE_FALLBACK] camera=%s track=%s face_conf=%.3f quality=%.3f "
+                    "person_display=%sx%s face_display=%sx%s",
                     face.camera_id,
                     face.track_id,
                     face.score,
                     computed_quality,
+                    person_crop.shape[1],
+                    person_crop.shape[0],
                     display_face_crop.shape[1],
                     display_face_crop.shape[0],
                 )
@@ -184,38 +172,34 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                 state.best_face = candidate
                 source = "best_face"
                 LOGGER.info(
-                    "[BEST_FACE_UPDATE] camera=%s track=%s old_quality=%.3f new_quality=%.3f display=%sx%s",
+                    "[BEST_FACE_UPDATE] camera=%s track=%s old_quality=%.3f new_quality=%.3f "
+                    "person_display=%sx%s face_display=%sx%s",
                     face.camera_id,
                     face.track_id,
                     baseline,
                     computed_quality,
+                    person_crop.shape[1],
+                    person_crop.shape[0],
                     display_face_crop.shape[1],
                     display_face_crop.shape[0],
                 )
 
-        # Keep the user-facing person and face pictures synchronized to exactly
-        # the same winning frame.
+        # The pair is always written together from the same winning frame.
         self._persist_person(candidate)
         self._persist_face(candidate, current_identity)
         LOGGER.info(
-            "[FACE_EVIDENCE_UPDATE] camera=%s track=%s source=%s quality=%.3f",
+            "[FACE_EVIDENCE_UPDATE] camera=%s track=%s source=%s quality=%.3f evidence=%s",
             face.camera_id,
             face.track_id,
             source,
             computed_quality,
+            evidence_bbox.as_tuple(),
         )
         return True
 
 
 def _person_geometry_consistent(anchor: BoundingBox, current: BoundingBox) -> bool:
-    """Conservative evidence-only drift guard; it never changes tracker IDs.
-
-    The guard compares every person-only replacement to the *first* valid bbox,
-    not to the previous replacement, so a shadow target cannot slowly ratchet
-    its way across a rack. Face evidence bypasses this guard because a detected
-    face provides the stronger same-frame human cue and replaces the pair in
-    ``observe_face``.
-    """
+    """Conservative evidence-only drift guard; it never changes tracker IDs."""
 
     area_ratio = current.area / max(anchor.area, 1.0)
     if not 0.45 <= area_ratio <= 2.25:
@@ -238,7 +222,12 @@ def _alarm_face_pair_crop(
     face_bbox: BoundingBox,
     config,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, BoundingBox] | None:
-    """Return same-frame person crop, expanded display face, raw face and evidence box."""
+    """Return face-anchored person crop, expanded display face and raw face ROI.
+
+    The person crop deliberately does not span the full tracker bbox.  A drifted
+    NvDCF box can cover a rack or cabinet, while a valid SCRFD face remains a far
+    stronger spatial cue for where the human actually is in the frame.
+    """
 
     array = np.asarray(frame)
     if array.size == 0:
@@ -249,11 +238,16 @@ def _alarm_face_pair_crop(
     if person is None or face is None or face.width < 8 or face.height < 8:
         return None
 
-    # Person evidence: upper body around the same winning face frame.
-    left = min(person.x1 - person.width * config.padding_x_ratio, face.x1)
-    top = min(person.y1 - person.height * config.padding_top_ratio, face.y1)
-    right = max(person.x2 + person.width * config.padding_x_ratio, face.x2)
-    bottom = max(person.y1 + person.height * config.upper_body_fraction, face.y2)
+    face_cx, _face_cy = face.center
+    # Rough upper-body framing derived from the detected face. Existing config
+    # ratios tune the amount of context without adding another model/config tree.
+    half_width = face.width * (2.0 + config.padding_x_ratio)
+    top_extension = face.height * (0.75 + config.padding_top_ratio)
+    bottom_extension = face.height * (3.0 + config.upper_body_fraction)
+    left = face_cx - half_width
+    right = face_cx + half_width
+    top = face.y1 - top_extension
+    bottom = face.y2 + bottom_extension
     try:
         evidence = BoundingBox(left, top, right, bottom).clipped(width, height)
     except ValueError:
@@ -261,28 +255,45 @@ def _alarm_face_pair_crop(
     if evidence is None:
         return None
 
+    # If the tracker box is still sane, keep the face-centered crop from becoming
+    # needlessly wider than the tracked human. When the tracker box has drifted,
+    # the face geometry remains authoritative and prevents a rack-wide snapshot.
+    person_face_ratio = person.area / max(face.area, 1.0)
+    if 4.0 <= person_face_ratio <= 80.0:
+        sane_left = max(0.0, person.x1 - person.width * config.padding_x_ratio)
+        sane_right = min(float(width), person.x2 + person.width * config.padding_x_ratio)
+        if sane_left <= face.x1 and sane_right >= face.x2:
+            narrowed_left = max(evidence.x1, sane_left)
+            narrowed_right = min(evidence.x2, sane_right)
+            if narrowed_right > narrowed_left:
+                evidence = BoundingBox(
+                    narrowed_left,
+                    evidence.y1,
+                    narrowed_right,
+                    evidence.y2,
+                )
+
     person_crop = rolling._crop_box(array, evidence)
     raw_face_crop = rolling._crop_box(array, face)
     if person_crop is None or raw_face_crop is None:
         return None
 
-    # User-facing face evidence: enlarge around the detector ROI. Reuse the
-    # configured crop ratios so the presentation remains config-driven.
-    display_left = max(evidence.x1, face.x1 - face.width * config.padding_x_ratio)
-    display_top = max(evidence.y1, face.y1 - face.height * config.padding_top_ratio)
-    display_right = min(evidence.x2, face.x2 + face.width * config.padding_x_ratio)
-    display_bottom = min(
-        evidence.y2,
-        face.y2 + face.height * config.upper_body_fraction,
-    )
+    # User-facing face evidence: enlarge around the detector ROI, but keep the
+    # raw face ROI untouched for sharpness/AdaFace quality decisions.
+    display_left = face.x1 - face.width * config.padding_x_ratio
+    display_top = face.y1 - face.height * config.padding_top_ratio
+    display_right = face.x2 + face.width * config.padding_x_ratio
+    display_bottom = face.y2 + face.height * config.upper_body_fraction
     try:
         display_box = BoundingBox(
             display_left,
             display_top,
             display_right,
             display_bottom,
-        )
+        ).clipped(width, height)
     except ValueError:
+        return None
+    if display_box is None:
         return None
     display_face_crop = rolling._crop_box(array, display_box)
     if display_face_crop is None:
