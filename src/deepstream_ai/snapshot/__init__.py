@@ -1,7 +1,6 @@
 """Event snapshot policy and storage."""
 
 from deepstream_ai.snapshot.manager import (
-    EventSnapshotManager,
     EvidenceCandidate,
     EvidenceSummary,
     FilesystemSnapshotStore,
@@ -16,6 +15,7 @@ from deepstream_ai.snapshot.manager import (
     SnapshotWriteError,
     TrackEvidenceState,
 )
+from deepstream_ai.snapshot.rolling_manager import EventSnapshotManager
 
 __all__ = [
     "EvidenceCandidate",
