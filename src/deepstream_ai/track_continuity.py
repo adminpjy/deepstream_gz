@@ -1,14 +1,17 @@
 """Small business-layer bridge for short NvDCF ID switches.
 
-NvDCF remains the authoritative tracker.  This module only aliases a newly
-created raw object_id back to the most plausible recently-lost logical track in
-the same camera.  The first raw ID is preserved as the logical/business ID, so
-existing alarm semantics do not change during normal tracking.
+NvDCF remains the authoritative tracker. This module only aliases a newly
+created raw object_id back to the most plausible existing logical track in the
+same camera. The first raw ID is preserved as the logical/business ID, so normal
+alarm semantics do not change.
 
-The resolver is deliberately conservative for multi-person scenes: a candidate
-must be recent, geometrically close, sufficiently similar in scale, and clearly
-better than the second-best candidate.  Tracks that are still present in the
-same frame are never merged.
+Two cases are handled conservatively:
+1. a recently-lost raw ID is replaced after a brief stream/association glitch;
+2. NvDCF briefly emits two almost-identical raw tracks for the same person.
+
+For multi-person safety, ordinary simultaneously visible tracks are never
+merged. Same-frame merging requires nearly identical person boxes, or strongly
+overlapping person boxes corroborated by overlapping face detections.
 """
 
 from __future__ import annotations
@@ -38,6 +41,9 @@ class TrackContinuityConfig:
     max_area_ratio: float
     min_match_score: float
     ambiguity_margin: float
+    duplicate_iou: float
+    duplicate_iou_with_face: float
+    duplicate_face_iou: float
     stale_retention_sec: float
 
     @classmethod
@@ -59,14 +65,27 @@ class TrackContinuityConfig:
             max_area_ratio=float(section.get("max_area_ratio", 2.50)),
             min_match_score=float(section.get("min_match_score", 0.55)),
             ambiguity_margin=float(section.get("ambiguity_margin", 0.15)),
+            duplicate_iou=float(section.get("duplicate_iou", 0.90)),
+            duplicate_iou_with_face=float(section.get("duplicate_iou_with_face", 0.70)),
+            duplicate_face_iou=float(section.get("duplicate_face_iou", 0.50)),
             stale_retention_sec=float(section.get("stale_retention_sec", 30.0)),
         )
         if result.max_gap_sec <= 0 or result.stale_retention_sec < result.max_gap_sec:
             raise ValueError("track_continuity timing values are invalid")
-        for name in ("min_iou", "max_center_distance_ratio", "min_match_score", "ambiguity_margin"):
+        for name in (
+            "min_iou",
+            "max_center_distance_ratio",
+            "min_match_score",
+            "ambiguity_margin",
+            "duplicate_iou",
+            "duplicate_iou_with_face",
+            "duplicate_face_iou",
+        ):
             value = getattr(result, name)
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"track_continuity.{name} must be between 0 and 1")
+        if result.duplicate_iou_with_face > result.duplicate_iou:
+            raise ValueError("duplicate_iou_with_face must not exceed duplicate_iou")
         if not 0.0 < result.min_area_ratio <= 1.0 <= result.max_area_ratio:
             raise ValueError("track_continuity area ratios are invalid")
         return result
@@ -99,6 +118,11 @@ class TrackContinuityResolver:
         with self._lock:
             self._purge(packet.timestamp)
             current_raw_ids = {track.track_id for track in packet.tracks}
+            track_by_raw = {track.track_id: track for track in packet.tracks}
+            faces_by_raw: dict[TrackId, list] = {}
+            for face in packet.faces:
+                faces_by_raw.setdefault(face.track_id, []).append(face)
+
             assignments: dict[TrackId, TrackId] = {}
             occupied_logical: set[TrackId] = set()
 
@@ -110,14 +134,57 @@ class TrackContinuityResolver:
                 assignments[track.track_id] = logical
                 occupied_logical.add(logical)
 
-            # A brand-new raw ID may be a fragment created by a short stream
-            # glitch or temporary NvDCF association failure.  Only recently
-            # missing logical tracks are eligible; simultaneously visible tracks
-            # are never merged.
             for track in packet.tracks:
                 raw_id = track.track_id
                 if raw_id in assignments:
                     continue
+
+                # First handle the rare NvDCF duplicate-target case. A new raw
+                # track can share an existing logical ID only when the current
+                # boxes are almost identical, or when strong box overlap is
+                # corroborated by overlapping SCRFD face boxes.
+                duplicate_candidates: list[tuple[float, TrackId, TrackId, float]] = []
+                for existing_raw, logical in assignments.items():
+                    existing = track_by_raw.get(existing_raw)
+                    if existing is None:
+                        continue
+                    person_iou = _iou(existing.bbox, track.bbox)
+                    face_iou = _max_face_iou(
+                        faces_by_raw.get(existing_raw, ()),
+                        faces_by_raw.get(raw_id, ()),
+                    )
+                    duplicate = person_iou >= self.config.duplicate_iou or (
+                        person_iou >= self.config.duplicate_iou_with_face
+                        and face_iou >= self.config.duplicate_face_iou
+                    )
+                    if duplicate:
+                        duplicate_candidates.append((person_iou + 0.25 * face_iou, logical, existing_raw, face_iou))
+
+                duplicate_candidates.sort(key=lambda item: item[0], reverse=True)
+                if duplicate_candidates:
+                    best = duplicate_candidates[0]
+                    second = duplicate_candidates[1][0] if len(duplicate_candidates) > 1 else -1.0
+                    if best[0] - second >= self.config.ambiguity_margin:
+                        logical = best[1]
+                        assignments[raw_id] = logical
+                        self._raw_to_logical[(packet.camera_id, raw_id)] = logical
+                        state = self._states.get((packet.camera_id, logical))
+                        if state is not None:
+                            state.raw_ids.add(raw_id)
+                        LOGGER.info(
+                            "[TRACK_CONTINUITY_DUPLICATE] camera=%s raw=%s logical=%s "
+                            "existing_raw=%s person_iou=%.3f face_iou=%.3f",
+                            packet.camera_id,
+                            raw_id,
+                            logical,
+                            best[2],
+                            best[0] - 0.25 * best[3],
+                            best[3],
+                        )
+                        continue
+
+                # Otherwise look only at recently missing logical tracks. This
+                # bridges a short RTSP flash or one failed NvDCF association.
                 candidates: list[tuple[float, _LogicalTrackState, float, float, float]] = []
                 for state in self._states.values():
                     if state.camera_id != packet.camera_id or state.logical_id in occupied_logical:
@@ -175,50 +242,72 @@ class TrackContinuityResolver:
                         raw_ids={raw_id},
                     )
 
-            resolved_tracks = []
+            # Deduplicate raw tracker fragments that now share one logical ID.
+            # Prefer a track carrying a face this frame, then detector confidence.
+            resolved_by_logical = {}
+            selected_raw_by_logical: dict[TrackId, TrackId] = {}
             for track in packet.tracks:
                 logical = assignments[track.track_id]
                 metadata = dict(track.metadata)
                 metadata["raw_track_id"] = track.track_id
                 resolved = replace(track, track_id=logical, metadata=metadata)
-                resolved_tracks.append(resolved)
+                current = resolved_by_logical.get(logical)
+                current_raw = selected_raw_by_logical.get(logical)
+                new_rank = (1 if faces_by_raw.get(track.track_id) else 0, track.confidence)
+                old_rank = (
+                    1 if current_raw is not None and faces_by_raw.get(current_raw) else 0,
+                    current.confidence if current is not None else -1.0,
+                )
+                if current is None or new_rank > old_rank:
+                    resolved_by_logical[logical] = resolved
+                    selected_raw_by_logical[logical] = track.track_id
+
+            for logical, resolved in resolved_by_logical.items():
+                raw_id = selected_raw_by_logical[logical]
                 state = self._states.get((packet.camera_id, logical))
                 if state is None:
                     state = _LogicalTrackState(
                         camera_id=packet.camera_id,
                         logical_id=logical,
-                        current_raw_id=track.track_id,
-                        last_bbox=track.bbox,
-                        last_seen=track.timestamp,
+                        current_raw_id=raw_id,
+                        last_bbox=resolved.bbox,
+                        last_seen=resolved.timestamp,
                         last_frame_number=packet.frame_number,
-                        raw_ids={track.track_id},
+                        raw_ids={raw_id},
                     )
                     self._states[(packet.camera_id, logical)] = state
                 else:
-                    state.current_raw_id = track.track_id
-                    state.last_bbox = track.bbox
-                    state.last_seen = track.timestamp
+                    state.current_raw_id = raw_id
+                    state.last_bbox = resolved.bbox
+                    state.last_seen = resolved.timestamp
                     state.last_frame_number = packet.frame_number
-                    state.raw_ids.add(track.track_id)
+                    state.raw_ids.add(raw_id)
 
             def logical_for(raw_id: TrackId) -> TrackId:
-                return assignments.get(
-                    raw_id,
-                    self._raw_to_logical.get((packet.camera_id, raw_id), raw_id),
-                )
+                return assignments.get(raw_id, self._raw_to_logical.get((packet.camera_id, raw_id), raw_id))
 
-            resolved_faces = tuple(
-                replace(face, track_id=logical_for(face.track_id)) for face in packet.faces
-            )
-            resolved_behaviors = tuple(
-                replace(behavior, track_id=logical_for(behavior.track_id))
-                for behavior in packet.behaviors
-            )
+            best_face_by_logical = {}
+            for face in packet.faces:
+                logical = logical_for(face.track_id)
+                resolved = replace(face, track_id=logical)
+                previous = best_face_by_logical.get(logical)
+                if previous is None or resolved.score > previous.score:
+                    best_face_by_logical[logical] = resolved
+
+            best_behavior = {}
+            for behavior in packet.behaviors:
+                logical = logical_for(behavior.track_id)
+                resolved = replace(behavior, track_id=logical)
+                key = (logical, behavior.behavior, behavior.model_name)
+                previous = best_behavior.get(key)
+                if previous is None or resolved.confidence > previous.confidence:
+                    best_behavior[key] = resolved
+
             return replace(
                 packet,
-                tracks=tuple(resolved_tracks),
-                faces=resolved_faces,
-                behaviors=resolved_behaviors,
+                tracks=tuple(resolved_by_logical.values()),
+                faces=tuple(best_face_by_logical.values()),
+                behaviors=tuple(best_behavior.values()),
             )
 
     def logical_id(self, camera_id: str, raw_track_id: TrackId) -> TrackId:
@@ -285,6 +374,14 @@ def _iou(first: BoundingBox, second: BoundingBox) -> float:
     intersection = (right - left) * (bottom - top)
     union = first.area + second.area - intersection
     return intersection / union if union > 0 else 0.0
+
+
+def _max_face_iou(first_faces, second_faces) -> float:
+    best = 0.0
+    for first in first_faces:
+        for second in second_faces:
+            best = max(best, _iou(first.bbox, second.bbox))
+    return best
 
 
 __all__ = ["TrackContinuityConfig", "TrackContinuityResolver"]
