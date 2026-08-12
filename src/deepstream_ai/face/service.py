@@ -21,7 +21,10 @@ LOGGER = logging.getLogger(__name__)
 @dataclass(frozen=True, slots=True)
 class FaceRecognitionConfig:
     similarity_threshold: float = 0.55
-    recognize_once_per_track: bool = True
+    # CCTV tracks often start with a poor side/blurred face and become much
+    # clearer later. Re-evaluate in rolling candidate windows instead of
+    # permanently freezing the first known/unknown result for the whole track.
+    recognize_once_per_track: bool = False
     require_landmarks: bool = True
     fusion: FaceFusionConfig = field(default_factory=FaceFusionConfig)
 
@@ -39,7 +42,7 @@ class FaceRecognitionConfig:
             similarity_threshold=float(
                 values.get("similarity_threshold", values.get("match_threshold", 0.55))
             ),
-            recognize_once_per_track=bool(values.get("recognize_once_per_track", True)),
+            recognize_once_per_track=bool(values.get("recognize_once_per_track", False)),
             require_landmarks=bool(values.get("require_landmarks", True)),
             fusion=FaceFusionConfig.from_mapping(values),
         )
@@ -52,7 +55,7 @@ class FaceRecognitionConfig:
             similarity_threshold=float(
                 getattr(config, "match_threshold", getattr(config, "similarity_threshold", 0.55))
             ),
-            recognize_once_per_track=bool(getattr(config, "recognize_once_per_track", True)),
+            recognize_once_per_track=bool(getattr(config, "recognize_once_per_track", False)),
             require_landmarks=bool(getattr(config, "require_landmarks", True)),
             fusion=FaceFusionConfig.from_runtime_config(config),
         )
