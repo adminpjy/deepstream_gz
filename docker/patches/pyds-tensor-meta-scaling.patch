@@ -1,9 +1,12 @@
 diff --git a/bindings/src/bindnvdsinfer.cpp b/bindings/src/bindnvdsinfer.cpp
 --- a/bindings/src/bindnvdsinfer.cpp
 +++ b/bindings/src/bindnvdsinfer.cpp
-@@ -205,1 +205,5 @@
+@@ -204,4 +204,8 @@ namespace pydeepstream {
+                 .def(py::init<>())
                  .def_readonly("network_info", &NvDsInferTensorMeta::network_info)
 +                .def_readonly("maintain_aspect_ratio",
 +                              &NvDsInferTensorMeta::maintain_aspect_ratio)
 +                .def_readonly("symmetric_padding",
 +                              &NvDsInferTensorMeta::symmetric_padding)
+                 .def_readonly("unique_id", &NvDsInferTensorMeta::unique_id)
+                 .def_readonly("num_output_layers",
