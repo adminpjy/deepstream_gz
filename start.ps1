@@ -1,6 +1,6 @@
 param(
     [switch]$NoPull,
-    [switch]$NoBuild,
+    [switch]$Build,
     [switch]$Logs
 )
 
@@ -42,6 +42,10 @@ try {
     if (-not $NoPull) {
         if (Get-Command git -ErrorAction SilentlyContinue) {
             Write-Step "Pull latest code"
+            $branch = (& git branch --show-current).Trim()
+            $origin = (& git remote get-url origin).Trim()
+            Write-Host "Git branch: $branch"
+            Write-Host "Git origin: $origin"
             Invoke-Checked -Command "git" -Arguments @("pull", "--ff-only")
         }
         else {
@@ -52,9 +56,9 @@ try {
     Write-Step "Stop existing services"
     Invoke-Checked -Command "docker" -Arguments @("compose", "down")
 
-    Write-Step "Start services"
+    Write-Step ($(if ($Build) { "Build image and start services" } else { "Start services (reuse existing image)" }))
     $upArgs = @("compose", "up")
-    if (-not $NoBuild) {
+    if ($Build) {
         $upArgs += "--build"
     }
     $upArgs += @("-d")
@@ -68,10 +72,10 @@ try {
     Write-Host "Web console: http://127.0.0.1:8080" -ForegroundColor Green
     Write-Host ""
     Write-Host "Common usage:" -ForegroundColor DarkGray
-    Write-Host "  .\start.ps1              # pull + restart + build" -ForegroundColor DarkGray
+    Write-Host "  .\start.ps1              # pull + restart, reuse existing image" -ForegroundColor DarkGray
     Write-Host "  .\start.ps1 -NoPull      # restart without git pull" -ForegroundColor DarkGray
-    Write-Host "  .\start.ps1 -NoBuild     # restart without rebuilding image" -ForegroundColor DarkGray
-    Write-Host "  .\start.ps1 -Logs        # start then follow app logs" -ForegroundColor DarkGray
+    Write-Host "  .\start.ps1 -Build       # rebuild Docker image, then restart" -ForegroundColor DarkGray
+    Write-Host "  .\start.ps1 -Logs        # restart then follow app logs" -ForegroundColor DarkGray
 
     if ($Logs) {
         Write-Step "Follow app logs (Ctrl+C to exit logs; containers keep running)"
