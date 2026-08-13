@@ -33,7 +33,13 @@ try {
     }
 
     Write-Step "Check Docker Desktop"
-    & docker info *> $null
+    # Docker Desktop writes harmless capability warnings (for example blkio
+    # support notices) to stderr even when `docker info` succeeds. With
+    # $ErrorActionPreference='Stop', PowerShell can promote that stderr text to
+    # a terminating NativeCommandError. Run the readiness probe through cmd.exe
+    # so stdout/stderr are discarded and only docker's process exit code decides
+    # whether the engine is ready.
+    & cmd.exe /d /c "docker info >nul 2>&1"
     if ($LASTEXITCODE -ne 0) {
         throw "Docker Desktop is not ready. Please start Docker Desktop and wait until the engine is running."
     }
