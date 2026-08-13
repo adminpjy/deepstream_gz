@@ -1,5 +1,4 @@
 diff --git a/bindings/src/bindnvdsinfer.cpp b/bindings/src/bindnvdsinfer.cpp
-index 2ced66a..0fd00c3 100644
 --- a/bindings/src/bindnvdsinfer.cpp
 +++ b/bindings/src/bindnvdsinfer.cpp
 @@ -203,6 +203,10 @@ namespace pydeepstream {
