@@ -32,7 +32,12 @@ try {
         throw "Docker command not found. Please start Docker Desktop first."
     }
 
-    Invoke-Checked -Command "docker" -Arguments @("info")
+    Write-Step "Check Docker Desktop"
+    & docker info *> $null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Docker Desktop is not ready. Please start Docker Desktop and wait until the engine is running."
+    }
+    Write-Host "Docker is ready." -ForegroundColor Green
 
     if (-not $NoPull) {
         if (Get-Command git -ErrorAction SilentlyContinue) {
