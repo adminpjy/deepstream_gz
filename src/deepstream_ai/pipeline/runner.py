@@ -37,7 +37,10 @@ class PipelineRunner:
         self._previous_handlers: dict[int, Any] = {}
         self._on_started = on_started
         self._signal_stop_count = 0
-        self._adaptive = AdaptiveInferenceController(config, graph)
+        # Construct this only after a real pipeline reaches PLAYING. Keeping
+        # __init__ side-effect free also preserves lightweight runner tests and
+        # service stop/restart paths that use partial config stubs.
+        self._adaptive: AdaptiveInferenceController | None = None
 
     def run(self) -> None:
         Gst = self.runtime.Gst
@@ -68,6 +71,7 @@ class PipelineRunner:
             # Start only after PLAYING so negotiated source caps contain the real
             # camera/file frame rate. Runtime property changes happen on GLib's
             # main-loop thread, not in the streaming probe thread.
+            self._adaptive = AdaptiveInferenceController(self.config, self.graph)
             self._adaptive.start(self.runtime.GLib)
             if self._on_started is not None:
                 self._on_started()
@@ -75,7 +79,9 @@ class PipelineRunner:
             if self._failed is not None:
                 raise self._failed
         finally:
-            self._adaptive.stop()
+            if self._adaptive is not None:
+                self._adaptive.stop()
+                self._adaptive = None
             health_path.unlink(missing_ok=True)
             health_path.with_suffix(health_path.suffix + ".tmp").unlink(missing_ok=True)
             self.graph.pipeline.set_state(Gst.State.NULL)
