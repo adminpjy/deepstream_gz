@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -31,7 +31,7 @@ class PipelineGraph:
     pipeline: Any
     metadata_probe: MetadataProbe
     source_bins: tuple[SourceBin, ...]
-    inference_elements: dict[str, Any]
+    inference_elements: dict[str, Any] = field(default_factory=dict)
     pretracker_guard: PeopleNetPretrackerGuard | None = None
 
 
