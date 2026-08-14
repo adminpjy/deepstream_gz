@@ -13,6 +13,7 @@ from typing import Any
 from deepstream_ai.config import AppConfig
 from deepstream_ai.errors import PipelineError
 
+from .adaptive import AdaptiveInferenceController
 from .builder import PipelineGraph
 
 LOGGER = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class PipelineRunner:
         self._previous_handlers: dict[int, Any] = {}
         self._on_started = on_started
         self._signal_stop_count = 0
+        self._adaptive = AdaptiveInferenceController(config, graph)
 
     def run(self) -> None:
         Gst = self.runtime.Gst
@@ -63,12 +65,17 @@ class PipelineRunner:
             temporary_health.write_text(str(os.getpid()), encoding="ascii")
             temporary_health.replace(health_path)
             LOGGER.info("DeepStream Pipeline 已启动，sources=%d", len(self.config.enabled_sources))
+            # Start only after PLAYING so negotiated source caps contain the real
+            # camera/file frame rate. Runtime property changes happen on GLib's
+            # main-loop thread, not in the streaming probe thread.
+            self._adaptive.start(self.runtime.GLib)
             if self._on_started is not None:
                 self._on_started()
             self.loop.run()
             if self._failed is not None:
                 raise self._failed
         finally:
+            self._adaptive.stop()
             health_path.unlink(missing_ok=True)
             health_path.with_suffix(health_path.suffix + ".tmp").unlink(missing_ok=True)
             self.graph.pipeline.set_state(Gst.State.NULL)
