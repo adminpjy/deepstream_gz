@@ -6,10 +6,10 @@ from dataclasses import dataclass
 from threading import Event, RLock
 from typing import Protocol
 
+from deepstream_ai.face_anchored_continuity import FaceAnchoredTrackContinuityResolver
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
 from deepstream_ai.stream_epoch import current_stream_generation
 from deepstream_ai.track_continuity import TrackContinuityResolver
-from deepstream_ai.track_continuity_guard import GuardedTrackContinuityResolver
 from deepstream_ai.weak_track_guard import WeakNewTrackGuard
 
 _NANOSECONDS = 1_000_000_000
@@ -116,7 +116,7 @@ class ActivityAwareConsumer:
         app_config = getattr(delegate, "config", None)
         config_path = getattr(app_config, "config_path", None)
         if continuity is None and config_path is not None:
-            continuity = GuardedTrackContinuityResolver.from_file(config_path)
+            continuity = FaceAnchoredTrackContinuityResolver.from_file(config_path)
         if weak_tracks is None and config_path is not None:
             weak_tracks = WeakNewTrackGuard.from_file(config_path)
         self.continuity = continuity
