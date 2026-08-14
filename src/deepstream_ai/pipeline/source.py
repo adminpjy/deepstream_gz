@@ -42,7 +42,12 @@ class SourceBin:
         self.decoder = make_element(Gst, "nvurisrcbin", f"uri-source-{index:02d}")
         self.decoder.set_property("uri", source_uri(app_config, source))
         set_if_supported(self.decoder, "gpu-id", app_config.pipeline.streammux.gpu_id)
-        set_if_supported(self.decoder, "cudadec-memtype", 2)  # unified memory on dGPU
+        # dGPU/WSL and production L20 both use CUDA device memory. DeepStream's
+        # dGPU troubleshooting guidance recommends cudadec-memtype=0, and the
+        # metadata probe already performs an explicit device-to-host copy from
+        # the NvBufSurface CUDA pointer, so unified memory is neither required
+        # nor desirable here.
+        set_if_supported(self.decoder, "cudadec-memtype", 0)
         set_if_supported(self.decoder, "num-extra-surfaces", 4)
         set_if_supported(self.decoder, "drop-frame-interval", 0)
         if source.type == "rtsp":
@@ -106,9 +111,17 @@ class SourceBin:
             with suppress(TypeError):
                 child.connect("child-added", self._on_child_added)
         if "nvv4l2decoder" in lowered:
+            # Set the concrete decoder as well as nvurisrcbin so dynamically
+            # created children cannot fall back to a different memory mode.
+            set_if_supported(child, "cudadec-memtype", 0)
             set_if_supported(child, "enable-max-performance", True)
             set_if_supported(child, "drop-frame-interval", 0)
             set_if_supported(child, "num-extra-surfaces", 4)
+            LOGGER.info(
+                "[NVDEC] camera_id=%s decoder=%s cudadec_memtype=device",
+                self.config.camera_id,
+                name,
+            )
         factory = child.get_factory() if hasattr(child, "get_factory") else None
         factory_name = factory.get_name().lower() if factory is not None else ""
         if (
