@@ -29,18 +29,18 @@ sources: []
 #     enabled: true
 #     nominal_fps: 25.0
 
-# Keep person detection at the tracking-safe floor. SCRFD is intentionally much
-# cheaper at 2 FPS: evidence/recognition can retry later, whereas losing the
-# person detector is what fragments NvDCF IDs.
+# PeopleNet and SCRFD both stay at the tracking/evidence safety floor. 5 FPS
+# face sampling is intentional: pose changes can fragment NvDCF body ReID while
+# a real face remains the strongest continuity cue.
 inference:
   person_fps: 5.0
-  face_fps: 2.0
+  face_fps: 5.0
   behavior_fps: 1.0
 
 # Runtime inference-rate controller. GPU utilization is capacity telemetry, not
-# by itself an overload signal: TensorRT is expected to run the GPU hard. Queue
-# pressure can still move the capacity profile/admission policy, but every
-# profile keeps PeopleNet at or above the configured 5 FPS tracking floor.
+# by itself an overload signal: TensorRT is expected to run the GPU hard. The
+# realtime controller now reduces PeopleNet only when queue backlog or drops
+# prove that wall-clock processing is actually falling behind.
 adaptive_inference:
   enabled: true
   initial_profile: normal
@@ -62,23 +62,23 @@ adaptive_inference:
   profiles:
     boost:
       person_fps: 8.0
-      face_fps: 2.0
+      face_fps: 5.0
       behavior_fps: 1.0
     normal:
       person_fps: 5.0
-      face_fps: 2.0
+      face_fps: 5.0
       behavior_fps: 1.0
     balanced:
       person_fps: 5.0
-      face_fps: 2.0
+      face_fps: 5.0
       behavior_fps: 1.0
     protect:
       person_fps: 5.0
-      face_fps: 2.0
+      face_fps: 5.0
       behavior_fps: 1.0
     emergency:
       person_fps: 5.0
-      face_fps: 2.0
+      face_fps: 5.0
       behavior_fps: 1.0
   overload:
     # The worker emits SYSTEM_CAPACITY_EXCEEDED at this floor. Service-level
@@ -138,10 +138,9 @@ weak_new_track:
   min_height_ratio: 0.10
   stale_retention_sec: 30.0
 
-# NvDCF shadow targets are emitted only as tracker miscellaneous metadata. When
-# the pinned PyDS binding exposes them they are preview-only. If it does not, the
-# business continuity edge bridge below supplies a conservative short fallback;
-# synthetic/shadow boxes never become SCRFD/AdaFace or evidence input.
+# NvDCF shadow targets are emitted only as tracker miscellaneous metadata. They
+# are used for a very short live-preview bridge and are never converted into
+# business tracks, SCRFD/AdaFace input, snapshots, alarms, or database records.
 shadow_tracking:
   enabled: true
   display_max_age_sec: 1.5
@@ -178,8 +177,9 @@ tracker:
 
 # NvDCF remains the tracker of record. This business-layer bridge preserves a
 # stable logical ID when NvDCF briefly fragments the same still-visible person.
-# Strict body ReID remains 0.85. Missing-ReID fallbacks are narrow, provisional,
-# and are revoked as soon as a later real ReID vector conflicts.
+# Strict body ReID remains 0.85. Missing-ReID fallback is limited to one visible
+# target and conservative geometry; it is never enabled as a general multi-person
+# proximity merge.
 track_continuity:
   enabled: true
   max_gap_sec: 12.0
@@ -218,33 +218,22 @@ track_continuity:
     max_center_distance_ratio: 0.40
     min_area_ratio: 0.60
     max_area_ratio: 1.70
-  # A person clipped by the left/right image edge can change visible area very
-  # quickly while still being the same physical target. Only missing-ReID new
-  # raw IDs are eligible, both boxes must touch the same lateral edge, competing
-  # edge targets block the merge, and later real ReID must still reach 0.85.
-  edge_bridge:
-    enabled: true
-    max_gap_sec: 3.0
-    edge_margin_ratio: 0.10
-    min_parallel_overlap: 0.35
-    max_parallel_center_shift_ratio: 0.60
-    min_area_ratio: 0.15
-    max_area_ratio: 4.00
-    ambiguity_margin: 0.15
-  # Face-backed continuity is a recovery path, not face recognition. It uses a
-  # real SCRFD detection only to prove spatial continuity of the same visible
-  # face while keeping body ReID above a safety floor.
-  face_override_max_gap_sec: 3.0
-  face_override_min_person_iou: 0.25
-  face_override_min_person_containment: 0.50
-  face_override_max_center_distance_ratio: 0.33
-  face_override_min_area_ratio: 0.60
-  face_override_max_area_ratio: 1.45
-  face_override_min_face_iou: 0.85
-  face_override_min_face_containment: 0.95
-  face_override_max_face_center_distance_ratio: 0.05
-  face_override_min_face_area_ratio: 0.85
-  face_override_max_face_area_ratio: 1.20
+  # Face-backed continuity is deliberately narrower than general geometry, but
+  # it must tolerate normal head motion. Task 1c2 showed the same frontal person
+  # at body-ReID 0.825 with person IoU ~0.63 and real-face IoU ~0.45, followed
+  # by another fragment ~9 s later with real-face IoU ~0.92. Keep the global
+  # body threshold at 0.85 and admit only this real-face-corroborated 0.80-0.85 band.
+  face_override_max_gap_sec: 10.0
+  face_override_min_person_iou: 0.50
+  face_override_min_person_containment: 0.60
+  face_override_max_center_distance_ratio: 0.30
+  face_override_min_area_ratio: 0.55
+  face_override_max_area_ratio: 1.60
+  face_override_min_face_iou: 0.40
+  face_override_min_face_containment: 0.55
+  face_override_max_face_center_distance_ratio: 0.25
+  face_override_min_face_area_ratio: 0.50
+  face_override_max_face_area_ratio: 1.80
   face_override_min_face_score: 0.70
   face_override_min_reid: 0.80
   stale_retention_sec: 30.0
