@@ -35,7 +35,7 @@ models/*
 # Test media and generated results.
 videos/*
 !videos/README.md
-output/*
+# output/*
 !output/.gitkeep
 uploads/*
 !uploads/.gitkeep
