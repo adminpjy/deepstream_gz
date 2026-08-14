@@ -21,7 +21,7 @@ cluster-mode=2
 custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_scrfd.so
 parse-bbox-func-name=NvDsInferParseCustomSCRFD
 output-tensor-meta=1
-secondary-reinfer-interval=5
+secondary-reinfer-interval=2
 
 [class-attrs-all]
 pre-cluster-threshold=0.35
