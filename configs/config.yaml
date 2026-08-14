@@ -32,10 +32,10 @@ sources: []
 # Analysis rates are converted to nvinfer interval values from nominal_fps.
 inference:
   person_fps: 5.0
-  # Face capture/detection runs at two real SCRFD inference frames per second.
-  # AdaFace still consumes only real detections/landmarks; the preview layer may
-  # visually hold the most recent face box between inference frames.
-  face_fps: 2.0
+  # Match person detection cadence so a brief frontal/usable face is much less
+  # likely to fall between SCRFD inference frames. AdaFace/database comparison
+  # is still quality/timeout gated below instead of running on every face.
+  face_fps: 5.0
   behavior_fps: 1.0
 
 pipeline:
@@ -163,11 +163,12 @@ face_recognition:
   output_name: "730"
   embedding_size: 512
   match_threshold: 0.40
-  # Use short rolling windows, then keep observing the same track. This gives
-  # later clearer faces another chance instead of freezing an early poor result.
+  # Clear faces are compared immediately. If no clear face arrives, the best
+  # real SCRFD candidate is compared after this short fallback window. Unknown
+  # tracks continue collecting later faces and can be upgraded by better views.
   min_candidates: 2
   max_candidates: 8
-  decision_timeout_sec: 2.0
+  decision_timeout_sec: 1.5
   input_width: 112
   input_height: 112
   require_landmarks: true
