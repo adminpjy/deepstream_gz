@@ -4,23 +4,72 @@ DeepStream exposes the primary GIE ``interval`` as a writable Gst property, but
 ``secondary-reinfer-interval`` is a config-file key rather than a runtime Gst
 property in the deployed GstNvInfer. Keep SCRFD/behavior cadence fixed at
 pipeline construction and adapt only PeopleNet while the pipeline is PLAYING.
+
+GPU utilization by itself is not treated as overload. TensorRT is expected to
+use the GPU aggressively; person cadence is reduced only when that utilization
+is accompanied by analytics queue backlog or dropped frames. NVDEC saturation
+is observed separately because reducing PeopleNet does not fix a decoder-bound
+pipeline.
 """
 
 from __future__ import annotations
 
 import logging
 
-from .adaptive import AdaptiveInferenceController, InferenceProfile, _skip_interval
+from .adaptive import AdaptiveInferenceController, GpuLoad, InferenceProfile, _skip_interval
 
 LOGGER = logging.getLogger(__name__)
 
 
 class RealtimeAdaptiveInferenceController(AdaptiveInferenceController):
-    """Preserve person-tracking cadence and never fake unsupported SGIE updates."""
+    """Preserve tracking cadence unless measured realtime backlog requires relief."""
 
     def __init__(self, config, graph) -> None:
         super().__init__(config, graph)
         self._static_sgie_logged: set[str] = set()
+
+    def _is_critical(
+        self,
+        gpu: GpuLoad,
+        queue_ratio: float | None,
+        drops_delta: int,
+    ) -> bool:
+        if drops_delta > 0:
+            return True
+        if queue_ratio is not None and queue_ratio >= self.config.queue_critical_ratio:
+            return True
+        # A compute spike is actionable only when work is already backing up.
+        if (
+            queue_ratio is not None
+            and queue_ratio >= self.config.queue_high_ratio
+            and gpu.gpu_util is not None
+            and gpu.gpu_util >= self.config.gpu_critical
+        ):
+            return True
+        return False
+
+    def _sustained_high(self, now: float) -> bool:
+        values = [
+            item
+            for item in self._history
+            if now - item.timestamp <= self.config.decision_window_sec
+        ]
+        if not values or now - values[0].timestamp < self.config.decision_window_sec * 0.8:
+            return False
+        if any(item.queue_drops_delta > 0 for item in values):
+            return True
+        queue_values = [item.queue_ratio for item in values if item.queue_ratio is not None]
+        if not queue_values:
+            return False
+        average_queue = sum(queue_values) / len(queue_values)
+        if average_queue >= self.config.queue_high_ratio:
+            return True
+        gpu_values = [item.gpu.gpu_util for item in values if item.gpu.gpu_util is not None]
+        return bool(
+            average_queue >= self.config.queue_low_ratio
+            and gpu_values
+            and sum(gpu_values) / len(gpu_values) >= self.config.gpu_high
+        )
 
     def _apply_profile(
         self,
