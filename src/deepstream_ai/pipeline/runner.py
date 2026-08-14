@@ -13,7 +13,7 @@ from typing import Any
 from deepstream_ai.config import AppConfig
 from deepstream_ai.errors import PipelineError
 
-from .adaptive import AdaptiveInferenceController
+from .adaptive_realtime import RealtimeAdaptiveInferenceController
 from .builder import PipelineGraph
 
 LOGGER = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ class PipelineRunner:
         # Construct this only after a real pipeline reaches PLAYING. Keeping
         # __init__ side-effect free also preserves lightweight runner tests and
         # service stop/restart paths that use partial config stubs.
-        self._adaptive: AdaptiveInferenceController | None = None
+        self._adaptive: RealtimeAdaptiveInferenceController | None = None
 
     def run(self) -> None:
         Gst = self.runtime.Gst
@@ -71,7 +71,7 @@ class PipelineRunner:
             # Start only after PLAYING so negotiated source caps contain the real
             # camera/file frame rate. Runtime property changes happen on GLib's
             # main-loop thread, not in the streaming probe thread.
-            self._adaptive = AdaptiveInferenceController(self.config, self.graph)
+            self._adaptive = RealtimeAdaptiveInferenceController(self.config, self.graph)
             self._adaptive.start(self.runtime.GLib)
             if self._on_started is not None:
                 self._on_started()
