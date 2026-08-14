@@ -37,11 +37,10 @@ inference:
   face_fps: 2.0
   behavior_fps: 1.0
 
-# Runtime inference-rate controller. The primary GIE exposes a live Gst
-# `interval` property and may be adjusted without rebuilding the pipeline.
-# DeepStream 9 reads SGIE `secondary-reinfer-interval` from the nvinfer config
-# file but does not expose it as a writable Gst property, so face/behavior
-# cadence stays at the startup values above instead of logging a false update.
+# Runtime inference-rate controller. GPU utilization is capacity telemetry, not
+# by itself an overload signal: TensorRT is expected to run the GPU hard. The
+# realtime controller now reduces PeopleNet only when queue backlog or drops
+# prove that wall-clock processing is actually falling behind.
 adaptive_inference:
   enabled: true
   initial_profile: normal
@@ -123,6 +122,28 @@ person_pretracker_guard:
   max_width_ratio: 0.50
   min_height_ratio: 0.93
   max_right_ratio: 0.52
+
+# Keep the detector/NvDCF floor at 0.10 for crouched and partially visible real
+# people, but do not immediately expose a brand-new weak target to business
+# logic. A weak new logical track stays provisional until detector evidence or a
+# real SCRFD face confirms it; otherwise it remains hidden as a false positive.
+weak_new_track:
+  enabled: true
+  instant_confirm_confidence: 0.35
+  sustained_confirm_confidence: 0.28
+  confirm_after_sec: 0.8
+  suppress_log_after_sec: 1.5
+  min_detector_observations: 2
+  min_width_ratio: 0.025
+  min_height_ratio: 0.10
+  stale_retention_sec: 30.0
+
+# NvDCF shadow targets are emitted only as tracker miscellaneous metadata. They
+# are used for a very short live-preview bridge and are never converted into
+# business tracks, SCRFD/AdaFace input, snapshots, alarms, or database records.
+shadow_tracking:
+  enabled: true
+  display_max_age_sec: 1.5
 
 # Disabled means the nvinfer element is not created and its config/model is not
 # opened. Enabled + missing/incompatible assets fails startup clearly.
