@@ -8,6 +8,7 @@ from deepstream_ai.domain import BoundingBox, Track
 from deepstream_ai.pipeline.metadata import _TRACKER_REID_METADATA_KEY, FramePacket
 from deepstream_ai.track_continuity import TrackContinuityConfig
 from deepstream_ai.track_continuity_guard import (
+    EdgeBridgeConfig,
     GuardedTrackContinuityResolver,
     SingleTargetBridgeConfig,
 )
@@ -44,6 +45,16 @@ def _resolver() -> GuardedTrackContinuityResolver:
             max_center_distance_ratio=0.40,
             min_area_ratio=0.60,
             max_area_ratio=1.70,
+        ),
+        EdgeBridgeConfig(
+            enabled=True,
+            max_gap_sec=3.0,
+            edge_margin_ratio=0.10,
+            min_parallel_overlap=0.35,
+            max_parallel_center_shift_ratio=0.60,
+            min_area_ratio=0.15,
+            max_area_ratio=4.00,
+            ambiguity_margin=0.15,
         ),
     )
 
@@ -142,6 +153,73 @@ def test_multi_person_scene_disables_missing_reid_geometry_bridge() -> None:
     )
 
     assert {track.track_id for track in resolved.tracks} == {1, 2}
+
+
+def test_right_edge_partial_fragment_keeps_business_id_without_reid() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    full_edge = BoundingBox(1450.0, 180.0, 1920.0, 1040.0)
+    first = resolver.resolve(_packet(1, NOW, (_track(0, NOW, full_edge, person_a),)))
+    assert first.tracks[0].track_id == 0
+
+    later = NOW + timedelta(seconds=1.0)
+    partial_edge = BoundingBox(1765.0, 350.0, 1920.0, 900.0)
+    resolved = resolver.resolve(_packet(26, later, (_track(1, later, partial_edge),)))
+
+    assert resolved.tracks[0].track_id == 0
+    assert resolved.tracks[0].metadata["raw_track_id"] == 1
+
+
+def test_edge_bridge_is_revoked_by_later_conflicting_reid() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    person_b = np.eye(1, 256, 1, dtype=np.float32).reshape(-1)
+    full_edge = BoundingBox(1450.0, 180.0, 1920.0, 1040.0)
+    partial_edge = BoundingBox(1765.0, 350.0, 1920.0, 900.0)
+    resolver.resolve(_packet(1, NOW, (_track(0, NOW, full_edge, person_a),)))
+
+    bridged_at = NOW + timedelta(seconds=1.0)
+    bridged = resolver.resolve(_packet(26, bridged_at, (_track(1, bridged_at, partial_edge),)))
+    assert bridged.tracks[0].track_id == 0
+
+    verified_at = bridged_at + timedelta(milliseconds=200)
+    rejected = resolver.resolve(
+        _packet(31, verified_at, (_track(1, verified_at, partial_edge, person_b),))
+    )
+    assert rejected.tracks[0].track_id == 1
+
+
+def test_edge_bridge_stops_when_another_person_competes_on_same_edge() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    person_b = np.eye(1, 256, 1, dtype=np.float32).reshape(-1)
+    old_a = BoundingBox(1500.0, 120.0, 1920.0, 650.0)
+    active_b = BoundingBox(1500.0, 650.0, 1920.0, 1080.0)
+    resolver.resolve(
+        _packet(
+            1,
+            NOW,
+            (
+                _track(0, NOW, old_a, person_a),
+                _track(2, NOW, active_b, person_b),
+            ),
+        )
+    )
+
+    later = NOW + timedelta(seconds=1.0)
+    ambiguous_fragment = BoundingBox(1740.0, 400.0, 1920.0, 850.0)
+    resolved = resolver.resolve(
+        _packet(
+            26,
+            later,
+            (
+                _track(1, later, ambiguous_fragment),
+                _track(2, later, active_b, person_b),
+            ),
+        )
+    )
+
+    assert 1 in {track.track_id for track in resolved.tracks}
 
 
 def test_same_person_raw_id_reuse_after_reconnect_recovers_old_business_id() -> None:
