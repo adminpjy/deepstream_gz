@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 from deepstream_ai.activity import ActivityAwareConsumer, PersonActivityTracker
-from deepstream_ai.analytics import AnalyticsDispatcher
 from deepstream_ai.config import AppConfig, SourceConfig, load_config
 from deepstream_ai.logging_config import configure_logging
 from deepstream_ai.pipeline.builder import DeepStreamPipelineBuilder
@@ -23,6 +22,7 @@ from deepstream_ai.pipeline.runner import PipelineRunner
 from deepstream_ai.pipeline.runtime import load_runtime, runtime_versions
 from deepstream_ai.preflight import validate_assets
 from deepstream_ai.preview import PreviewWriter
+from deepstream_ai.provisional_analytics import ProvisionalAwareAnalyticsDispatcher
 
 LOGGER = logging.getLogger(__name__)
 _TASK_ID = re.compile(r"^[a-f0-9]{12,32}$")
@@ -71,10 +71,6 @@ def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
     snapshot = replace(base.output.snapshot, root=str(output_dir / "snapshot"))
     output = replace(
         base.output,
-        # Test/production tasks only need live preview, events and evidence
-        # snapshots. Do not encode a monolithic result.mp4 for every input;
-        # those files consumed large amounts of disk space and are not part of
-        # the required evidence workflow.
         enabled=False,
         path=str(output_dir / "result.mp4"),
         sync=False,
@@ -136,7 +132,7 @@ def run_task(spec_path: Path) -> int:
     preview_width = int(spec.get("preview_width", 960))
     control_path = output_dir / "control.json"
     activity = PersonActivityTracker(idle_timeout_sec)
-    dispatcher: AnalyticsDispatcher | None = None
+    dispatcher: ProvisionalAwareAnalyticsDispatcher | None = None
     preview: PreviewWriter | None = None
     reporter_stop = threading.Event()
     reporter: threading.Thread | None = None
@@ -154,7 +150,7 @@ def run_task(spec_path: Path) -> int:
         _log_contract(config)
         runtime = load_runtime()
         LOGGER.info("DeepStream Python runtime 已加载: %s", runtime_versions(runtime))
-        dispatcher = AnalyticsDispatcher(
+        dispatcher = ProvisionalAwareAnalyticsDispatcher(
             config,
             queue_size=config.runtime.analytics_queue_size,
         )
