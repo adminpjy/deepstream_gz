@@ -7,7 +7,8 @@ context. Person and face evidence always come from the same winning frame.
 Person-only evidence is anchored to the first valid tracked-person bbox so an
 NvDCF shadow box cannot gradually overwrite a human with a sharp rack/cabinet.
 When a face exists, the user-facing person evidence is anchored around that face
-rather than trusting the full current tracker bbox.
+and, when the tracker box is geometrically sane, widened to include the complete
+person plus modest scene context for later human review.
 """
 
 from __future__ import annotations
@@ -41,6 +42,21 @@ class FaceEvidencePolicy:
     stable_quality_tolerance: float = 0.04
     stable_max_gap_sec: float = 0.80
     hold_log_interval_sec: float = 2.0
+
+    # Human-review evidence should contain enough context to understand what the
+    # person was doing. These values affect only persisted JPEG presentation;
+    # SCRFD/AdaFace still operate on the original detector ROI.
+    person_context_x_ratio: float = 0.20
+    person_context_top_ratio: float = 0.12
+    person_context_bottom_ratio: float = 0.18
+    face_context_x_ratio: float = 0.85
+    face_context_top_ratio: float = 0.55
+    face_context_bottom_ratio: float = 1.65
+    person_display_min_width: int = 480
+    person_display_min_height: int = 720
+    face_display_min_width: int = 240
+    face_display_min_height: int = 320
+    display_max_upscale: float = 4.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +169,13 @@ class EventSnapshotManager(RollingEventSnapshotManager):
             if state is None:
                 return False
 
-        pair = _alarm_face_pair_crop(frame, track.bbox, face.bbox, self.config)
+        pair = _alarm_face_pair_crop(
+            frame,
+            track.bbox,
+            face.bbox,
+            self.config,
+            self.face_policy,
+        )
         if pair is None:
             LOGGER.warning(
                 "[FACE_SNAPSHOT_SKIP] camera=%s track=%s reason=invalid_geometry face=%s person=%s",
@@ -246,7 +268,8 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                 source = "face_fallback"
                 LOGGER.info(
                     "[FACE_FALLBACK] camera=%s track=%s face_conf=%.3f quality=%.3f "
-                    "frontal=%.3f blur=%.3f size=%.3f person_display=%sx%s face_display=%sx%s",
+                    "frontal=%.3f blur=%.3f size=%.3f raw_face=%sx%s "
+                    "person_display=%sx%s face_display=%sx%s",
                     face.camera_id,
                     face.track_id,
                     face.score,
@@ -254,6 +277,8 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                     metrics.frontal,
                     metrics.blur,
                     metrics.size,
+                    raw_face_crop.shape[1],
+                    raw_face_crop.shape[0],
                     person_crop.shape[1],
                     person_crop.shape[0],
                     display_face_crop.shape[1],
@@ -265,7 +290,7 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                 LOGGER.info(
                     "[BEST_FACE_UPDATE] camera=%s track=%s reason=%s old_quality=%.3f new_quality=%.3f "
                     "new_frontal=%.3f new_blur=%.3f new_size=%.3f new_detector=%.3f stable=%d "
-                    "person_display=%sx%s face_display=%sx%s",
+                    "raw_face=%sx%s person_display=%sx%s face_display=%sx%s",
                     face.camera_id,
                     face.track_id,
                     reason,
@@ -276,6 +301,8 @@ class EventSnapshotManager(RollingEventSnapshotManager):
                     metrics.size,
                     metrics.detector,
                     stable_count,
+                    raw_face_crop.shape[1],
+                    raw_face_crop.shape[0],
                     person_crop.shape[1],
                     person_crop.shape[0],
                     display_face_crop.shape[1],
@@ -433,12 +460,16 @@ def _alarm_face_pair_crop(
     person_bbox: BoundingBox,
     face_bbox: BoundingBox,
     config,
+    policy: FaceEvidencePolicy,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, BoundingBox] | None:
-    """Return face-anchored person crop, expanded display face and raw face ROI.
+    """Return review-friendly person crop, display face crop and raw model ROI.
 
-    The person crop deliberately does not span the full tracker bbox. A drifted
-    NvDCF box can cover a rack or cabinet, while a valid SCRFD face remains a far
-    stronger spatial cue for where the human actually is in the frame.
+    The raw face ROI is never resized and is used only for face-quality scoring.
+    Persisted evidence is deliberately larger: the face image carries head,
+    neck and shoulder context, while a geometrically sane tracker person box is
+    allowed to extend the face-anchored person evidence down to the complete
+    body. This changes human-review JPEGs only; detector/tracker/AdaFace inputs
+    are untouched.
     """
 
     array = np.asarray(frame)
@@ -453,7 +484,9 @@ def _alarm_face_pair_crop(
     face_cx, _face_cy = face.center
     half_width = face.width * (2.0 + config.padding_x_ratio)
     top_extension = face.height * (0.75 + config.padding_top_ratio)
-    bottom_extension = face.height * (3.0 + config.upper_body_fraction)
+    # Keep the original face anchor as a safe fallback when the tracker body
+    # geometry has drifted. It covers roughly upper body even without the body box.
+    bottom_extension = face.height * (3.6 + config.upper_body_fraction)
     left = face_cx - half_width
     right = face_cx + half_width
     top = face.y1 - top_extension
@@ -466,29 +499,52 @@ def _alarm_face_pair_crop(
         return None
 
     person_face_ratio = person.area / max(face.area, 1.0)
-    if 4.0 <= person_face_ratio <= 80.0:
-        sane_left = max(0.0, person.x1 - person.width * config.padding_x_ratio)
-        sane_right = min(float(width), person.x2 + person.width * config.padding_x_ratio)
-        if sane_left <= face.x1 and sane_right >= face.x2:
-            narrowed_left = max(evidence.x1, sane_left)
-            narrowed_right = min(evidence.x2, sane_right)
-            if narrowed_right > narrowed_left:
-                evidence = BoundingBox(
-                    narrowed_left,
-                    evidence.y1,
-                    narrowed_right,
-                    evidence.y2,
-                )
+    person_height_ratio = person.height / max(face.height, 1.0)
+    face_inside_person = (
+        person.x1 - 0.20 * person.width <= face_cx <= person.x2 + 0.20 * person.width
+        and person.y1 - 0.20 * person.height <= face.y1 <= person.y2
+    )
+    sane_person = (
+        4.0 <= person_face_ratio <= 140.0
+        and person_height_ratio >= 2.2
+        and face_inside_person
+    )
+    if sane_person:
+        # Include the full detected body and a modest amount of scene context.
+        # This fixes evidence that previously stopped around the waist/knees just
+        # because the face-anchor crop was intentionally conservative.
+        person_left = person.x1 - person.width * policy.person_context_x_ratio
+        person_right = person.x2 + person.width * policy.person_context_x_ratio
+        person_top = person.y1 - person.height * policy.person_context_top_ratio
+        person_bottom = person.y2 + person.height * policy.person_context_bottom_ratio
+        try:
+            person_context = BoundingBox(
+                person_left,
+                person_top,
+                person_right,
+                person_bottom,
+            ).clipped(width, height)
+        except ValueError:
+            person_context = None
+        if person_context is not None:
+            evidence = BoundingBox(
+                min(evidence.x1, person_context.x1),
+                min(evidence.y1, person_context.y1),
+                max(evidence.x2, person_context.x2),
+                max(evidence.y2, person_context.y2),
+            )
 
     person_crop = rolling._crop_box(array, evidence)
     raw_face_crop = rolling._crop_box(array, face)
     if person_crop is None or raw_face_crop is None:
         return None
 
-    display_left = face.x1 - face.width * config.padding_x_ratio
-    display_top = face.y1 - face.height * config.padding_top_ratio
-    display_right = face.x2 + face.width * config.padding_x_ratio
-    display_bottom = face.y2 + face.height * config.upper_body_fraction
+    # Display evidence is intentionally head-and-shoulders rather than the raw
+    # SCRFD rectangle. Do not feed this expanded crop to AdaFace.
+    display_left = face.x1 - face.width * policy.face_context_x_ratio
+    display_top = face.y1 - face.height * policy.face_context_top_ratio
+    display_right = face.x2 + face.width * policy.face_context_x_ratio
+    display_bottom = face.y2 + face.height * policy.face_context_bottom_ratio
     try:
         display_box = BoundingBox(
             display_left,
@@ -504,7 +560,56 @@ def _alarm_face_pair_crop(
     if display_face_crop is None:
         return None
 
+    person_crop = _ensure_min_display_size(
+        person_crop,
+        min_width=policy.person_display_min_width,
+        min_height=policy.person_display_min_height,
+        max_scale=policy.display_max_upscale,
+    )
+    display_face_crop = _ensure_min_display_size(
+        display_face_crop,
+        min_width=policy.face_display_min_width,
+        min_height=policy.face_display_min_height,
+        max_scale=policy.display_max_upscale,
+    )
+
     return person_crop, display_face_crop, raw_face_crop, evidence
+
+
+def _ensure_min_display_size(
+    image: np.ndarray,
+    *,
+    min_width: int,
+    min_height: int,
+    max_scale: float,
+) -> np.ndarray:
+    """Upscale persisted evidence for review without pretending to add detail."""
+
+    array = np.asarray(image)
+    if array.size == 0:
+        return np.ascontiguousarray(array)
+    height, width = array.shape[:2]
+    if width <= 0 or height <= 0:
+        return np.ascontiguousarray(array)
+    scale = max(1.0, min_width / width, min_height / height)
+    scale = min(scale, max(1.0, float(max_scale)))
+    if scale <= 1.001:
+        return np.ascontiguousarray(array)
+    target_width = max(width, int(round(width * scale)))
+    target_height = max(height, int(round(height * scale)))
+    try:
+        import cv2  # type: ignore[import-not-found]
+
+        resized = cv2.resize(
+            array,
+            (target_width, target_height),
+            interpolation=cv2.INTER_CUBIC,
+        )
+        return np.ascontiguousarray(resized)
+    except ImportError:
+        y = np.linspace(0, height - 1, target_height).round().astype(np.intp)
+        x = np.linspace(0, width - 1, target_width).round().astype(np.intp)
+        return np.ascontiguousarray(array[y[:, None], x[None, :]])
 
 
 __all__ = ["EventSnapshotManager", "FaceEvidencePolicy"]
