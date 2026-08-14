@@ -172,22 +172,94 @@ class _Repository:
         return FaceVectorMatch("worker-42", 0.82, 1, NOW)
 
 
-def test_recognition_service_waits_for_multiple_frames_then_matches() -> None:
+class _KnownThenUnknownRepository(_Repository):
+    def __init__(self) -> None:
+        self.calls = 0
+
+    def find_nearest(self, embedding, *, min_similarity=None):
+        self.calls += 1
+        if self.calls == 1:
+            return FaceVectorMatch("worker-42", 0.82, 1, NOW)
+        return None
+
+
+def test_clear_face_is_compared_immediately_without_waiting_for_two_frames() -> None:
     config = FaceRecognitionConfig(
         similarity_threshold=0.6,
+        high_quality_threshold=0.70,
         fusion=FaceFusionConfig(min_candidates=2, max_candidates=3),
     )
     service = FaceRecognitionService(_Embedder(), _Repository(), config)
     crop = np.full((112, 112, 3), 128, dtype=np.uint8)
 
-    assert service.observe(face(0.8), crop) is None
-    result = service.observe(face(0.9, frame=1), crop)
+    result = service.observe(face(0.9), crop)
 
+    assert result is not None
     assert result.worker_id == "worker-42"
     assert result.known
     assert result.similarity == pytest.approx(0.82)
-    assert result.sample_count == 2
+    assert result.sample_count == 1
     assert service.result_for("cam-1", 7) is result
+
+
+def test_low_quality_face_gets_timeout_fallback_even_without_new_detection() -> None:
+    config = FaceRecognitionConfig(
+        similarity_threshold=0.6,
+        high_quality_threshold=0.99,
+        fusion=FaceFusionConfig(
+            min_candidates=2,
+            max_candidates=3,
+            max_track_age_seconds=1.0,
+        ),
+    )
+    service = FaceRecognitionService(_Embedder(), _Repository(), config)
+    crop = np.full((112, 112, 3), 128, dtype=np.uint8)
+    weak = {"blur_score": 0.1, "frontal_score": 0.1}
+
+    assert service.observe(face(0.25, metadata=weak), crop) is None
+    results = service.recognize_due(NOW + timedelta(seconds=1.1))
+
+    assert len(results) == 1
+    assert results[0].known
+    assert results[0].sample_count == 1
+
+
+def test_finalize_uses_single_real_face_as_last_no_miss_fallback() -> None:
+    config = FaceRecognitionConfig(
+        similarity_threshold=0.6,
+        high_quality_threshold=0.99,
+        fusion=FaceFusionConfig(min_candidates=2, max_candidates=3, max_track_age_seconds=2.0),
+    )
+    service = FaceRecognitionService(_Embedder(), _Repository(), config)
+    crop = np.full((112, 112, 3), 128, dtype=np.uint8)
+    weak = {"blur_score": 0.1, "frontal_score": 0.1}
+
+    assert service.observe(face(0.25, metadata=weak), crop) is None
+    result = service.finalize_track("cam-1", 7)
+
+    assert result is not None
+    assert result.known
+    assert result.sample_count == 1
+
+
+def test_known_identity_is_not_downgraded_by_later_unknown_result() -> None:
+    repository = _KnownThenUnknownRepository()
+    config = FaceRecognitionConfig(
+        similarity_threshold=0.6,
+        high_quality_threshold=0.70,
+        retry_quality_improvement=0.01,
+        fusion=FaceFusionConfig(min_candidates=1, max_candidates=3),
+    )
+    service = FaceRecognitionService(_Embedder(), repository, config)
+    crop = np.full((112, 112, 3), 128, dtype=np.uint8)
+
+    first = service.observe(face(0.80), crop)
+    second = service.observe(face(0.99, frame=1), crop)
+
+    assert first is not None and first.known
+    assert second is not None and second.known
+    assert second.worker_id == "worker-42"
+    assert service.result_for("cam-1", 7).worker_id == "worker-42"
 
 
 def test_normalize_embedding_enforces_512_finite_nonzero_values() -> None:
