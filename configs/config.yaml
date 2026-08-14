@@ -32,9 +32,10 @@ sources: []
 # Analysis rates are converted to nvinfer interval values from nominal_fps.
 inference:
   person_fps: 5.0
-  # On a 25 FPS RTSP stream this means roughly one real SCRFD inference every
-  # two frames. Recognition still consumes only real detections/landmarks.
-  face_fps: 12.5
+  # Face capture/detection runs at two real SCRFD inference frames per second.
+  # AdaFace still consumes only real detections/landmarks; the preview layer may
+  # visually hold the most recent face box between inference frames.
+  face_fps: 2.0
   behavior_fps: 1.0
 
 pipeline:
