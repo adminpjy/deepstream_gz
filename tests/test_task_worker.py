@@ -34,10 +34,11 @@ def test_file_task_is_namespaced_recorded_and_clock_paced(
     assert config.output.enabled is True
     assert config.output.sync is True
     assert Path(config.output.path).parent == (tmp_path / "task").resolve()
+    assert Path(config.output.path).name == "result.mp4"
     assert config.runtime.health_file.endswith("pipeline.ready")
 
 
-def test_rtsp_task_has_preview_events_without_unbounded_mp4(
+def test_rtsp_task_records_replay_video_without_file_clock_pacer(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
@@ -56,7 +57,32 @@ def test_rtsp_task_has_preview_events_without_unbounded_mp4(
         ),
     )
 
-    assert config.output.enabled is False
+    assert config.output.enabled is True
     assert config.output.sync is False
+    assert Path(config.output.path) == (tmp_path / "task" / "result.mp4").resolve()
     assert config.output.events_enabled is True
     assert config.output.snapshot.root.endswith("snapshot")
+
+
+def test_task_recording_can_be_disabled_explicitly(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("DATABASE_DSN", "postgresql://test:test@localhost/test")
+    base = load_config(Path("configs/config.yaml"))
+    spec = _spec(
+        tmp_path,
+        {
+            "type": "rtsp",
+            "camera_id": "rtsp-a",
+            "url": "rtsp://camera.example/live",
+            "nominal_fps": 25,
+        },
+    )
+    spec["record_video"] = False
+
+    config = build_task_config(base, spec)
+
+    assert config.output.enabled is False
+    assert config.output.events_enabled is True
+    assert config.output.snapshot.enabled is True
