@@ -1,8 +1,8 @@
 """Display-only NvDCF shadow-track metadata bridge.
 
-Shadow targets are intentionally kept out of FramePacket business tracks.  The
+Shadow targets are intentionally kept out of FramePacket business tracks. The
 tracker probe stores only lightweight bbox metadata for the live preview so a
-short detector miss does not make the operator-visible box disappear.  Shadow
+short detector miss does not make the operator-visible box disappear. Shadow
 boxes never enter SCRFD, AdaFace, snapshots, alarms, or database work.
 """
 
@@ -135,13 +135,14 @@ class ShadowTrackRegistry:
             batch_type = getattr(pyds, "NvDsTargetMiscDataBatch", None)
             stream_type = getattr(pyds, "NvDsTargetMiscDataStream", None)
             object_type = getattr(pyds, "NvDsTargetMiscDataObject", None)
-            if (
-                meta_type is None
-                or user_meta_type is None
-                or batch_type is None
-                or stream_type is None
-                or object_type is None
-            ):
+            available = all(
+                value is not None
+                for value in (meta_type, user_meta_type, batch_type, stream_type, object_type)
+            ) and all(
+                callable(getattr(value, "list", None))
+                for value in (batch_type, stream_type, object_type)
+            )
+            if not available:
                 if not self._warned_unavailable:
                     LOGGER.warning(
                         "[TRACK_SHADOW_UNAVAILABLE] pinned PyDS does not expose shadow-list metadata"
@@ -195,7 +196,16 @@ class ShadowTrackRegistry:
                         except (AttributeError, TypeError, ValueError):
                             continue
                         key = (camera_id, raw_id)
-                        since = self._shadow_since.setdefault(key, now)
+                        if key not in self._shadow_since:
+                            self._shadow_since[key] = now
+                            LOGGER.info(
+                                "[TRACK_SHADOW_ENTER] camera=%s raw=%s frame=%d tracker_age=%d",
+                                camera_id,
+                                raw_id,
+                                frame_number,
+                                max(0, int(getattr(selected, "age", 0))),
+                            )
+                        since = self._shadow_since[key]
                         current_shadow_ids[camera_id].add(raw_id)
                         if now - since > self.config.display_max_age_sec:
                             self._hidden_by_age += 1
@@ -234,10 +244,16 @@ class ShadowTrackRegistry:
                 while len(self._frames) > _MAX_FRAME_CACHE:
                     self._frames.popitem(last=False)
 
-                for key in list(self._shadow_since):
+                for key, started in list(self._shadow_since.items()):
                     camera_id, raw_id = key
                     if camera_id in current_shadow_ids and raw_id not in current_shadow_ids[camera_id]:
                         self._shadow_since.pop(key, None)
+                        LOGGER.info(
+                            "[TRACK_SHADOW_EXIT] camera=%s raw=%s duration=%.3f",
+                            camera_id,
+                            raw_id,
+                            max(0.0, now - started),
+                        )
             return Gst.PadProbeReturn.OK
         except Exception:
             with self._lock:
