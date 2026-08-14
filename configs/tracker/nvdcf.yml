@@ -49,9 +49,10 @@ TrajectoryManagement:
   # The previous 0.01 search region was too narrow when a person changed pose or
   # moved after a short miss. Use the wider PeopleNet-oriented search scale.
   trackletSpacialSearchRegionScale: 0.2598
-  # Produce ReID observations more often so recovery is not starved by an
-  # eight-frame sampling interval.
-  reidExtractionInterval: 2
+  # Extract ReID on every eligible detector observation. PeopleNet remains 5 FPS
+  # in normal/balanced/protect profiles, so this improves reconnection evidence
+  # without forcing the ReID network to run on all decoded 25/30 FPS frames.
+  reidExtractionInterval: 0
 
 DataAssociator:
   dataAssociatorType: 0

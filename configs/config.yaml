@@ -21,7 +21,7 @@ sources: []
 #     url: ${GATE_01_RTSP_URL}
 #     enabled: true
 #     nominal_fps: 30.0       # startup fallback; auto-corrected after PLAYING
-#     latency_ms: 500
+#     latency_ms: 200
 #     reconnect_interval_sec: 10
 #   - camera_id: gate-02
 #     type: file
@@ -29,21 +29,19 @@ sources: []
 #     enabled: true
 #     nominal_fps: 25.0
 
-# These values remain the safe startup profile. After the source reaches
-# PLAYING, adaptive_inference below can change nvinfer cadence without stopping
-# NvDCF or rebuilding the pipeline.
+# Keep person detection at the tracking-safe floor. SCRFD is intentionally much
+# cheaper at 2 FPS: evidence/recognition can retry later, whereas losing the
+# person detector is what fragments NvDCF IDs.
 inference:
   person_fps: 5.0
-  # Match person detection cadence so a brief frontal/usable face is much less
-  # likely to fall between SCRFD inference frames. AdaFace/database comparison
-  # is still quality/timeout gated below instead of running on every face.
-  face_fps: 5.0
+  face_fps: 2.0
   behavior_fps: 1.0
 
-# Runtime inference-rate controller. Scheduling is based on the negotiated
-# source FPS plus shared GPU/NVDEC pressure and analytics queue backpressure.
-# Compressed bitrate is observability data, not a direct inference-load signal.
-# Decoder output and NvDCF continue at the source cadence in every profile.
+# Runtime inference-rate controller. The primary GIE exposes a live Gst
+# `interval` property and may be adjusted without rebuilding the pipeline.
+# DeepStream 9 reads SGIE `secondary-reinfer-interval` from the nvinfer config
+# file but does not expose it as a writable Gst property, so face/behavior
+# cadence stays at the startup values above instead of logging a false update.
 adaptive_inference:
   enabled: true
   initial_profile: normal
@@ -65,24 +63,24 @@ adaptive_inference:
   profiles:
     boost:
       person_fps: 8.0
-      face_fps: 8.0
-      behavior_fps: 2.0
+      face_fps: 2.0
+      behavior_fps: 1.0
     normal:
       person_fps: 5.0
-      face_fps: 5.0
+      face_fps: 2.0
       behavior_fps: 1.0
     balanced:
       person_fps: 5.0
-      face_fps: 4.0
-      behavior_fps: 0.5
+      face_fps: 2.0
+      behavior_fps: 1.0
     protect:
-      person_fps: 4.0
-      face_fps: 3.0
-      behavior_fps: 0.25
+      person_fps: 5.0
+      face_fps: 2.0
+      behavior_fps: 1.0
     emergency:
-      person_fps: 3.0
-      face_fps: 3.0
-      behavior_fps: 0.2
+      person_fps: 4.0
+      face_fps: 2.0
+      behavior_fps: 1.0
   overload:
     # The worker emits SYSTEM_CAPACITY_EXCEEDED at this floor. Service-level
     # admission control can consume this policy when global task rejection is enabled.
@@ -158,12 +156,12 @@ tracker:
 
 # NvDCF remains the tracker of record. This business-layer bridge preserves a
 # stable logical ID when NvDCF briefly fragments the same still-visible person.
-# Strict body ReID remains the normal identity gate; a borderline ReID result is
-# allowed only when both person geometry and a real SCRFD face are nearly
-# continuous. Borderline observations never update the trusted ReID gallery.
+# Strict body ReID remains 0.85. Missing-ReID fallback is limited to one visible
+# target and conservative geometry; it is never enabled as a general multi-person
+# proximity merge.
 track_continuity:
   enabled: true
-  max_gap_sec: 8.0
+  max_gap_sec: 12.0
   min_iou: 0.10
   max_center_distance_ratio: 0.75
   min_area_ratio: 0.40
@@ -173,7 +171,7 @@ track_continuity:
   duplicate_iou: 0.90
   duplicate_iou_with_face: 0.70
   duplicate_face_iou: 0.50
-  reid_max_gap_sec: 10.0
+  reid_max_gap_sec: 12.0
   # Calibrated against preserved A/B/A samples: different people were around
   # 0.756-0.759, so ordinary body-ReID reconnection must stay conservative.
   reid_match_min: 0.85
@@ -187,6 +185,18 @@ track_continuity:
   fragment_max_center_distance_ratio: 0.13
   fragment_min_area_ratio: 0.70
   fragment_max_area_ratio: 1.35
+  # A new raw ID may provisionally inherit the previous logical ID only when it
+  # is the sole visible target and its body geometry is strongly compatible.
+  # This window covers the observed ~9 s seated-pose fragmentation while keeping
+  # general two-person/crossing scenes on the strict ReID path.
+  single_target_bridge:
+    enabled: true
+    max_gap_sec: 10.0
+    min_iou: 0.20
+    min_containment: 0.45
+    max_center_distance_ratio: 0.40
+    min_area_ratio: 0.60
+    max_area_ratio: 1.70
   # Face-backed continuity is a recovery path, not face recognition. It uses a
   # real SCRFD detection only to prove spatial continuity of the same visible
   # face while keeping body ReID above a safety floor.
@@ -283,9 +293,10 @@ snapshot:
   root: /workspace/output/snapshot
   image_format: jpg
   jpeg_quality: 95
-  # Evidence is written immediately, so this value only controls lifecycle
-  # cleanup. Keep state through short NvDCF shadow/re-association gaps.
-  person_decision_delay_sec: 10.0
+  # Evidence is written immediately. Keep lifecycle state slightly longer than
+  # the 12 s continuity window so a successfully bridged raw ID cannot arrive
+  # after its logical evidence has already been finalized.
+  person_decision_delay_sec: 13.0
   behavior_cooldown_sec: 10.0
   max_pending_tracks: 10000
 
