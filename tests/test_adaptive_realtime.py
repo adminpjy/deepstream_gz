@@ -70,6 +70,19 @@ def test_runtime_adaptation_changes_only_primary_gie(tmp_path) -> None:
     assert behavior.properties == []
 
 
+def test_emergency_profile_cannot_reduce_person_below_configured_floor(tmp_path) -> None:
+    controller = _controller(tmp_path)
+    person = _Element("person-detector")
+    controller.graph.inference_elements = {"person": person}
+    emergency = next(profile for profile in controller.config.profiles if profile.name == "emergency")
+    assert emergency.person_fps == 4.0
+
+    controller._apply_profile(emergency, 30.0, reason="critical_load")
+
+    # 30 FPS / (interval + 1) = 5 FPS, even though the profile asks for 4.
+    assert person.properties == [("interval", 5)]
+
+
 def test_gpu_spike_without_backlog_is_not_critical(tmp_path) -> None:
     controller = _controller(tmp_path)
     load = GpuLoad(
