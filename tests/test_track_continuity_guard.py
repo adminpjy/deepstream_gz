@@ -86,6 +86,25 @@ def test_missing_reid_single_target_pose_change_keeps_first_business_id() -> Non
     assert resolver.presentation_track_id("camera-a", 1) == 0
 
 
+def test_provisional_bridge_is_revoked_when_real_reid_conflicts() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    person_b = np.eye(1, 256, 1, dtype=np.float32).reshape(-1)
+    first_box = BoundingBox(692.0, 233.0, 1522.0, 1047.0)
+    changed_box = BoundingBox(367.0, 328.0, 1018.0, 1078.0)
+    resolver.resolve(_packet(1, NOW, (_track(0, NOW, first_box, person_a),)))
+
+    bridged_at = NOW + timedelta(seconds=9.05)
+    bridged = resolver.resolve(_packet(227, bridged_at, (_track(1, bridged_at, changed_box),)))
+    assert bridged.tracks[0].track_id == 0
+
+    verified_at = bridged_at + timedelta(seconds=0.20)
+    rejected = resolver.resolve(
+        _packet(232, verified_at, (_track(1, verified_at, changed_box, person_b),))
+    )
+    assert rejected.tracks[0].track_id == 1
+
+
 def test_present_conflicting_reid_never_uses_geometry_bridge() -> None:
     resolver = _resolver()
     person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
