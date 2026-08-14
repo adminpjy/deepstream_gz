@@ -6,11 +6,11 @@ from dataclasses import dataclass
 from threading import Event, RLock
 from typing import Protocol
 
-from deepstream_ai.face_anchored_continuity import FaceAnchoredTrackContinuityResolver
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
+from deepstream_ai.pose_aware_continuity import PoseAwareTrackContinuityResolver
+from deepstream_ai.provisional_track_guard import ProvisionalTrackGuard
 from deepstream_ai.stream_epoch import current_stream_generation
 from deepstream_ai.track_continuity import TrackContinuityResolver
-from deepstream_ai.weak_track_guard import WeakNewTrackGuard
 
 _NANOSECONDS = 1_000_000_000
 
@@ -100,7 +100,7 @@ class PersonActivityTracker:
 
 
 class ActivityAwareConsumer:
-    """Resolve IDs, suppress weak new tracks, then fan out business work."""
+    """Resolve IDs, hold new business IDs briefly, then fan out business work."""
 
     def __init__(
         self,
@@ -108,7 +108,7 @@ class ActivityAwareConsumer:
         activity: PersonActivityTracker,
         preview: PreviewSink | None = None,
         continuity: TrackContinuityResolver | None = None,
-        weak_tracks: WeakNewTrackGuard | None = None,
+        weak_tracks: ProvisionalTrackGuard | None = None,
     ) -> None:
         self.delegate = delegate
         self.activity = activity
@@ -116,9 +116,9 @@ class ActivityAwareConsumer:
         app_config = getattr(delegate, "config", None)
         config_path = getattr(app_config, "config_path", None)
         if continuity is None and config_path is not None:
-            continuity = FaceAnchoredTrackContinuityResolver.from_file(config_path)
+            continuity = PoseAwareTrackContinuityResolver.from_file(config_path)
         if weak_tracks is None and config_path is not None:
-            weak_tracks = WeakNewTrackGuard.from_file(config_path)
+            weak_tracks = ProvisionalTrackGuard.from_file(config_path)
         self.continuity = continuity
         self.weak_tracks = weak_tracks
 
@@ -136,12 +136,19 @@ class ActivityAwareConsumer:
         self._sync_generation(packet.camera_id)
         if self.continuity is not None:
             packet = self.continuity.resolve(packet)
+
+        analysis_packet = packet
+        visible_packet = packet
         if self.weak_tracks is not None:
-            packet = self.weak_tracks.filter(packet)
-        self.activity.observe(packet)
+            analysis_packet, visible_packet = self.weak_tracks.partition(packet)
+
+        # Activity/preview must reflect only confirmed business people.  The
+        # asynchronous analysis worker additionally receives provisional tracks
+        # so real SCRFD faces can build AdaFace continuity anchors.
+        self.activity.observe(visible_packet)
         if self.preview is not None:
-            self.preview.submit(packet)
-        return self.delegate.submit(packet)
+            self.preview.submit(visible_packet)
+        return self.delegate.submit(analysis_packet)
 
     def identity_label(self, camera_id: str, track_id: int | str) -> str | None:
         self._sync_generation(camera_id)
@@ -154,9 +161,6 @@ class ActivityAwareConsumer:
         camera_id: str,
         raw_track_id: int | str,
     ) -> int | str | None:
-        # Shadow metadata is read upstream of the normal FramePacket probe. Sync
-        # the generation here as well so the first post-reconnect shadow box can
-        # never reuse a stale raw->logical alias from the previous tracker epoch.
         self._sync_generation(camera_id)
         if self.continuity is None:
             logical_id: int | str = raw_track_id
