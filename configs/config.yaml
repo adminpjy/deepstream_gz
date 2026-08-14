@@ -88,9 +88,8 @@ face:
   landmark_source: tensor
   landmark_coordinates: absolute
   landmark_scale: 1.0
-  # Must equal face.example.txt pre-cluster-threshold. Prefer recall here; final
-  # evidence and AdaFace still require quality/landmark checks downstream.
-  landmark_threshold: 0.30
+  # Keep tensor-landmark filtering aligned with face.example.txt.
+  landmark_threshold: 0.35
 
 # The business layer sees only this adapter key, never tracker implementation APIs.
 tracker:
