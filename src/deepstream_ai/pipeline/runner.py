@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import signal
 from contextlib import suppress
 from pathlib import Path
@@ -12,11 +13,14 @@ from typing import Any
 
 from deepstream_ai.config import AppConfig
 from deepstream_ai.errors import PipelineError
+from deepstream_ai.stream_epoch import bump_stream_generation
 
 from .adaptive_realtime import RealtimeAdaptiveInferenceController
 from .builder import PipelineGraph
+from .shadow_tracking import ShadowTrackRegistry
 
 LOGGER = logging.getLogger(__name__)
+_RTSP_SOURCE_NAME = re.compile(r"uri-source-(\d+)$")
 
 
 class PipelineRunner:
@@ -37,10 +41,8 @@ class PipelineRunner:
         self._previous_handlers: dict[int, Any] = {}
         self._on_started = on_started
         self._signal_stop_count = 0
-        # Construct this only after a real pipeline reaches PLAYING. Keeping
-        # __init__ side-effect free also preserves lightweight runner tests and
-        # service stop/restart paths that use partial config stubs.
         self._adaptive: RealtimeAdaptiveInferenceController | None = None
+        self._shadow: ShadowTrackRegistry | None = None
 
     def run(self) -> None:
         Gst = self.runtime.Gst
@@ -51,6 +53,24 @@ class PipelineRunner:
         health_path = Path(self.config.runtime.health_file)
         health_path.unlink(missing_ok=True)
         try:
+            # Read NvDCF shadow-list metadata directly at tracker output. This
+            # probe stores only bbox/ID data for preview and never enters the
+            # business FramePacket path used by SCRFD/AdaFace/evidence.
+            tracker = self.graph.pipeline.get_by_name("person-tracker")
+            if tracker is not None:
+                tracker_pad = tracker.get_static_pad("src")
+                if tracker_pad is not None:
+                    self._shadow = ShadowTrackRegistry(
+                        self.runtime,
+                        self.config,
+                        self.graph.metadata_probe.consumer,
+                    )
+                    tracker_pad.add_probe(Gst.PadProbeType.BUFFER, self._shadow.callback, None)
+                    LOGGER.info(
+                        "[TRACK_SHADOW] preview bridge enabled max_age=%.2fs",
+                        self._shadow.config.display_max_age_sec,
+                    )
+
             state_result = self.graph.pipeline.set_state(Gst.State.PLAYING)
             if state_result == Gst.StateChangeReturn.FAILURE:
                 raise PipelineError("Pipeline 无法进入 PLAYING 状态")
@@ -89,6 +109,17 @@ class PipelineRunner:
                 self.graph.metadata_probe.log_performance()
             except Exception:
                 LOGGER.exception("输出 Probe 性能统计失败")
+            if self._shadow is not None:
+                stats = self._shadow.stats()
+                LOGGER.info(
+                    "[TRACK_SHADOW_SUMMARY] frames=%d objects=%d hidden_by_age=%d errors=%d",
+                    stats.frames,
+                    stats.objects,
+                    stats.hidden_by_age,
+                    stats.errors,
+                )
+                self._shadow.close()
+                self._shadow = None
             if self.graph.pretracker_guard is not None:
                 stats = self.graph.pretracker_guard.stats()
                 LOGGER.info(
@@ -113,6 +144,19 @@ class PipelineRunner:
             return
         self._stopping.set()
         LOGGER.info("收到停止请求")
+
+        live_rtsp = any(
+            getattr(source, "type", None) == "rtsp"
+            for source in getattr(self.config, "enabled_sources", ())
+        )
+        if send_eos and live_rtsp:
+            # Sending EOS through nvurisrcbin can leave the live source waiting
+            # long enough for its reconnect watchdog to create a fresh decoder
+            # and reset NvDCF IDs. A user/idle stop on RTSP should instead leave
+            # PLAYING immediately; pipeline NULL in finally releases resources.
+            send_eos = False
+            LOGGER.info("[RTSP_STOP] live source: skip EOS and stop main loop immediately")
+
         if send_eos:
             accepted = bool(self.graph.pipeline.send_event(self.runtime.Gst.Event.new_eos()))
             if not accepted:
@@ -150,6 +194,8 @@ class PipelineRunner:
             warning, debug = message.parse_warning()
             source = message.src.get_name() if message.src is not None else "unknown"
             LOGGER.warning("GStreamer 警告 source=%s: %s; debug=%s", source, warning, debug)
+            if not self._stopping.is_set() and "Trying reconnection" in str(warning):
+                self._mark_rtsp_reconnect(source)
         elif message.type == Gst.MessageType.STATE_CHANGED and message.src == self.graph.pipeline:
             old, new, pending = message.parse_state_changed()
             LOGGER.debug(
@@ -158,6 +204,22 @@ class PipelineRunner:
                 new.value_nick,
                 pending.value_nick,
             )
+
+    def _mark_rtsp_reconnect(self, source_name: str) -> None:
+        match = _RTSP_SOURCE_NAME.fullmatch(source_name)
+        if match is None:
+            return
+        index = int(match.group(1))
+        sources = getattr(self.config, "enabled_sources", ())
+        if not 0 <= index < len(sources):
+            return
+        source = sources[index]
+        if getattr(source, "type", None) != "rtsp":
+            return
+        bump_stream_generation(
+            source.camera_id,
+            reason=f"rtsp_reconnect:{source_name}",
+        )
 
     def _install_signals(self) -> None:
         for signum in (signal.SIGINT, signal.SIGTERM):
