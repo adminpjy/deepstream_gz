@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from threading import Event, RLock
 from typing import Protocol
 
+from deepstream_ai.multi_person_continuity import MultiPersonSafePoseAwareTrackContinuityResolver
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
-from deepstream_ai.pose_aware_continuity import PoseAwareTrackContinuityResolver
 from deepstream_ai.provisional_track_guard import ProvisionalTrackGuard
 from deepstream_ai.stream_epoch import current_stream_generation
 from deepstream_ai.track_continuity import TrackContinuityResolver
@@ -116,7 +116,7 @@ class ActivityAwareConsumer:
         app_config = getattr(delegate, "config", None)
         config_path = getattr(app_config, "config_path", None)
         if continuity is None and config_path is not None:
-            continuity = PoseAwareTrackContinuityResolver.from_file(config_path)
+            continuity = MultiPersonSafePoseAwareTrackContinuityResolver.from_file(config_path)
         if weak_tracks is None and config_path is not None:
             weak_tracks = ProvisionalTrackGuard.from_file(config_path)
         self.continuity = continuity
