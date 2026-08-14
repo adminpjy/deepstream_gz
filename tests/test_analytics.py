@@ -46,6 +46,7 @@ def _packet(
     face_score: float = 0.95,
     face_bbox: BoundingBox | None = None,
     image_value: int = 0,
+    frame_number: int = 1,
 ) -> FramePacket:
     timestamp = timestamp or datetime.now(UTC)
     track = Track("camera-a", 7, timestamp, BoundingBox(10, 10, 90, 110), 0.9)
@@ -64,7 +65,47 @@ def _packet(
     )
     image = np.full((120, 120, 4), image_value, dtype=np.uint8)
     image[..., 3] = 255
-    return FramePacket("camera-a", 1, timestamp, image, (track,), faces, ())
+    return FramePacket("camera-a", frame_number, timestamp, image, (track,), faces, ())
+
+
+def test_tracking_only_queue_keeps_latest_frame_instead_of_backlog(tmp_path: Path) -> None:
+    dispatcher = AnalyticsDispatcher(_config(tmp_path), queue_size=2)
+    dispatcher._accepting = True
+    first = _packet(with_face=False, frame_number=1, image_value=10)
+    latest = _packet(with_face=False, frame_number=2, image_value=20)
+
+    assert dispatcher.submit(first)
+    assert dispatcher.submit(latest)
+
+    metrics = dispatcher.queue_metrics()
+    assert metrics["size"] == 1
+    assert metrics["coalesced"] == 1
+    queued = dispatcher._queue.get_nowait()
+    try:
+        assert queued.frame_number == 2
+        assert int(queued.image[0, 0, 0]) == 20
+    finally:
+        dispatcher._queue.task_done()
+
+
+def test_evidence_frame_is_never_coalesced_away(tmp_path: Path) -> None:
+    dispatcher = AnalyticsDispatcher(_config(tmp_path), queue_size=2)
+    dispatcher._accepting = True
+    evidence = _packet(with_face=True, frame_number=1)
+    tracking = _packet(with_face=False, frame_number=2)
+
+    assert dispatcher.submit(evidence)
+    assert dispatcher.submit(tracking)
+
+    assert dispatcher.queue_metrics()["size"] == 2
+    first = dispatcher._queue.get_nowait()
+    second = dispatcher._queue.get_nowait()
+    try:
+        assert first.faces
+        assert second.frame_number == 2
+    finally:
+        dispatcher._queue.task_done()
+        dispatcher._queue.task_done()
 
 
 def test_person_without_face_saves_one_best_crop(tmp_path: Path) -> None:
