@@ -27,6 +27,7 @@ import numpy as np
 from deepstream_ai.database import FaceVectorRepository
 from deepstream_ai.domain import FaceDetection, IdentityResult, TrackId
 from deepstream_ai.face.alignment import FivePointFaceAligner
+from deepstream_ai.face.continuity_anchor import FACE_CONTINUITY_ANCHORS
 from deepstream_ai.face.embedding import FaceEmbedder
 from deepstream_ai.face.errors import InvalidFaceInput
 from deepstream_ai.face.quality import FaceFusionConfig, MultiFrameFaceFusion, normalize_embedding
@@ -40,18 +41,9 @@ class FaceRecognitionConfig:
     recognize_once_per_track: bool = False
     require_landmarks: bool = True
     fusion: FaceFusionConfig = field(default_factory=FaceFusionConfig)
-    # Quality is the existing weighted detector/size/sharpness/frontal score.
-    # Around 0.72 represents a genuinely useful CCTV face without requiring a
-    # perfect frontal portrait.
     high_quality_threshold: float = 0.72
-    # A later face must normally improve this much before re-comparing a known
-    # track. Unknown tracks additionally get the bounded retry path below.
     retry_quality_improvement: float = 0.06
-    # Unknown identities get another chance even when the scalar quality score
-    # is similar, because a different pose can still produce a better embedding.
     unknown_retry_sec: float = 2.0
-    # Fuse only the strongest recent faces for one comparison. Weak side/blurred
-    # candidates should not dilute a later good embedding.
     max_compare_candidates: int = 3
 
     def __post_init__(self) -> None:
@@ -87,8 +79,6 @@ class FaceRecognitionConfig:
 
     @classmethod
     def from_runtime_config(cls, config: object) -> "FaceRecognitionConfig":
-        """Adapt :mod:`deepstream_ai.config`'s slots dataclass by attributes."""
-
         return cls(
             similarity_threshold=float(
                 getattr(config, "match_threshold", getattr(config, "similarity_threshold", 0.55))
@@ -131,8 +121,6 @@ class FaceRecognitionService:
         self.embedder = embedder
         self.repository = repository
         self.config = config or FaceRecognitionConfig()
-        # Keep the existing scorer/config contract, but delay expensive AdaFace
-        # embedding until the policy decides a comparison is due.
         self.fusion = fusion or MultiFrameFaceFusion(self.config.fusion)
         self.aligner = aligner or FivePointFaceAligner()
         self._pending: dict[tuple[str, TrackId], deque[_PendingFace]] = {}
@@ -195,8 +183,6 @@ class FaceRecognitionService:
         )
 
     def recognize_due(self, now: datetime) -> tuple[IdentityResult, ...]:
-        """Evaluate timeout/retry windows even on frames with no new face."""
-
         results: list[IdentityResult] = []
         for key in tuple(self._pending):
             reason = self._comparison_reason(key, now)
@@ -293,8 +279,19 @@ class FaceRecognitionService:
         matrix = np.stack(embeddings, axis=0)
         fused = np.average(matrix, axis=0, weights=np.asarray(weights, dtype=np.float32))
         embedding = normalize_embedding(fused)
-        match = self.repository.find_nearest(embedding)
         best = selected[0]
+        # Publish the real AdaFace embedding before database identity resolution.
+        # This lets continuity recover an unknown person across a raw-ID change
+        # without running heavy AdaFace work on the streaming/probe thread.
+        FACE_CONTINUITY_ANCHORS.observe(
+            camera_id,
+            track_id,
+            embedding,
+            timestamp=best.detection.timestamp,
+            quality=best.quality,
+        )
+
+        match = self.repository.find_nearest(embedding)
         average_quality = float(np.mean([item.quality for item in selected]))
         similarity = -1.0 if match is None else match.similarity
         known = match is not None and similarity >= self.config.similarity_threshold
@@ -336,8 +333,6 @@ class FaceRecognitionService:
         return preferred
 
     def finalize_track(self, camera_id: str, track_id: TrackId) -> IdentityResult | None:
-        """Run the final no-miss fallback for a track that still owns real faces."""
-
         key = (camera_id, track_id)
         pending = self._pending.get(key)
         if not pending:
@@ -361,8 +356,6 @@ class FaceRecognitionService:
     ) -> IdentityResult:
         if previous is None:
             return incoming
-        # Never downgrade a known identity to unknown. Among known results, keep
-        # the stronger similarity; an unknown result may always be upgraded.
         if previous.known and not incoming.known:
             return previous
         if incoming.known and not previous.known:
@@ -382,6 +375,9 @@ class FaceRecognitionService:
         self._recognized.pop(key, None)
         self._last_recognition_at.pop(key, None)
         self._last_recognition_quality.pop(key, None)
+        # Do not clear FACE_CONTINUITY_ANCHORS here. A short-lived anchor must
+        # survive business finalization long enough to recover a later raw-ID
+        # fragment. The registry expires it independently.
 
 
 def _seconds_between(later: datetime, earlier: datetime) -> float:
