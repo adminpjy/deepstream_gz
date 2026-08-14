@@ -11,6 +11,10 @@ TargetManagement:
   enableBboxUnClipping: 1
   preserveStreamUpdateOrder: 0
   maxTargetsPerStream: 150
+  # Emit shadow targets only through tracker miscellaneous user metadata. The
+  # application reads this list at tracker output for a <=1.5 s preview bridge;
+  # shadow boxes never become business FramePacket tracks or face/evidence input.
+  outputShadowTracks: 1
   # Suppress duplicate target creation when a new detector bbox still overlaps
   # an existing/shadow target. Keep this independent from the rack false-positive
   # guard in the PGIE pre-tracker layer.
