@@ -1,0 +1,165 @@
+2026-08-14 08:39:04 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/person-peoplenet.txt engine=/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine source_models=['/workspace/models/peoplenet/resnet34_peoplenet.onnx']
+2026-08-14 08:39:04 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/face.example.txt engine=/workspace/models/face.engine source_models=['/workspace/models/face-deepstream.onnx']
+2026-08-14 08:39:04 | INFO     | __main__ | [DETECTOR] PeopleNet
+2026-08-14 08:39:04 | INFO     | __main__ | [TRACKER] NvDCF
+2026-08-14 08:39:04 | INFO     | __main__ | [TRACKER_CONFIG] /workspace/configs/tracker/nvdcf.yml
+2026-08-14 08:39:04 | INFO     | __main__ | [PEOPLENET_CLASSES] person=0, bag=1, face=2
+2026-08-14 08:39:04 | INFO     | __main__ | DeepStream Python runtime 已加载: {'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-14 08:39:04.993687675 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=1 runtime_config=/workspace/output/tasks/eb77f9ebc2e5459a/.runtime/nvinfer/person-detector.txt
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=2 runtime_config=/workspace/output/tasks/eb77f9ebc2e5459a/.runtime/nvinfer/face-detector.txt
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: smoking
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: eating
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: drinking
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: carrying
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.peoplenet_pretracker_guard | [PRETRACKER_GUARD] enabled=True pgie_uid=1 person_classes=[0] max_conf=0.550 left<=0.030 top<=0.020 width=[0.400,0.500] height>=0.930 right<=0.520 frame=1920x1080
+2026-08-14 08:39:07 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW] preview bridge enabled max_age=1.50s
+0:00:02.580256572 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:02.581188064 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:02.612899182 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/tasks/eb77f9ebc2e5459a/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+0:00:05.005904688 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:05.008588189 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:05.040863660 [32m  715[00m     0x12a35fc0 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector>[00m [UID 1]: Load new model:/workspace/output/tasks/eb77f9ebc2e5459a/.runtime/nvinfer/person-detector.txt sucessfully
+Opening in BLOCKING MODE 
+0:00:05.065814566 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.066759568 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:00:05.068088879 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.069131178 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:00:05.070082650 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.070814124 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:00:05.071747639 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.072600510 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:00:05.073314454 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.073838492 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:00:05.074483867 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.075421518 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:00:05.075921655 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.076422519 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:00:05.076966540 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.077532409 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:00:05.078035365 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.078628820 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:00:05.078995016 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.079287034 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:00:05.079671287 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.080103048 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:00:05.080423487 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.080725206 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:00:05.081075941 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.081545639 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:00:05.081934690 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.082247025 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:00:05.082591859 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.083093531 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:00:05.083473237 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.083849905 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:00:05.084456109 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.084905933 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:00:05.085336779 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.085821721 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:00:05.086224981 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.086553533 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:00:05.086884421 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:05.087304128 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:00:05.088043257 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.088606037 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:00:05.088961855 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.089274154 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:00:05.089546761 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.089834536 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P216
+0:00:05.090093894 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.090447752 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P216
+0:00:05.090840131 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.091270046 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:00:05.091746492 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.092158060 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:00:05.092586263 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.093057862 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P412
+0:00:05.093543225 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.093990740 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P412
+0:00:05.094514903 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.095022458 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P410
+0:00:05.095466608 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.095978048 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P410
+0:00:05.096488700 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.096919799 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:00:05.097274757 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.097706571 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:00:05.098093452 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.098571183 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:00:05.099193285 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:05.099650997 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM12
+2026-08-14 08:39:10 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=camera-06 uri=vsrc_0
+0:00:05.347993196 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0>[00m Duration invalid, not setting latency
+0:00:05.380143805 [32m  715[00m 0x7f4fa80014e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:00:05.387491605 [32m  715[00m 0x7f4fa8001ff0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+2026-08-14 08:39:13 | WARNING  | deepstream_ai.pipeline.shadow_tracking | [TRACK_SHADOW_UNAVAILABLE] pinned PyDS does not expose shadow-list metadata
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=1
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.adaptive | [SOURCE_PROFILE] camera=camera-06 fps=10.000 resolution=1920x1080 source=negotiated_caps
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE] component=person target=5.00 floor=5.00 actual≈5.00 interval=1 reason=source_profile
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE_STATIC] component=face target=5.00 actual≈5.00 reinfer=2 reason=config_startup runtime_update=unsupported
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=10.00 gpu=98.0% mem=7.0% nvdec=21.0% queue=0.0% drops_delta=0
+2026-08-14 08:39:13 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE] enabled profile=normal sample=2.0s window=10.0s
+2026-08-14 08:39:13 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_PROVISIONAL] camera=camera-06 track=0 raw=0 conf=0.209 alias=False
+2026-08-14 08:39:14 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_CONFIRMED] camera=camera-06 track=0 reason=detector_confidence age=1.013 max_conf=0.399 observations=5
+2026-08-14 08:39:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-06 track=0 person_conf=0.399 quality=0.536
+2026-08-14 08:39:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-06 track=0 source=person_fallback quality=0.536
+2026-08-14 08:39:15 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_PROVISIONAL] camera=camera-06 track=1 raw=1 conf=0.291 alias=False
+2026-08-14 08:39:15 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=10.00 gpu=100.0% mem=10.0% nvdec=24.0% queue=1.6% drops_delta=0
+2026-08-14 08:39:15 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=1 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.751
+2026-08-14 08:39:15 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_CONFIRMED] camera=camera-06 track=1 reason=real_face age=0.752 max_conf=0.883 observations=4
+2026-08-14 08:39:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-06 track=1 person_conf=0.778 quality=0.655
+2026-08-14 08:39:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-06 track=1 source=person_fallback quality=0.655
+2026-08-14 08:39:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-06 track=1 face_conf=0.694 quality=0.732 frontal=0.997 blur=1.000 size=0.197 person_display=204x335 face_display=74x121
+2026-08-14 08:39:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=face_fallback quality=0.732 frontal=0.997 blur=1.000 evidence=(915.2596715927124, 208.32324981689453, 1118.977179145813, 542.6096080780029)
+2026-08-14 08:39:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-06 track=1 reason=quality_upgrade old_quality=0.732 new_quality=0.756 new_frontal=0.895 new_blur=1.000 new_size=0.227 new_detector=0.806 stable=1 person_display=243x270 face_display=89x105
+2026-08-14 08:39:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=best_face quality=0.756 frontal=0.895 blur=1.000 evidence=(882.1538818359375, 0.0, 1124.7638427734375, 269.8602352142334)
+2026-08-14 08:39:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_HOLD] camera=camera-06 track=1 old_q=0.756 old_front=0.895 old_blur=1.000 new_q=0.758 new_front=0.975 new_blur=1.000 new_det=0.751 stable=1
+2026-08-14 08:39:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-06 track=1 reason=quality_upgrade old_quality=0.756 new_quality=0.775 new_frontal=0.886 new_blur=1.000 new_size=0.304 new_detector=0.819 stable=1 person_display=246x429 face_display=90x154
+2026-08-14 08:39:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=best_face quality=0.775 frontal=0.886 blur=1.000 evidence=(850.4881484985351, 190.447509765625, 1095.6906539916993, 618.223046875)
+2026-08-14 08:39:17 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.775
+2026-08-14 08:39:17 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=10.00 gpu=99.0% mem=11.0% nvdec=26.0% queue=0.0% drops_delta=0
+2026-08-14 08:39:18 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_MERGE] camera=camera-06 raw=2 logical=1 gap=0.203 mode=reid similarity=0.852 area_ratio=2.987
+2026-08-14 08:39:18 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-06 track=1 reason=quality_upgrade old_quality=0.775 new_quality=0.792 new_frontal=0.953 new_blur=1.000 new_size=0.507 new_detector=0.715 stable=1 person_display=313x508 face_display=114x201
+2026-08-14 08:39:18 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=best_face quality=0.792 frontal=0.953 blur=1.000 evidence=(797.1160732269287, 572.4600448608398, 1109.680595779419, 1080.0)
+2026-08-14 08:39:18 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-06 track=1 reason=quality_upgrade old_quality=0.792 new_quality=0.830 new_frontal=0.993 new_blur=1.000 new_size=0.510 new_detector=0.798 stable=2 person_display=307x521 face_display=111x207
+2026-08-14 08:39:18 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=best_face quality=0.830 frontal=0.993 blur=1.000 evidence=(810.1958122253418, 559.7407836914062, 1116.657169342041, 1080.0)
+2026-08-14 08:39:19 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_HOLD] camera=camera-06 track=1 old_q=0.830 old_front=0.993 old_blur=1.000 new_q=0.686 new_front=0.914 new_blur=1.000 new_det=0.413 stable=0
+2026-08-14 08:39:19 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.830
+2026-08-14 08:39:19 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-06 track=1 reason=quality_upgrade old_quality=0.830 new_quality=0.853 new_frontal=0.936 new_blur=1.000 new_size=0.627 new_detector=0.830 stable=1 person_display=365x498 face_display=133x214
+2026-08-14 08:39:19 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=10.00 gpu=99.0% mem=12.0% nvdec=19.0% queue=0.0% drops_delta=0
+2026-08-14 08:39:19 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-06 track=1 source=best_face quality=0.853 frontal=0.936 blur=1.000 evidence=(751.1814620971679, 582.1532592773438, 1115.6381484985352, 1080.0)
+2026-08-14 08:39:19 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_PROVISIONAL] camera=camera-06 track=3 raw=3 conf=0.619 alias=False
+2026-08-14 08:39:21 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.853
+2026-08-14 08:39:21 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=3 reason=timeout_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.602
+2026-08-14 08:39:21 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_HOLD] camera=camera-06 track=1 old_q=0.853 old_front=0.936 old_blur=1.000 new_q=0.617 new_front=0.934 new_blur=1.000 new_det=0.389 stable=0
+2026-08-14 08:39:21 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=10.00 gpu=99.0% mem=12.0% nvdec=37.0% queue=0.0% drops_delta=0
+nvstreammux: Successfully handled EOS for source_id=0
+2026-08-14 08:39:22 | INFO     | deepstream_ai.pipeline.runner | 所有文件源处理完成 (EOS)
+2026-08-14 08:39:22 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              223
+Probe Frames:                 223
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      9.921
+P95 Probe Time (ms):          29.000
+Max Probe Time (ms):          37.974
+Tracker ReID Vectors:         71
+Tracker ReID Missing:         66
+=======================================
+2026-08-14 08:39:22 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW_SUMMARY] frames=0 objects=0 hidden_by_age=0 errors=0
+2026-08-14 08:39:22 | INFO     | deepstream_ai.pipeline.runner | [PRETRACKER_GUARD_SUMMARY] frames=223 verified_people=78 suppressed=0 errors=0
+2026-08-14 08:39:22 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止
+2026-08-14 08:39:22 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-06 track=0 source=person_fallback identity=unknown similarity=-1.000 quality=0.536
+2026-08-14 08:39:22 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-06 track=1 reason=finalize_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.696
+2026-08-14 08:39:22 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-06 track=1 source=best_face identity=unknown similarity=-1.000 quality=0.853
+2026-08-14 08:39:22 | INFO     | deepstream_ai.snapshot.rolling_manager | Evidence Summary tracks=2 finalized=2 success=2 failed=0 missing=0 best_face=1 face_fallback=0 best_person=0 person_fallback=1 know=0 unknown=1
