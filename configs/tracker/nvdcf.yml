@@ -91,7 +91,10 @@ VisualTracker:
   visualTrackerType: 1
   useColorNames: 1
   useHog: 1
-  featureImgSizeLevel: 3
+  # Pose changes in task 1c2 made the level-3 DCF representation lose a frontal
+  # person for multi-second gaps. Prefer the largest feature image for tracking
+  # accuracy; capacity tuning must not silently trade away person continuity.
+  featureImgSizeLevel: 5
   featureFocusOffsetFactor_y: -0.1054
   filterLr: 0.0767
   filterChannelWeightsLr: 0.0339
