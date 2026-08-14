@@ -53,8 +53,6 @@ class PersonActivityTracker:
         if stream_time_ns is None or stream_time_ns < 0:
             return False
         with self._lock:
-            # RTSP reconnects and file seeks may move PTS backwards. Start a
-            # fresh inactivity window instead of immediately expiring a task.
             if (
                 self._current_stream_time_ns is not None
                 and stream_time_ns < self._current_stream_time_ns
@@ -124,15 +122,21 @@ class ActivityAwareConsumer:
         self.continuity = continuity
         self.weak_tracks = weak_tracks
 
-    def submit(self, packet: FramePacket) -> bool:
-        generation = current_stream_generation(packet.camera_id)
+    def _sync_generation(self, camera_id: str) -> int:
+        generation = current_stream_generation(camera_id)
         if self.continuity is not None:
             begin_generation = getattr(self.continuity, "begin_stream_generation", None)
             if callable(begin_generation):
-                begin_generation(packet.camera_id, generation)
+                begin_generation(camera_id, generation)
+        if self.weak_tracks is not None:
+            self.weak_tracks.begin_stream_generation(camera_id, generation)
+        return generation
+
+    def submit(self, packet: FramePacket) -> bool:
+        self._sync_generation(packet.camera_id)
+        if self.continuity is not None:
             packet = self.continuity.resolve(packet)
         if self.weak_tracks is not None:
-            self.weak_tracks.begin_stream_generation(packet.camera_id, generation)
             packet = self.weak_tracks.filter(packet)
         self.activity.observe(packet)
         if self.preview is not None:
@@ -140,6 +144,7 @@ class ActivityAwareConsumer:
         return self.delegate.submit(packet)
 
     def identity_label(self, camera_id: str, track_id: int | str) -> str | None:
+        self._sync_generation(camera_id)
         if self.continuity is not None:
             track_id = self.continuity.logical_id(camera_id, track_id)
         return self.delegate.identity_label(camera_id, track_id)
@@ -149,6 +154,10 @@ class ActivityAwareConsumer:
         camera_id: str,
         raw_track_id: int | str,
     ) -> int | str | None:
+        # Shadow metadata is read upstream of the normal FramePacket probe. Sync
+        # the generation here as well so the first post-reconnect shadow box can
+        # never reuse a stale raw->logical alias from the previous tracker epoch.
+        self._sync_generation(camera_id)
         if self.continuity is None:
             logical_id: int | str = raw_track_id
         else:
