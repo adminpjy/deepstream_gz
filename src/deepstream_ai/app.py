@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 
-from deepstream_ai.analytics import AnalyticsDispatcher
 from deepstream_ai.config import AppConfig
 from deepstream_ai.pipeline.builder import DeepStreamPipelineBuilder
 from deepstream_ai.pipeline.runner import PipelineRunner
 from deepstream_ai.pipeline.runtime import load_runtime, runtime_versions
 from deepstream_ai.preflight import validate_assets
+from deepstream_ai.provisional_analytics import ProvisionalAwareAnalyticsDispatcher
 
 LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class DeepStreamApplication:
         )
         runtime = load_runtime()
         LOGGER.info("DeepStream Python runtime 已加载: %s", runtime_versions(runtime))
-        dispatcher = AnalyticsDispatcher(
+        dispatcher = ProvisionalAwareAnalyticsDispatcher(
             self.config,
             queue_size=self.config.runtime.analytics_queue_size,
         )
