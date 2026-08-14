@@ -76,6 +76,16 @@ class PipelineRunner:
                 self.graph.metadata_probe.log_performance()
             except Exception:
                 LOGGER.exception("输出 Probe 性能统计失败")
+            if self.graph.pretracker_guard is not None:
+                stats = self.graph.pretracker_guard.stats()
+                LOGGER.info(
+                    "[PRETRACKER_GUARD_SUMMARY] frames=%d verified_people=%d "
+                    "suppressed=%d errors=%d",
+                    stats.frames,
+                    stats.verified_people,
+                    stats.suppressed,
+                    stats.errors,
+                )
             bus.remove_signal_watch()
             self._restore_signals()
             LOGGER.info("DeepStream Pipeline 已停止")

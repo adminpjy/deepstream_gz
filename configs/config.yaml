@@ -66,6 +66,25 @@ person:
     face: 2
   label: person
 
+# Narrow pre-NvDCF guard for the repeatable test2 server-rack false proposal.
+# All conditions below must match the same raw PeopleNet object; no single
+# width, height, position, or confidence threshold can remove an object.
+# Ratios use the streammux 1920x1080 coordinate space.  The upper width/right
+# bounds keep the rule scoped to the measured left-half rack signature.
+person_pretracker_guard:
+  enabled: true
+  # Full test2 EOS replay also emitted the same rack geometry at raw PGIE
+  # confidences 0.379, 0.422, and 0.507.  0.55 covers those proposals; the
+  # complete retained corpus has zero face-confirmed real proposals matching
+  # the geometry even without a confidence ceiling.
+  max_confidence: 0.55
+  max_left_ratio: 0.03
+  max_top_ratio: 0.02
+  min_width_ratio: 0.40
+  max_width_ratio: 0.50
+  min_height_ratio: 0.93
+  max_right_ratio: 0.52
+
 # Disabled means the nvinfer element is not created and its config/model is not
 # opened. Enabled + missing/incompatible assets fails startup clearly.
 face:
@@ -112,6 +131,27 @@ track_continuity:
   duplicate_iou: 0.90
   duplicate_iou_with_face: 0.70
   duplicate_face_iou: 0.50
+  # A ReID-only bridge may span the 10-second business evidence grace period;
+  # conflicting/ambiguous identities never fall back to geometry.
+  reid_max_gap_sec: 10.0
+  # Calibrated against the preserved 7c A/B/A snapshots: A-old↔A-new=0.873,
+  # while A↔B=0.756-0.759 with the deployed NVIDIA ResNet50 preprocessing.
+  reid_match_min: 0.85
+  # Never blend a different person into the stable gallery. This deliberately
+  # equals reid_match_min; task 7c measured A/B at about 0.76.
+  reid_update_min: 0.85
+  reid_hijack_margin: 0.15
+  reid_ambiguity_margin: 0.08
+  # A lower ReID floor is allowed only for a near-identical NvDCF fragment
+  # appearing within 120 ms of the previous box. The full 0.85 threshold
+  # remains mandatory for ordinary lost-track reconnection.
+  fragment_min_reid: 0.82
+  fragment_max_gap_sec: 0.12
+  fragment_min_iou: 0.65
+  fragment_min_containment: 0.85
+  fragment_max_center_distance_ratio: 0.13
+  fragment_min_area_ratio: 0.70
+  fragment_max_area_ratio: 1.35
   stale_retention_sec: 30.0
 
 face_recognition:

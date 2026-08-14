@@ -72,7 +72,9 @@ def _jsonable(value: Any) -> Any:
             if item.name not in {"crop", "image"}
         }
     if isinstance(value, Mapping):
-        return {str(key): _jsonable(item) for key, item in value.items()}
+        return {
+            str(key): _jsonable(item) for key, item in value.items() if not str(key).startswith("_")
+        }
     if isinstance(value, (list, tuple, set)):
         return [_jsonable(item) for item in value]
     if isinstance(value, Path):

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 from deepstream_ai.domain import BoundingBox, Track
@@ -13,6 +14,7 @@ from deepstream_ai.pipeline.metadata import (
     _face_landmarks,
     _hide_pgie_non_person_osd,
     _track_id,
+    _tracker_reid_embedding,
     _validate_gpu_surface_layout,
 )
 
@@ -52,6 +54,61 @@ def test_untracked_id_mapping_is_still_available_for_non_person_callers() -> Non
 def test_only_confirmed_nvdcf_object_ids_are_effective_tracks() -> None:
     assert _effective_nvdcf_track_id(SimpleNamespace(object_id=42)) == 42
     assert _effective_nvdcf_track_id(SimpleNamespace(object_id=_UNTRACKED_ID)) is None
+
+
+def test_tracker_reid_embedding_is_copied_normalized_and_read_only() -> None:
+    source = np.full(256, 2.0, dtype=np.float32)
+    reid = SimpleNamespace(
+        featureSize=256,
+        get_host_reid_vector=lambda: source,
+    )
+    user_meta = SimpleNamespace(
+        base_meta=SimpleNamespace(meta_type=17),
+        user_meta_data=reid,
+    )
+    node = SimpleNamespace(data=user_meta, next=None)
+
+    class Cast:
+        @staticmethod
+        def cast(value):
+            return value
+
+    pyds = SimpleNamespace(
+        NVDS_TRACKER_OBJ_REID_META=17,
+        NvDsObjReid=Cast,
+        NvDsUserMeta=Cast,
+    )
+    result = _tracker_reid_embedding(SimpleNamespace(obj_user_meta_list=node), pyds)
+
+    assert result is not None
+    assert result.dtype == np.float32
+    assert np.linalg.norm(result) == pytest.approx(1.0)
+    assert not result.flags.writeable
+    source[:] = 0
+    assert np.linalg.norm(result) == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize("size", [0, 255, 257])
+def test_tracker_reid_embedding_rejects_wrong_feature_size(size: int) -> None:
+    reid = SimpleNamespace(
+        featureSize=size,
+        get_host_reid_vector=lambda: np.ones(max(size, 1), dtype=np.float32),
+    )
+    meta = SimpleNamespace(base_meta=SimpleNamespace(meta_type=17), user_meta_data=reid)
+    node = SimpleNamespace(data=meta, next=None)
+
+    class Cast:
+        @staticmethod
+        def cast(value):
+            return value
+
+    pyds = SimpleNamespace(
+        NVDS_TRACKER_OBJ_REID_META=17,
+        NvDsObjReid=Cast,
+        NvDsUserMeta=Cast,
+    )
+
+    assert _tracker_reid_embedding(SimpleNamespace(obj_user_meta_list=node), pyds) is None
 
 
 def _osd_object(*, component_id: int, class_id: int):

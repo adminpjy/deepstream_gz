@@ -14,6 +14,10 @@ from deepstream_ai.errors import PipelineError
 from .elements import add_many, link_many, make_element, set_if_supported
 from .metadata import FramePacketConsumer, MetadataProbe
 from .nvinfer_config import materialize_nvinfer_config
+from .peoplenet_pretracker_guard import (
+    PeopleNetPretrackerGuard,
+    PeopleNetPretrackerGuardConfig,
+)
 from .source import SourceBin, link_source_to_mux
 
 LOGGER = logging.getLogger(__name__)
@@ -27,6 +31,7 @@ class PipelineGraph:
     pipeline: Any
     metadata_probe: MetadataProbe
     source_bins: tuple[SourceBin, ...]
+    pretracker_guard: PeopleNetPretrackerGuard | None = None
 
 
 class DeepStreamPipelineBuilder:
@@ -126,13 +131,37 @@ class DeepStreamPipelineBuilder:
         add_many(pipeline, elements)
         link_many([streammux, *elements])
 
+        guard_config = PeopleNetPretrackerGuardConfig.from_file(self.config.config_path)
+        pretracker_guard: PeopleNetPretrackerGuard | None = None
+        if guard_config.enabled:
+            person = self.config.pipeline.person
+            if person.detector_type != "peoplenet":
+                raise PipelineError("person_pretracker_guard 仅可用于已验证 class_id 的 PeopleNet")
+            pretracker_guard = PeopleNetPretrackerGuard(
+                self.runtime,
+                guard_config,
+                pgie_unique_id=person.unique_id,
+                person_class_ids=person.person_class_ids,
+                frame_width=self.config.pipeline.streammux.width,
+                frame_height=self.config.pipeline.streammux.height,
+            )
+            guard_pad = pgie.get_static_pad("src")
+            if guard_pad is None:
+                raise PipelineError("无法获取 PeopleNet pre-tracker guard pad")
+            guard_pad.add_probe(Gst.PadProbeType.BUFFER, pretracker_guard.callback, None)
+
         probe = MetadataProbe(self.runtime, self.config, self.consumer)
         probe_element = secondary_chain[-1] if secondary_chain else snapshot_caps
         probe_pad = probe_element.get_static_pad("src")
         if probe_pad is None:
             raise PipelineError("无法获取截图 metadata probe pad")
         probe_pad.add_probe(Gst.PadProbeType.BUFFER, probe.callback, None)
-        return PipelineGraph(pipeline=pipeline, metadata_probe=probe, source_bins=sources)
+        return PipelineGraph(
+            pipeline=pipeline,
+            metadata_probe=probe,
+            source_bins=sources,
+            pretracker_guard=pretracker_guard,
+        )
 
     def _configure_streammux(self, streammux: Any, count: int) -> None:
         cfg = self.config.pipeline.streammux
@@ -221,6 +250,10 @@ class DeepStreamPipelineBuilder:
             # validated from the deployed labels so auxiliary objects neither
             # consume tracker IDs nor compete with person association.
             "operate-on-class-ids": person_class_ids,
+            # ReID vectors are copied into business continuity state before
+            # their GstBuffer expires. Size this for dense/multi-stream scenes
+            # instead of relying on nvtracker's small default pool of 32.
+            "user-meta-pool-size": 256,
         }.items():
             set_if_supported(tracker, name, value)
         if cfg.library_file:

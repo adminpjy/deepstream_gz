@@ -33,6 +33,8 @@ _NANOSECONDS = 1_000_000_000
 _UNTRACKED_ID = (1 << 64) - 1
 _MAX_GPU_SURFACE_BYTES = 512 * 1024 * 1024
 _PROBE_HISTOGRAM_MAX_MS = 60_000
+_TRACKER_REID_FEATURE_SIZE = 256
+_TRACKER_REID_METADATA_KEY = "_tracker_reid_embedding"
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +58,8 @@ class ProbePerformance:
     average_ms: float
     p95_ms: float
     max_ms: float
+    reid_vectors: int
+    reid_missing: int
 
 
 class FramePacketConsumer(Protocol):
@@ -142,6 +146,43 @@ def _effective_nvdcf_track_id(obj_meta: Any) -> int | None:
 
     value = int(getattr(obj_meta, "object_id", _UNTRACKED_ID))
     return None if value == _UNTRACKED_ID else value
+
+
+def _tracker_reid_embedding(obj_meta: Any, pyds: Any) -> np.ndarray | None:
+    """Copy and normalize one NvDCF object ReID vector while metadata is alive."""
+
+    expected_type = getattr(pyds, "NVDS_TRACKER_OBJ_REID_META", None)
+    reid_type = getattr(pyds, "NvDsObjReid", None)
+    user_meta_type = getattr(pyds, "NvDsUserMeta", None)
+    if expected_type is None or reid_type is None or user_meta_type is None:
+        return None
+
+    for user_meta in _iter_glist(
+        getattr(obj_meta, "obj_user_meta_list", None),
+        user_meta_type.cast,
+    ):
+        if getattr(user_meta.base_meta, "meta_type", None) != expected_type:
+            continue
+        try:
+            reid = reid_type.cast(user_meta.user_meta_data)
+            feature_size = int(reid.featureSize)
+            if feature_size != _TRACKER_REID_FEATURE_SIZE:
+                return None
+            view = np.asarray(reid.get_host_reid_vector(), dtype=np.float32).reshape(-1)
+            if view.size != feature_size or not np.all(np.isfinite(view)):
+                return None
+            norm = float(np.linalg.norm(view))
+            if not np.isfinite(norm) or norm <= 1e-12:
+                return None
+            # The PyDS array points into tracker-owned host memory. Own the 1 KiB
+            # vector before this GstBuffer and its user metadata are released.
+            result = np.array(view / norm, dtype=np.float32, copy=True)
+            result.setflags(write=False)
+            return result
+        except (AttributeError, RuntimeError, TypeError, ValueError):
+            LOGGER.debug("无法读取 NvDCF object ReID metadata", exc_info=True)
+            return None
+    return None
 
 
 def _validate_gpu_surface_layout(
@@ -261,6 +302,8 @@ class MetadataProbe:
         self._timing_frames = 0
         self._timing_queue_drops = 0
         self._timing_errors = 0
+        self._timing_reid_vectors = 0
+        self._timing_reid_missing = 0
         self._timing_total_ns = 0
         self._timing_max_ns = 0
         self._timing_logged = False
@@ -346,6 +389,8 @@ class MetadataProbe:
                 average_ms=average_ns / 1_000_000,
                 p95_ms=float(p95_ms),
                 max_ms=self._timing_max_ns / 1_000_000,
+                reid_vectors=self._timing_reid_vectors,
+                reid_missing=self._timing_reid_missing,
             )
 
     def log_performance(self) -> ProbePerformance:
@@ -365,6 +410,8 @@ class MetadataProbe:
             "Average Probe Time (ms):      %.3f\n"
             "P95 Probe Time (ms):          %.3f\n"
             "Max Probe Time (ms):          %.3f\n"
+            "Tracker ReID Vectors:         %d\n"
+            "Tracker ReID Missing:         %d\n"
             "=======================================",
             result.callbacks,
             result.frames,
@@ -373,6 +420,8 @@ class MetadataProbe:
             result.average_ms,
             result.p95_ms,
             result.max_ms,
+            result.reid_vectors,
+            result.reid_missing,
         )
         return result
 
@@ -427,13 +476,22 @@ class MetadataProbe:
             if bbox is None:
                 continue
             track_id = _track_id(obj_meta, frame_number, index)
+            metadata: dict[str, Any] = {"class_id": class_id, "component_id": uid}
+            reid_embedding = _tracker_reid_embedding(obj_meta, pyds)
+            if reid_embedding is not None:
+                metadata[_TRACKER_REID_METADATA_KEY] = reid_embedding
+                with self._timing_lock:
+                    self._timing_reid_vectors += 1
+            else:
+                with self._timing_lock:
+                    self._timing_reid_missing += 1
             track = Track(
                 camera_id=camera_id,
                 track_id=track_id,
                 timestamp=timestamp,
                 bbox=bbox,
                 confidence=_confidence(obj_meta),
-                metadata={"class_id": class_id, "component_id": uid},
+                metadata=metadata,
             )
             tracks.append(track)
             persons_by_object_id[native_track_id] = track
@@ -675,11 +733,16 @@ class MetadataProbe:
         camera_id: str,
         values: Sequence[tuple[Any, int | str]],
     ) -> None:
-        updates: list[tuple[Any, str]] = []
+        updates: list[tuple[Any, int | str | None, str | None]] = []
+        presenter = getattr(self.consumer, "presentation_track_id", None)
         for obj_meta, track_id in values:
-            label = self.consumer.identity_label(camera_id, track_id)
-            if label:
-                updates.append((obj_meta, label))
+            presentation_id = presenter(camera_id, track_id) if callable(presenter) else track_id
+            label = (
+                self.consumer.identity_label(camera_id, track_id)
+                if presentation_id is not None
+                else None
+            )
+            updates.append((obj_meta, presentation_id, label))
         if not updates:
             return
 
@@ -689,14 +752,18 @@ class MetadataProbe:
         pyds = self.runtime.pyds
         pyds.nvds_acquire_meta_lock(batch_meta)
         try:
-            for obj_meta, label in updates:
-                raw_text = obj_meta.text_params.display_text
-                if isinstance(raw_text, str):
-                    current = raw_text
-                elif raw_text:
-                    current = str(pyds.get_string(raw_text))
-                else:
-                    current = ""
-                obj_meta.text_params.display_text = f"{current} {label}".strip()
+            person = getattr(getattr(self.config, "pipeline", None), "person", None)
+            object_label = str(getattr(person, "label", "person") or "person")
+            for obj_meta, presentation_id, label in updates:
+                if presentation_id is None:
+                    obj_meta.rect_params.border_width = 0
+                    if hasattr(obj_meta.rect_params, "has_bg_color"):
+                        obj_meta.rect_params.has_bg_color = False
+                    obj_meta.text_params.display_text = ""
+                    if hasattr(obj_meta.text_params, "set_bg_clr"):
+                        obj_meta.text_params.set_bg_clr = False
+                    continue
+                current = f"{object_label} {presentation_id}"
+                obj_meta.text_params.display_text = f"{current} {label or ''}".strip()
         finally:
             pyds.nvds_release_meta_lock(batch_meta)

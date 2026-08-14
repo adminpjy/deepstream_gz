@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from deepstream_ai.analytics import AnalyticsDispatcher
+from deepstream_ai.analytics import AnalyticsDispatcher, _jsonable
 from deepstream_ai.config import load_config
 from deepstream_ai.domain import BoundingBox, FaceDetection, Track
 from deepstream_ai.pipeline.metadata import FramePacket
@@ -75,6 +75,25 @@ def test_person_without_face_saves_one_best_crop(tmp_path: Path) -> None:
 
     assert len(list((tmp_path / "output/snapshot/person").glob("*.jpg"))) == 1
     assert not (tmp_path / "output/snapshot/face").exists()
+
+
+def test_jsonable_does_not_publish_private_track_metadata() -> None:
+    timestamp = datetime.now(UTC)
+    track = Track(
+        "camera-a",
+        7,
+        timestamp,
+        BoundingBox(10, 10, 90, 110),
+        0.9,
+        metadata={
+            "class_id": 0,
+            "_tracker_reid_embedding": np.ones(256, dtype=np.float32),
+        },
+    )
+
+    payload = _jsonable(track)
+
+    assert payload["metadata"] == {"class_id": 0}
 
 
 def test_face_without_recognition_is_saved_as_unknown_upper_body(tmp_path: Path) -> None:

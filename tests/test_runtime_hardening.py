@@ -198,7 +198,7 @@ def test_identity_annotation_holds_batch_meta_lock_only_for_mutation() -> None:
 
     probe._annotate_identities(batch_meta, "camera-a", [(obj, 7)])
 
-    assert obj.text_params.display_text == "person alice"
+    assert obj.text_params.display_text == "person 7 alice"
     assert lock_events == [("acquire", batch_meta), ("release", batch_meta)]
 
 
@@ -216,6 +216,34 @@ def test_identity_annotation_decodes_pyds_display_text_pointer() -> None:
     probe._annotate_identities(object(), "camera-a", [(obj, 7)])
 
     assert obj.text_params.display_text == "person 7 unknown sim=-1.000"
+
+
+def test_quarantined_tracker_box_is_hidden_from_osd() -> None:
+    pyds = SimpleNamespace(
+        nvds_acquire_meta_lock=lambda _meta: None,
+        nvds_release_meta_lock=lambda _meta: None,
+    )
+    consumer = SimpleNamespace(
+        identity_label=lambda _camera, _track: None,
+        presentation_track_id=lambda _camera, _track: None,
+    )
+    config = SimpleNamespace(
+        enabled_sources=(),
+        behavior=(),
+        pipeline=SimpleNamespace(person=SimpleNamespace(label="person")),
+    )
+    probe = MetadataProbe(SimpleNamespace(pyds=pyds), config, consumer)
+    obj = SimpleNamespace(
+        rect_params=SimpleNamespace(border_width=3, has_bg_color=True),
+        text_params=SimpleNamespace(display_text="person 0", set_bg_clr=True),
+    )
+
+    probe._annotate_identities(object(), "camera-a", [(obj, 0)])
+
+    assert obj.rect_params.border_width == 0
+    assert obj.rect_params.has_bg_color is False
+    assert obj.text_params.display_text == ""
+    assert obj.text_params.set_bg_clr is False
 
 
 def test_probe_performance_reports_bounded_p95_and_logs_once(caplog) -> None:
@@ -240,6 +268,8 @@ def test_probe_performance_reports_bounded_p95_and_logs_once(caplog) -> None:
     assert result.average_ms == pytest.approx(50.5)
     assert result.p95_ms == pytest.approx(95.0)
     assert result.max_ms == pytest.approx(100.0)
+    assert result.reid_vectors == 0
+    assert result.reid_missing == 0
 
     with caplog.at_level("INFO"):
         probe.log_performance()
@@ -247,6 +277,7 @@ def test_probe_performance_reports_bounded_p95_and_logs_once(caplog) -> None:
     assert caplog.text.count("========== Probe Performance ==========") == 1
     assert "Average Probe Time (ms):      50.500" in caplog.text
     assert "P95 Probe Time (ms):          95.000" in caplog.text
+    assert "Tracker ReID Vectors:         0" in caplog.text
 
 
 def test_probe_p95_covers_the_full_lifetime_not_only_a_recent_window() -> None:
@@ -347,6 +378,7 @@ class _GraphPipeline:
 )
 def test_builder_converts_before_face_sgie_and_probes_last_metadata_source(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
     face_enabled: bool,
     expected_probe_name: str,
 ) -> None:
@@ -404,19 +436,31 @@ def test_builder_converts_before_face_sgie_and_probes_last_metadata_source(
         lambda *_args: None,
     )
 
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        "person_pretracker_guard: {enabled: true}\n",
+        encoding="utf-8",
+    )
     config = SimpleNamespace(
+        config_path=config_path,
         enabled_sources=(SimpleNamespace(type="file"),),
         pipeline=SimpleNamespace(
-            person=object(),
+            person=SimpleNamespace(
+                detector_type="peoplenet",
+                unique_id=1,
+                person_class_ids=(0,),
+            ),
             face=SimpleNamespace(enabled=face_enabled),
-            streammux=SimpleNamespace(gpu_id=0),
+            streammux=SimpleNamespace(gpu_id=0, width=1920, height=1080),
         ),
         inference=SimpleNamespace(person_fps=10.0, face_fps=2.0, behavior_fps=2.0),
         behavior=(),
         output=SimpleNamespace(enabled=False),
     )
 
-    DeepStreamPipelineBuilder(SimpleNamespace(Gst=Gst), config, object()).build()
+    graph = DeepStreamPipelineBuilder(
+        SimpleNamespace(Gst=Gst, pyds=SimpleNamespace()), config, object()
+    ).build()
 
     expected_prefix = [
         "stream-muxer",
@@ -429,6 +473,10 @@ def test_builder_converts_before_face_sgie_and_probes_last_metadata_source(
         expected_prefix.append("face-detector")
     assert linked_names[: len(expected_prefix)] == expected_prefix
     assert elements[expected_probe_name].src_pad.probes == [(probe_type, probe_callback, None)]
+    assert graph.pretracker_guard is not None
+    assert elements["person-detector"].src_pad.probes == [
+        (probe_type, graph.pretracker_guard.callback, None)
+    ]
 
 
 @pytest.mark.parametrize(
@@ -570,6 +618,7 @@ def test_tracker_builder_uses_ds9_plugin_properties_only(monkeypatch: pytest.Mon
     assert "enable-past-frame" not in element.values
     assert element.values["ll-config-file"] == "tracker.yml"
     assert element.values["operate-on-class-ids"] == "7;3"
+    assert element.values["user-meta-pool-size"] == 256
 
 
 def test_compose_grace_period_exceeds_default_runtime_shutdown() -> None:

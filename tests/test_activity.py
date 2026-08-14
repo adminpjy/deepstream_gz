@@ -137,3 +137,4 @@ def test_activity_is_observed_even_when_the_analytics_queue_rejects_a_frame() ->
     assert preview.packets == [value]
     assert activity.snapshot().person_detections == 1
     assert consumer.identity_label("camera-a", 7) == "camera-a:7"
+    assert consumer.presentation_track_id("camera-a", 7) == 7

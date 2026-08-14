@@ -115,9 +115,7 @@ class ActivityAwareConsumer:
             app_config = getattr(delegate, "config", None)
             config_path = getattr(app_config, "config_path", None)
             if config_path is not None:
-                continuity = TrackContinuityResolver(
-                    TrackContinuityConfig.from_file(config_path)
-                )
+                continuity = TrackContinuityResolver(TrackContinuityConfig.from_file(config_path))
         self.continuity = continuity
 
     def submit(self, packet: FramePacket) -> bool:
@@ -132,6 +130,15 @@ class ActivityAwareConsumer:
         if self.continuity is not None:
             track_id = self.continuity.logical_id(camera_id, track_id)
         return self.delegate.identity_label(camera_id, track_id)
+
+    def presentation_track_id(
+        self,
+        camera_id: str,
+        raw_track_id: int | str,
+    ) -> int | str | None:
+        if self.continuity is None:
+            return raw_track_id
+        return self.continuity.presentation_track_id(camera_id, raw_track_id)
 
 
 __all__ = [

@@ -43,6 +43,7 @@ def test_nvdcf_uses_accuracy_association_and_nvidia_reid() -> None:
     assert tracker["VisualTracker"]["visualTrackerType"] == 1
     assert tracker["TargetManagement"]["maxShadowTrackingAge"] == 75
     assert tracker["TargetManagement"]["probationAge"] == 2
+    assert tracker["TargetManagement"]["minIouDiff4NewTarget"] == pytest.approx(0.2)
     assert tracker["DataAssociator"]["associationMatcherType"] == 1
     assert "checkClassMatch" not in tracker["BaseConfig"]
     assert tracker["DataAssociator"]["checkClassMatch"] == 1
@@ -56,6 +57,7 @@ def test_nvdcf_uses_accuracy_association_and_nvidia_reid() -> None:
 
     reid = tracker["ReID"]
     assert reid["reidType"] == 2
+    assert reid["outputReidTensor"] == 1
     assert reid["batchSize"] == 16
     assert reid["reidFeatureSize"] == 256
     assert reid["inferDims"] == [3, 256, 128]
