@@ -7,8 +7,10 @@ from threading import Event, RLock
 from typing import Protocol
 
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
+from deepstream_ai.stream_epoch import current_stream_generation
 from deepstream_ai.track_continuity import TrackContinuityResolver
 from deepstream_ai.track_continuity_guard import GuardedTrackContinuityResolver
+from deepstream_ai.weak_track_guard import WeakNewTrackGuard
 
 _NANOSECONDS = 1_000_000_000
 
@@ -100,7 +102,7 @@ class PersonActivityTracker:
 
 
 class ActivityAwareConsumer:
-    """Resolve short ID glitches, then fan out activity/preview/business work."""
+    """Resolve IDs, suppress weak new tracks, then fan out business work."""
 
     def __init__(
         self,
@@ -108,20 +110,30 @@ class ActivityAwareConsumer:
         activity: PersonActivityTracker,
         preview: PreviewSink | None = None,
         continuity: TrackContinuityResolver | None = None,
+        weak_tracks: WeakNewTrackGuard | None = None,
     ) -> None:
         self.delegate = delegate
         self.activity = activity
         self.preview = preview
-        if continuity is None:
-            app_config = getattr(delegate, "config", None)
-            config_path = getattr(app_config, "config_path", None)
-            if config_path is not None:
-                continuity = GuardedTrackContinuityResolver.from_file(config_path)
+        app_config = getattr(delegate, "config", None)
+        config_path = getattr(app_config, "config_path", None)
+        if continuity is None and config_path is not None:
+            continuity = GuardedTrackContinuityResolver.from_file(config_path)
+        if weak_tracks is None and config_path is not None:
+            weak_tracks = WeakNewTrackGuard.from_file(config_path)
         self.continuity = continuity
+        self.weak_tracks = weak_tracks
 
     def submit(self, packet: FramePacket) -> bool:
+        generation = current_stream_generation(packet.camera_id)
         if self.continuity is not None:
+            begin_generation = getattr(self.continuity, "begin_stream_generation", None)
+            if callable(begin_generation):
+                begin_generation(packet.camera_id, generation)
             packet = self.continuity.resolve(packet)
+        if self.weak_tracks is not None:
+            self.weak_tracks.begin_stream_generation(packet.camera_id, generation)
+            packet = self.weak_tracks.filter(packet)
         self.activity.observe(packet)
         if self.preview is not None:
             self.preview.submit(packet)
@@ -138,8 +150,14 @@ class ActivityAwareConsumer:
         raw_track_id: int | str,
     ) -> int | str | None:
         if self.continuity is None:
-            return raw_track_id
-        return self.continuity.presentation_track_id(camera_id, raw_track_id)
+            logical_id: int | str = raw_track_id
+        else:
+            logical_id = self.continuity.presentation_track_id(camera_id, raw_track_id)
+            if logical_id is None:
+                return None
+        if self.weak_tracks is not None and not self.weak_tracks.is_visible(camera_id, logical_id):
+            return None
+        return logical_id
 
 
 __all__ = [
