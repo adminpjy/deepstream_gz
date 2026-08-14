@@ -7,7 +7,8 @@ from threading import Event, RLock
 from typing import Protocol
 
 from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
-from deepstream_ai.track_continuity import TrackContinuityConfig, TrackContinuityResolver
+from deepstream_ai.track_continuity import TrackContinuityResolver
+from deepstream_ai.track_continuity_guard import GuardedTrackContinuityResolver
 
 _NANOSECONDS = 1_000_000_000
 
@@ -115,7 +116,7 @@ class ActivityAwareConsumer:
             app_config = getattr(delegate, "config", None)
             config_path = getattr(app_config, "config_path", None)
             if config_path is not None:
-                continuity = TrackContinuityResolver(TrackContinuityConfig.from_file(config_path))
+                continuity = GuardedTrackContinuityResolver.from_file(config_path)
         self.continuity = continuity
 
     def submit(self, packet: FramePacket) -> bool:
