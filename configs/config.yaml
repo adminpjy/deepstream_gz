@@ -21,9 +21,6 @@ sources: []
 #     url: ${GATE_01_RTSP_URL}
 #     enabled: true
 #     nominal_fps: 25.0
-#     # Prefer tracking continuity over ultra-low latency. The source adapter
-#     # also protects RTSP with a 500 ms minimum jitter buffer and keeps late
-#     # packets instead of forcing a one-frame visual discontinuity.
 #     latency_ms: 500
 #     reconnect_interval_sec: 10
 #   - camera_id: gate-02
@@ -35,10 +32,9 @@ sources: []
 # Analysis rates are converted to nvinfer interval values from nominal_fps.
 inference:
   person_fps: 5.0
-  # Face detection is intentionally sampled at the same 5 FPS as person
-  # tracking during current testing. CCTV faces change quickly with pose/motion;
-  # 2 FPS skipped too many usable frontal frames.
-  face_fps: 5.0
+  # On a 25 FPS RTSP stream this means roughly one real SCRFD inference every
+  # two frames. Recognition still consumes only real detections/landmarks.
+  face_fps: 12.5
   behavior_fps: 1.0
 
 pipeline:
@@ -69,14 +65,8 @@ person:
 # Narrow pre-NvDCF guard for the repeatable test2 server-rack false proposal.
 # All conditions below must match the same raw PeopleNet object; no single
 # width, height, position, or confidence threshold can remove an object.
-# Ratios use the streammux 1920x1080 coordinate space.  The upper width/right
-# bounds keep the rule scoped to the measured left-half rack signature.
 person_pretracker_guard:
   enabled: true
-  # Full test2 EOS replay also emitted the same rack geometry at raw PGIE
-  # confidences 0.379, 0.422, and 0.507.  0.55 covers those proposals; the
-  # complete retained corpus has zero face-confirmed real proposals matching
-  # the geometry even without a confidence ceiling.
   max_confidence: 0.55
   max_left_ratio: 0.03
   max_top_ratio: 0.02
@@ -98,8 +88,9 @@ face:
   landmark_source: tensor
   landmark_coordinates: absolute
   landmark_scale: 1.0
-  # Must equal the nvinfer pre-cluster-threshold below the face parser.
-  landmark_threshold: 0.35
+  # Must equal face.example.txt pre-cluster-threshold. Prefer recall here; final
+  # evidence and AdaFace still require quality/landmark checks downstream.
+  landmark_threshold: 0.30
 
 # The business layer sees only this adapter key, never tracker implementation APIs.
 tracker:
@@ -115,10 +106,11 @@ tracker:
     onnx_sha256: 0e21d09278508ec835955f422a9fdd3cd59b2a6ecdef98d705f388f33cebac2b
     require_prebuilt_engine: true
 
-# NvDCF remains the tracker of record. This lightweight business-layer bridge
-# only reconnects a brand-new raw NvDCF ID to one clearly matching recently-lost
-# logical track. It also collapses a same-frame duplicate only when boxes are
-# almost identical, or strong overlap is corroborated by overlapping faces.
+# NvDCF remains the tracker of record. This business-layer bridge preserves a
+# stable logical ID when NvDCF briefly fragments the same still-visible person.
+# Strict body ReID remains the normal identity gate; a borderline ReID result is
+# allowed only when both person geometry and a real SCRFD face are nearly
+# continuous. Borderline observations never update the trusted ReID gallery.
 track_continuity:
   enabled: true
   max_gap_sec: 8.0
@@ -131,20 +123,13 @@ track_continuity:
   duplicate_iou: 0.90
   duplicate_iou_with_face: 0.70
   duplicate_face_iou: 0.50
-  # A ReID-only bridge may span the 10-second business evidence grace period;
-  # conflicting/ambiguous identities never fall back to geometry.
   reid_max_gap_sec: 10.0
-  # Calibrated against the preserved 7c A/B/A snapshots: A-old↔A-new=0.873,
-  # while A↔B=0.756-0.759 with the deployed NVIDIA ResNet50 preprocessing.
+  # Calibrated against preserved A/B/A samples: different people were around
+  # 0.756-0.759, so ordinary body-ReID reconnection must stay conservative.
   reid_match_min: 0.85
-  # Never blend a different person into the stable gallery. This deliberately
-  # equals reid_match_min; task 7c measured A/B at about 0.76.
   reid_update_min: 0.85
   reid_hijack_margin: 0.15
   reid_ambiguity_margin: 0.08
-  # A lower ReID floor is allowed only for a near-identical NvDCF fragment
-  # appearing within 120 ms of the previous box. The full 0.85 threshold
-  # remains mandatory for ordinary lost-track reconnection.
   fragment_min_reid: 0.82
   fragment_max_gap_sec: 0.12
   fragment_min_iou: 0.65
@@ -152,6 +137,22 @@ track_continuity:
   fragment_max_center_distance_ratio: 0.13
   fragment_min_area_ratio: 0.70
   fragment_max_area_ratio: 1.35
+  # Face-backed continuity is a recovery path, not face recognition. It uses a
+  # real SCRFD detection only to prove spatial continuity of the same visible
+  # face while keeping body ReID above a safety floor.
+  face_override_max_gap_sec: 3.0
+  face_override_min_person_iou: 0.25
+  face_override_min_person_containment: 0.50
+  face_override_max_center_distance_ratio: 0.33
+  face_override_min_area_ratio: 0.60
+  face_override_max_area_ratio: 1.45
+  face_override_min_face_iou: 0.85
+  face_override_min_face_containment: 0.95
+  face_override_max_face_center_distance_ratio: 0.05
+  face_override_min_face_area_ratio: 0.85
+  face_override_max_face_area_ratio: 1.20
+  face_override_min_face_score: 0.70
+  face_override_min_reid: 0.80
   stale_retention_sec: 30.0
 
 face_recognition:
@@ -172,9 +173,7 @@ face_recognition:
   require_landmarks: true
 
 # behavior.<name>.enabled is the authoritative load switch. Disabled models are
-# absent from the pipeline and consume no model GPU memory. Arbitrary YOLO .pt
-# files are not DeepStream-compatible until explicitly exported and paired with
-# the correct parser; see configs/models/behavior.metadata.example.json.
+# absent from the pipeline and consume no model GPU memory.
 behavior:
   smoking:
     enabled: false
@@ -205,8 +204,6 @@ behavior:
     labels: [carrying]
     threshold: 0.50
 
-# Logical model catalog for deployment inventory. Runtime switches above remain
-# authoritative; this node never makes a disabled model load implicitly.
 models:
   person:
     architecture: peoplenet-resnet34-detectnet-v2
