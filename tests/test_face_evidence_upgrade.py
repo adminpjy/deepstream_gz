@@ -105,23 +105,25 @@ def test_real_scrfd_face_uses_unified_scorer_not_legacy_quality_hint() -> None:
 def test_two_stable_frontal_faces_can_replace_slightly_higher_early_score() -> None:
     manager = _manager()
     frame = np.zeros((300, 300, 4), dtype=np.uint8)
-    early = _face(NOW, score=0.95, blur=0.70, frontal=0.86)
+    # The early face has a slightly higher total score but is not stable-quality
+    # because blur is below the stable threshold. Two subsequent frontal faces
+    # should therefore be allowed to replace it without lowering the global
+    # identity/ReID thresholds.
+    early = _face(NOW, score=0.95, blur=0.44, frontal=0.86)
     first_clear = _face(
         NOW + timedelta(milliseconds=200),
-        score=0.80,
-        blur=0.85,
+        score=0.70,
+        blur=0.70,
         frontal=0.90,
     )
     second_clear = _face(
         NOW + timedelta(milliseconds=400),
-        score=0.80,
-        blur=0.85,
+        score=0.70,
+        blur=0.70,
         frontal=0.90,
     )
 
     assert manager.observe_face(frame, _track(NOW), early)
-    # The first clear frame is deliberately a little lower in total quality and
-    # should be held until the same frontal geometry is seen again.
     assert not manager.observe_face(frame, _track(first_clear.timestamp), first_clear)
     assert manager.observe_face(frame, _track(second_clear.timestamp), second_clear)
 
