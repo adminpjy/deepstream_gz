@@ -51,11 +51,12 @@ class SourceBin:
         set_if_supported(self.decoder, "num-extra-surfaces", 4)
         set_if_supported(self.decoder, "drop-frame-interval", 0)
         if source.type == "rtsp":
-            # A short RTP jitter spike must not create a visible one-frame hole
-            # that immediately destabilizes detector/tracker association. Keep a
-            # modest jitter reserve and retain late packets. The business layer
-            # tolerates this extra latency better than an ID switch.
-            rtsp_latency_ms = max(500, int(source.latency_ms))
+            # Live analytics must stay close to wall-clock time. Keep only a
+            # small RTP jitter reserve and allow rtspsrc/nvurisrcbin to discard
+            # packets that have already fallen outside that latency budget.
+            # NvDCF/continuity absorb short misses; accumulating old frames would
+            # instead make the operator watch increasingly stale video.
+            rtsp_latency_ms = max(200, int(source.latency_ms))
             set_if_supported(self.decoder, "latency", rtsp_latency_ms)
             # Docker Desktop/WSL cannot reliably receive the UDP RTP ports
             # negotiated by RTSP. Start directly with interleaved RTP-over-TCP
@@ -66,10 +67,10 @@ class SourceBin:
             # a GObject property on this element.
             set_if_supported(self.decoder, "rtsp-reconnect-interval", source.reconnect_interval_sec)
             set_if_supported(self.decoder, "rtsp-reconnect-attempts", -1)
-            set_if_supported(self.decoder, "drop-on-latency", False)
+            set_if_supported(self.decoder, "drop-on-latency", True)
             LOGGER.info(
-                "RTSP 抖动保护: camera_id=%s transport=tcp latency_ms=%d "
-                "drop_on_latency=false reconnect_interval_sec=%d",
+                "RTSP 实时模式: camera_id=%s transport=tcp latency_ms=%d "
+                "drop_on_latency=true reconnect_interval_sec=%d",
                 source.camera_id,
                 rtsp_latency_ms,
                 source.reconnect_interval_sec,
