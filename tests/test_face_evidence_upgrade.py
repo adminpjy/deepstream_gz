@@ -5,7 +5,11 @@ from datetime import UTC, datetime, timedelta
 import numpy as np
 
 from deepstream_ai.domain import BoundingBox, FaceDetection, Track
-from deepstream_ai.snapshot.alarm_manager import EventSnapshotManager
+from deepstream_ai.snapshot.alarm_manager import (
+    EventSnapshotManager,
+    FaceEvidencePolicy,
+    _alarm_face_pair_crop,
+)
 from deepstream_ai.snapshot.manager import SnapshotConfig
 
 NOW = datetime(2026, 8, 14, tzinfo=UTC)
@@ -131,3 +135,31 @@ def test_two_stable_frontal_faces_can_replace_slightly_higher_early_score() -> N
     assert state is not None
     assert state.best_face is not None
     assert state.best_face.timestamp == second_clear.timestamp
+
+
+def test_review_crops_are_large_but_raw_face_roi_stays_native_resolution() -> None:
+    frame = np.zeros((1080, 1920, 4), dtype=np.uint8)
+    person = BoundingBox(930, 205, 1215, 1005)
+    face = BoundingBox(1010, 245, 1070, 325)
+    config = SnapshotConfig(
+        padding_x_ratio=0.35,
+        padding_top_ratio=0.25,
+        upper_body_fraction=0.85,
+        frame_color_space="rgba",
+    )
+    policy = FaceEvidencePolicy()
+
+    result = _alarm_face_pair_crop(frame, person, face, config, policy)
+
+    assert result is not None
+    person_crop, display_face_crop, raw_face_crop, evidence_bbox = result
+    # Raw SCRFD ROI is still exactly what face-quality/AdaFace logic expects.
+    assert raw_face_crop.shape[:2] == (80, 60)
+    # Saved evidence is human-review friendly and not a tiny detector rectangle.
+    assert person_crop.shape[1] >= policy.person_display_min_width
+    assert person_crop.shape[0] >= policy.person_display_min_height
+    assert display_face_crop.shape[1] >= policy.face_display_min_width
+    assert display_face_crop.shape[0] >= policy.face_display_min_height
+    # The person evidence extends below the detector body box when frame room
+    # exists, preserving feet/context instead of stopping around the waist.
+    assert evidence_bbox.y2 > person.y2
