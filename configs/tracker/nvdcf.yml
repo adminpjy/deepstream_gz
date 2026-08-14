@@ -1,8 +1,7 @@
 # DeepStream 9 NvDCF accuracy-oriented configuration with NVIDIA ReIdentificationNet.
-# PeopleNet may run below source FPS (for example 5 FPS on a 25 FPS stream),
-# while NvDCF still receives every decoded frame. Tentative/shadow ages must
-# therefore tolerate detector-skip frames or the same stationary person can be
-# repeatedly terminated and recreated with new object IDs.
+# PeopleNet may run below source FPS while NvDCF still receives every decoded
+# frame. Shadow/re-association settings therefore favor continuity: a person who
+# remains in view must survive short detector misses, pose changes and RTSP jitter.
 BaseConfig:
   minDetectorConfidence: 0.1894
 
@@ -10,42 +9,45 @@ TargetManagement:
   enableBboxUnClipping: 1
   preserveStreamUpdateOrder: 0
   maxTargetsPerStream: 150
-  # Lower values suppress duplicate target creation when a new detector bbox
-  # still overlaps an existing/shadow target.
-  # Reject a new detector target when it overlaps an existing target by more
-  # than this amount.  0.20 removes the lower-body fragments observed in the
-  # live A/B while still allowing clearly distinct people to enter.
+  # Suppress duplicate target creation when a new detector bbox still overlaps
+  # an existing/shadow target. Keep this independent from the rack false-positive
+  # guard in the PGIE pre-tracker layer.
   minIouDiff4NewTarget: 0.2000
   minTrackerConfidence: 0.1513
   probationAge: 2
-  # Keep active targets alive through short detector misses/pose changes while
-  # limiting how long a stale/hijacked target can compete during crossings.
-  maxShadowTrackingAge: 75
-  # IMPORTANT: this must be larger than the number of detector-skipped frames
-  # during tentative activation. With 5 FPS detection on 25-30 FPS input there
-  # are typically 4-5 skipped frames; 1 caused repeated ID churn.
-  earlyTerminationAge: 8
+  # At 25 FPS this gives roughly ten seconds of shadow survival. A person can be
+  # partly out of frame or briefly missed without immediately receiving a new ID.
+  maxShadowTrackingAge: 250
+  # Must exceed the detector-skip count. 12 also gives tentative tracks more
+  # tolerance during startup/pose changes than the previous value of 8.
+  earlyTerminationAge: 12
 
 TrajectoryManagement:
   useUniqueID: 0
   enableReAssoc: 1
-  # Keep trajectory re-association conservative in multi-person crossings.
-  minMatchingScore4Overall: 0.6622
+  # Re-association should recover a recently lost target instead of requiring a
+  # near-perfect trajectory match. Multi-person safety is still protected by
+  # DataAssociator, NvDCF ReID and the business continuity layer.
+  minMatchingScore4Overall: 0.4000
   minTrackletMatchingScore: 0.2940
   minMatchingScore4ReidSimilarity: 0.0771
   matchingScoreWeight4TrackletSimilarity: 0.7981
   matchingScoreWeight4ReidSimilarity: 0.3848
   minTrajectoryLength4Projection: 34
   prepLength4TrajectoryProjection: 58
-  trajectoryProjectionLength: 33
+  trajectoryProjectionLength: 94
   maxAngle4TrackletMatching: 67
   minSpeedSimilarity4TrackletMatching: 0.0574
   minBboxSizeSimilarity4TrackletMatching: 0.1013
   maxTrackletMatchingTimeSearchRange: 27
   trajectoryProjectionProcessNoiseScale: 0.0100
   trajectoryProjectionMeasurementNoiseScale: 100
-  trackletSpacialSearchRegionScale: 0.0100
-  reidExtractionInterval: 8
+  # The previous 0.01 search region was too narrow when a person changed pose or
+  # moved after a short miss. Use the wider PeopleNet-oriented search scale.
+  trackletSpacialSearchRegionScale: 0.2598
+  # Produce ReID observations more often so recovery is not starved by an
+  # eight-frame sampling interval.
+  reidExtractionInterval: 2
 
 DataAssociator:
   dataAssociatorType: 0
