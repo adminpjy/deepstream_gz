@@ -78,8 +78,8 @@
               </div>
 
               <div id="rtspSourcePanel" class="source-panel" role="tabpanel" aria-labelledby="rtspTab" hidden>
-                <label class="field"><span>RTSP 地址</span><span class="input-wrap"><span class="input-prefix" aria-hidden="true">URL</span><input id="rtspUrl" name="rtspUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="rtsp://user:password@host:554/stream" /></span><small>输入地址不会自动连接，点击“开始分析”后才启动该路。</small></label>
-                <label class="field"><span>标称帧率</span><span class="input-wrap"><input id="nominalFps" name="nominalFps" type="number" min="0.1" max="240" step="0.1" value="25" /><span class="input-suffix">FPS</span></span></label>
+                <label class="field"><span>RTSP 地址</span><span class="input-wrap"><span class="input-prefix" aria-hidden="true">URL</span><input id="rtspUrl" name="rtspUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" value="rtsp://10.101.176.41:8554/camera" placeholder="rtsp://user:password@host:554/stream" /></span><small>已预置固定测试地址；修改地址不会自动连接，点击“开始分析”后才启动该路。</small></label>
+                <label class="field"><span>标称帧率</span><span class="input-wrap"><input id="nominalFps" name="nominalFps" type="number" min="0.1" max="240" step="0.1" value="25" /><span class="input-suffix">FPS</span></span><small>默认 25 FPS，与后端 RTSP 默认标称帧率保持一致。</small></label>
               </div>
 
               <div class="form-row">
