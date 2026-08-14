@@ -69,11 +69,17 @@ def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
     output_dir = Path(str(spec["output_dir"])).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     snapshot = replace(base.output.snapshot, root=str(output_dir / "snapshot"))
+
+    # Test tasks keep an encoded, OSD-annotated replay artifact beside their
+    # logs/snapshots. RTSP is already wall-clock paced by the live source, while
+    # uploaded files are explicitly paced so a replay resembles the original
+    # timing instead of running as fast as the decoder can consume it.
+    record_video = bool(spec.get("record_video", True))
     output = replace(
         base.output,
-        enabled=False,
+        enabled=record_video,
         path=str(output_dir / "result.mp4"),
-        sync=False,
+        sync=source.type == "file",
         events_enabled=True,
         events_path=str(output_dir / "events.jsonl"),
         snapshot=snapshot,
@@ -94,6 +100,12 @@ def _log_contract(config: AppConfig) -> None:
     LOGGER.info(
         "[PEOPLENET_CLASSES] %s",
         ", ".join(f"{name}={class_id}" for name, class_id in config.pipeline.person.people_classes),
+    )
+    LOGGER.info(
+        "[TASK_RECORDING] enabled=%s path=%s sync=%s",
+        str(config.output.enabled).lower(),
+        config.output.path,
+        str(config.output.sync).lower(),
     )
 
 
@@ -122,6 +134,8 @@ def run_task(spec_path: Path) -> int:
             "error": None,
             "source_type": spec.get("source", {}).get("type"),
             "camera_id": spec.get("source", {}).get("camera_id"),
+            "record_video": bool(spec.get("record_video", True)),
+            "result_file": "result.mp4",
         },
     )
     base = load_config(Path(str(spec["base_config"])))
