@@ -6,10 +6,10 @@ property in the deployed GstNvInfer. Keep SCRFD/behavior cadence fixed at
 pipeline construction and adapt only PeopleNet while the pipeline is PLAYING.
 
 GPU utilization by itself is not treated as overload. TensorRT is expected to
-use the GPU aggressively; person cadence is reduced only when that utilization
-is accompanied by analytics queue backlog or dropped frames. NVDEC saturation
-is observed separately because reducing PeopleNet does not fix a decoder-bound
-pipeline.
+use the GPU aggressively; person cadence is never reduced below the configured
+tracking-safe ``inference.person_fps`` floor. Queue pressure may still move the
+capacity profile so service admission can react, but it must not trade away
+person tracking continuity.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 class RealtimeAdaptiveInferenceController(AdaptiveInferenceController):
-    """Preserve tracking cadence unless measured realtime backlog requires relief."""
+    """Preserve the configured PeopleNet tracking floor under realtime load."""
 
     def __init__(self, config, graph) -> None:
         super().__init__(config, graph)
@@ -38,7 +38,6 @@ class RealtimeAdaptiveInferenceController(AdaptiveInferenceController):
             return True
         if queue_ratio is not None and queue_ratio >= self.config.queue_critical_ratio:
             return True
-        # A compute spike is actionable only when work is already backing up.
         if (
             queue_ratio is not None
             and queue_ratio >= self.config.queue_high_ratio
@@ -81,7 +80,8 @@ class RealtimeAdaptiveInferenceController(AdaptiveInferenceController):
         elements = getattr(self.graph, "inference_elements", {}) or {}
         for key, element in elements.items():
             if key == "person":
-                target = profile.person_fps
+                configured_floor = float(self.app_config.inference.person_fps)
+                target = max(float(profile.person_fps), configured_floor)
                 skip = _skip_interval(source_fps, target)
                 try:
                     element.set_property("interval", int(skip))
@@ -94,18 +94,16 @@ class RealtimeAdaptiveInferenceController(AdaptiveInferenceController):
                     continue
                 actual = source_fps / (skip + 1)
                 LOGGER.info(
-                    "[ADAPTIVE_RATE] component=person target=%.2f actual≈%.2f "
+                    "[ADAPTIVE_RATE] component=person target=%.2f floor=%.2f actual≈%.2f "
                     "interval=%d reason=%s",
                     target,
+                    configured_floor,
                     actual,
                     skip,
                     reason,
                 )
                 continue
 
-            # SGIE cadence was materialized into its nvinfer config before
-            # PLAYING. Do not call the non-existent Gst property and do not log
-            # a dynamic success that never happened.
             if key == "face":
                 target = float(self.app_config.inference.face_fps)
             elif key.startswith("behavior:"):
