@@ -1,0 +1,528 @@
+2026-08-14 07:41:18 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/person-peoplenet.txt engine=/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine source_models=['/workspace/models/peoplenet/resnet34_peoplenet.onnx']
+2026-08-14 07:41:18 | INFO     | __main__ | 模型预检通过 config=/workspace/configs/nvinfer/face.example.txt engine=/workspace/models/face.engine source_models=['/workspace/models/face-deepstream.onnx']
+2026-08-14 07:41:18 | INFO     | __main__ | [DETECTOR] PeopleNet
+2026-08-14 07:41:18 | INFO     | __main__ | [TRACKER] NvDCF
+2026-08-14 07:41:18 | INFO     | __main__ | [TRACKER_CONFIG] /workspace/configs/tracker/nvdcf.yml
+2026-08-14 07:41:18 | INFO     | __main__ | [PEOPLENET_CLASSES] person=0, bag=1, face=2
+2026-08-14 07:41:18 | INFO     | __main__ | DeepStream Python runtime 已加载: {'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-14 07:41:19.042746746 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-14 07:41:20 | INFO     | deepstream_ai.pipeline.source | RTSP 实时模式: camera_id=camera-01 transport=tcp latency_ms=200 drop_on_latency=true reconnect_interval_sec=10
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=5 runtime_config=/workspace/output/tasks/4469fe7611df4da6/.runtime/nvinfer/person-detector.txt
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=6 runtime_config=/workspace/output/tasks/4469fe7611df4da6/.runtime/nvinfer/face-detector.txt
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: smoking
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: eating
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: drinking
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.builder | 行为模型已关闭，不创建 nvinfer: carrying
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.peoplenet_pretracker_guard | [PRETRACKER_GUARD] enabled=True pgie_uid=1 person_classes=[0] max_conf=0.550 left<=0.030 top<=0.020 width=[0.400,0.500] height>=0.930 right<=0.520 frame=1920x1080
+2026-08-14 07:41:21 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW] preview bridge enabled max_age=1.50s
+Protocol set: 0x4
+0:00:02.565646703 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:02.570021960 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:02.579590022 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/tasks/4469fe7611df4da6/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+0:00:05.304951038 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 1]: deserialized trt engine from :/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:05.305559555 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 1]: Use deserialized engine model: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine
+0:00:05.310388851 [34m   75[00m     0x1ce59780 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector>[00m [UID 1]: Load new model:/workspace/output/tasks/4469fe7611df4da6/.runtime/nvinfer/person-detector.txt sucessfully
+2026-08-14 07:41:25 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=camera-01 uri=vsrc_0
+2026-08-14 07:41:25 | INFO     | deepstream_ai.pipeline.source | [NVDEC] camera_id=camera-01 decoder=nvv4l2decoder0 cudadec_memtype=device
+Opening in BLOCKING MODE 
+0:00:06.361982399 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.362275779 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:00:06.362579316 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.362894337 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:00:06.363181028 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.363476336 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:00:06.363740088 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.364037460 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:00:06.364345897 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.364614689 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:00:06.364828561 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.365045962 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:00:06.365350036 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.365729376 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:00:06.366049039 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.366350372 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:00:06.366649938 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.366949104 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:00:06.367289596 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.367583408 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:00:06.367965642 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.368284287 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:00:06.368580157 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.368861780 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:00:06.369177198 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.369450790 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:00:06.369625886 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.369802811 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:00:06.370000485 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.370172675 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:00:06.370396627 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.370653771 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:00:06.370920729 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.371198433 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:00:06.371475029 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.372062415 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:00:06.373579116 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.374565965 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:00:06.375234215 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:00:06.376039317 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:00:06.377652318 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.377951666 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:00:06.378253414 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.378488606 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:00:06.378807131 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.379130605 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P216
+0:00:06.379411371 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.379751624 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P216
+0:00:06.380308880 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.380618430 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:00:06.380909346 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.381172433 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:00:06.381407291 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.381671822 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P412
+0:00:06.381976789 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.382227186 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P412
+0:00:06.382475239 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.382682737 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P410
+0:00:06.382825093 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.382973766 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P410
+0:00:06.383232224 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.383417272 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:00:06.383642321 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.383849301 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:00:06.384085551 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.384348102 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:00:06.384674721 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:00:06.385176137 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM12
+0:00:06.510385759 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0>[00m Duration invalid, not setting latency
+0:00:06.513221480 [34m   75[00m 0x7ff374001520 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:00:06.742274361 [34m   75[00m 0x7ff3740024e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+2026-08-14 07:41:29 | WARNING  | deepstream_ai.pipeline.shadow_tracking | [TRACK_SHADOW_UNAVAILABLE] pinned PyDS does not expose shadow-list metadata
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=1
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.adaptive | [SOURCE_PROFILE] camera=camera-01 fps=30.000 resolution=1280x720 source=negotiated_caps
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE] component=person target=5.00 floor=5.00 actual≈5.00 interval=5 reason=source_profile
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE_STATIC] component=face target=5.00 actual≈5.00 reinfer=6 reason=config_startup runtime_update=unsupported
+2026-08-14 07:41:29 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=0 conf=0.463 detector_conf=0.463 bbox=677x733
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=90.0% mem=22.0% nvdec=27.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:29 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=0 reason=real_face age=0.000 max_conf=0.463 detector_observations=1 bbox_ratio=0.3526x0.6790
+2026-08-14 07:41:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE] enabled profile=normal sample=2.0s window=10.0s
+2026-08-14 07:41:29 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=0 person_conf=0.463 quality=0.685
+2026-08-14 07:41:29 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=0 source=person_fallback quality=0.685
+2026-08-14 07:41:29 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=0 face_conf=0.816 quality=0.641 person_display=1026x896 face_display=372x552
+2026-08-14 07:41:29 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=face_fallback quality=0.641 evidence=(620.7313346862793, 184.06680297851562, 1645.5261878967285, 1080.0)
+2026-08-14 07:41:30 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.641 new_quality=0.643 person_display=1021x889 face_display=370x540
+2026-08-14 07:41:30 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.643 evidence=(619.3947738647461, 191.3294677734375, 1639.2713943481444, 1080.0)
+2026-08-14 07:41:31 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=85.0% mem=2.0% nvdec=37.0% queue=3.1% drops_delta=0
+2026-08-14 07:41:31 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=timeout_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.709
+2026-08-14 07:41:32 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.643 new_quality=0.647 person_display=1014x913 face_display=368x563
+2026-08-14 07:41:32 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.647 evidence=(625.5254074096679, 167.31170654296875, 1638.5063613891602, 1080.0)
+2026-08-14 07:41:32 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.647 new_quality=0.664 person_display=992x928 face_display=360x570
+2026-08-14 07:41:32 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.664 evidence=(631.7121498107911, 152.81716918945312, 1622.6811454772949, 1080.0)
+2026-08-14 07:41:33 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.719
+2026-08-14 07:41:33 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=94.0% mem=2.0% nvdec=18.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:34 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.720
+2026-08-14 07:41:35 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=81.0% mem=2.0% nvdec=50.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:36 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.714
+2026-08-14 07:41:37 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=0 old_quality=0.664 new_quality=0.682 person_display=1023x943 face_display=371x579
+2026-08-14 07:41:37 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=0 source=best_face quality=0.682 evidence=(610.1223419189453, 137.552734375, 1632.9354583740235, 1080.0)
+2026-08-14 07:41:37 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=2.0% nvdec=69.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:38 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.742
+2026-08-14 07:41:39 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=76.0% mem=2.0% nvdec=61.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:41 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=71.0% mem=1.0% nvdec=63.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:42 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.739
+2026-08-14 07:41:43 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=72.0% mem=1.0% nvdec=47.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:44 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.738
+2026-08-14 07:41:45 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=67.0% mem=2.0% nvdec=56.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:46 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.737
+2026-08-14 07:41:47 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=2.0% nvdec=53.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:48 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=0 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.675
+2026-08-14 07:41:49 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=69.0% mem=1.0% nvdec=55.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:51 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=76.0% mem=2.0% nvdec=71.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:53 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=1 conf=0.466 detector_conf=0.466 bbox=922x354
+2026-08-14 07:41:53 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=1 reason=real_face age=0.000 max_conf=0.466 detector_observations=1 bbox_ratio=0.4801x0.3280
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=1 person_conf=0.466 quality=0.459
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=1 source=person_fallback quality=0.459
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=1 face_conf=0.546 quality=0.408 person_display=1789x425 face_display=672x266
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=face_fallback quality=0.408 evidence=(0.0, 655.499755859375, 1788.776171875, 1080.0)
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.408 new_quality=0.409 person_display=1823x434 face_display=700x272
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.409 evidence=(0.0, 646.0020751953125, 1822.862092590332, 1080.0)
+2026-08-14 07:41:53 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=1.0% nvdec=69.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.409 new_quality=0.445 person_display=1805x461 face_display=682x288
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.445 evidence=(0.0, 619.9541015625, 1804.3545684814453, 1080.0)
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.445 new_quality=0.512 person_display=1908x527 face_display=757x329
+2026-08-14 07:41:53 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.512 evidence=(0.0, 553.723388671875, 1907.5695770263671, 1080.0)
+2026-08-14 07:41:54 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.512 new_quality=0.526 person_display=1560x776 face_display=627x528
+2026-08-14 07:41:54 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.526 evidence=(216.150390625, 304.8343505859375, 1775.3397537231444, 1080.0)
+2026-08-14 07:41:54 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=timeout_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.697
+2026-08-14 07:41:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.526 new_quality=0.655 person_display=1049x1056 face_display=412x648
+2026-08-14 07:41:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.655 evidence=(580.3966346740723, 24.763671875, 1628.8888366699218, 1080.0)
+2026-08-14 07:41:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.655 new_quality=0.664 person_display=1133x1047 face_display=421x648
+2026-08-14 07:41:55 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=2.0% nvdec=60.0% queue=1.6% drops_delta=0
+2026-08-14 07:41:55 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.664 evidence=(580.6555015563964, 33.535247802734375, 1712.5058532714843, 1080.0)
+2026-08-14 07:41:56 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.713
+2026-08-14 07:41:57 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=55.0% queue=0.0% drops_delta=0
+2026-08-14 07:41:58 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.698
+2026-08-14 07:41:59 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=76.0% mem=2.0% nvdec=57.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:00 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.728
+2026-08-14 07:42:01 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=74.0% mem=2.0% nvdec=43.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:02 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=0 source=best_face identity=unknown similarity=-1.000 quality=0.682
+2026-08-14 07:42:02 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.718
+2026-08-14 07:42:03 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=40.0% mem=1.0% nvdec=24.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:04 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.664 new_quality=0.666 person_display=832x945 face_display=302x481
+2026-08-14 07:42:04 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.666 evidence=(627.462306213379, 135.74310302734375, 1458.6857345581054, 1080.0)
+2026-08-14 07:42:04 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.724
+2026-08-14 07:42:05 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=71.0% mem=2.0% nvdec=62.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:06 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.740
+2026-08-14 07:42:07 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=2 conf=0.459 detector_conf=0.459 bbox=356x1060
+2026-08-14 07:42:07 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=2 reason=detector_confidence age=0.000 max_conf=0.459 detector_observations=1 bbox_ratio=0.1856x0.9816
+2026-08-14 07:42:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=2 person_conf=0.459 quality=0.431
+2026-08-14 07:42:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=person_fallback quality=0.431
+2026-08-14 07:42:07 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=69.0% mem=2.0% nvdec=60.0% queue=3.1% drops_delta=0
+2026-08-14 07:42:07 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_person quality=0.583
+2026-08-14 07:42:07 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=2 face_conf=0.707 quality=0.564 person_display=568x680 face_display=254x275
+2026-08-14 07:42:07 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=2 source=face_fallback quality=0.564 evidence=(1352.7521102905273, 0.0, 1920.0, 679.4538818359375)
+2026-08-14 07:42:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=2 old_quality=0.564 new_quality=0.608 person_display=678x757 face_display=246x297
+2026-08-14 07:42:08 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_face quality=0.608 evidence=(1228.4550178527832, 0.0, 1905.943709564209, 756.1706871032715)
+2026-08-14 07:42:08 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.745
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=2 old_quality=0.608 new_quality=0.622 person_display=593x904 face_display=222x348
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_face quality=0.622 evidence=(1085.2021484375, 0.0, 1677.8968238830566, 903.7333610534669)
+2026-08-14 07:42:09 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=2 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.725
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=2 old_quality=0.622 new_quality=0.624 person_display=587x884 face_display=217x342
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_face quality=0.624 evidence=(1080.33818359375, 0.0, 1666.6878971099854, 883.7686386108398)
+2026-08-14 07:42:09 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=2.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.666 new_quality=0.685 person_display=846x912 face_display=307x503
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.685 evidence=(608.8792472839355, 168.63836669921875, 1453.8314002990724, 1080.0)
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=2 old_quality=0.624 new_quality=0.635 person_display=613x901 face_display=222x347
+2026-08-14 07:42:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=2 source=best_face quality=0.635 evidence=(1144.700658416748, 0.0, 1756.7526649475099, 900.0234413146973)
+2026-08-14 07:42:10 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.748
+2026-08-14 07:42:11 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=2 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.728
+2026-08-14 07:42:11 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=71.0% mem=2.0% nvdec=51.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.685 new_quality=0.687 person_display=851x923 face_display=309x515
+2026-08-14 07:42:12 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.687 evidence=(612.340428161621, 157.90997314453125, 1462.8472244262696, 1080.0)
+2026-08-14 07:42:12 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.752
+2026-08-14 07:42:13 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=66.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:13 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.687 new_quality=0.691 person_display=863x908 face_display=313x505
+2026-08-14 07:42:13 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.691 evidence=(603.3730209350585, 172.05506896972656, 1465.044612121582, 1080.0)
+2026-08-14 07:42:14 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_REID_REJECT] camera=camera-01 raw=3 candidate_logical=2 similarity=0.757 score=0.872 iou=0.832 face_iou=0.000
+2026-08-14 07:42:14 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=3 conf=0.976 detector_conf=0.976 bbox=427x1061
+2026-08-14 07:42:14 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=3 reason=real_face age=0.000 max_conf=0.976 detector_observations=1 bbox_ratio=0.2225x0.9829
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=3 person_conf=0.976 quality=0.584
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=3 source=person_fallback quality=0.584
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=3 face_conf=0.807 quality=0.631 person_display=493x842 face_display=254x323
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=3 source=face_fallback quality=0.631 evidence=(1427.1293815612794, 0.0, 1920.0, 841.1591796875)
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=1 old_quality=0.691 new_quality=0.695 person_display=855x919 face_display=310x515
+2026-08-14 07:42:14 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=1 source=best_face quality=0.695 evidence=(609.185767364502, 161.62930297851562, 1463.2354209899902, 1080.0)
+2026-08-14 07:42:14 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.758
+2026-08-14 07:42:15 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.733
+2026-08-14 07:42:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=3 old_quality=0.631 new_quality=0.632 person_display=667x829 face_display=242x317
+2026-08-14 07:42:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_face quality=0.632 evidence=(1145.9880096435547, 0.0, 1811.9505279541015, 828.5656936645508)
+2026-08-14 07:42:15 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=75.0% mem=2.0% nvdec=54.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=3 old_quality=0.632 new_quality=0.646 person_display=667x820 face_display=242x313
+2026-08-14 07:42:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_face quality=0.646 evidence=(1154.2560722351075, 0.0, 1820.5789649963378, 819.6670211791992)
+2026-08-14 07:42:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=3 old_quality=0.646 new_quality=0.653 person_display=679x805 face_display=247x307
+2026-08-14 07:42:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_face quality=0.653 evidence=(1166.61474609375, 0.0, 1844.44287109375, 804.5462936401367)
+2026-08-14 07:42:16 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.733
+2026-08-14 07:42:16 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.751
+2026-08-14 07:42:17 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=3.0% nvdec=40.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:18 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.748
+2026-08-14 07:42:18 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.722
+2026-08-14 07:42:19 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=3 old_quality=0.653 new_quality=0.666 person_display=631x744 face_display=273x285
+2026-08-14 07:42:19 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=3 source=best_face quality=0.666 evidence=(1289.6844367980957, 0.0, 1920.0, 743.9169216156006)
+2026-08-14 07:42:19 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=69.0% mem=2.0% nvdec=33.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:20 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.741
+2026-08-14 07:42:20 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.760
+2026-08-14 07:42:21 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=73.0% mem=2.0% nvdec=44.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:22 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.748
+2026-08-14 07:42:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=2 source=best_face identity=unknown similarity=-1.000 quality=0.635
+2026-08-14 07:42:23 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=74.0% mem=2.0% nvdec=61.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:24 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.754
+2026-08-14 07:42:25 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=67.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:26 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.749
+2026-08-14 07:42:27 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_MERGE] camera=camera-01 raw=4 logical=3 gap=6.428 mode=reid similarity=0.870 area_ratio=0.819
+2026-08-14 07:42:27 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.710
+2026-08-14 07:42:27 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=81.0% mem=2.0% nvdec=70.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:28 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.751
+2026-08-14 07:42:29 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=3 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.733
+2026-08-14 07:42:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=2.0% nvdec=66.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:30 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.754
+2026-08-14 07:42:31 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=75.0% mem=2.0% nvdec=63.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:32 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.733
+2026-08-14 07:42:33 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=71.0% mem=2.0% nvdec=61.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:35 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=67.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:37 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=74.0% mem=2.0% nvdec=46.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:38 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_REID_REJECT] camera=camera-01 raw=5 candidate_logical=1 similarity=0.669 score=0.582 iou=0.486 face_iou=0.000
+2026-08-14 07:42:38 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=5 conf=0.582 detector_conf=0.582 bbox=945x719
+2026-08-14 07:42:38 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=5 reason=real_face age=0.000 max_conf=0.582 detector_observations=1 bbox_ratio=0.4923x0.6656
+2026-08-14 07:42:38 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=5 person_conf=0.582 quality=0.694
+2026-08-14 07:42:38 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=5 source=person_fallback quality=0.694
+2026-08-14 07:42:38 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=5 face_conf=0.867 quality=0.683 person_display=856x895 face_display=310x490
+2026-08-14 07:42:38 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=face_fallback quality=0.683 evidence=(608.7072509765625, 185.97068786621094, 1463.3545166015624, 1080.0)
+2026-08-14 07:42:38 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.737
+2026-08-14 07:42:39 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=2.0% nvdec=44.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:40 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.739
+2026-08-14 07:42:41 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=3 source=best_face identity=unknown similarity=-1.000 quality=0.666
+2026-08-14 07:42:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.683 new_quality=0.684 person_display=854x900 face_display=310x496
+2026-08-14 07:42:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.684 evidence=(608.192650604248, 180.88833618164062, 1461.9091102600098, 1080.0)
+2026-08-14 07:42:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.684 new_quality=0.688 person_display=862x905 face_display=312x502
+2026-08-14 07:42:41 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.688 evidence=(604.1469230651855, 175.64524841308594, 1465.4687538146973, 1080.0)
+2026-08-14 07:42:41 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=53.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:42 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.688 new_quality=0.689 person_display=857x904 face_display=311x500
+2026-08-14 07:42:42 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.689 evidence=(610.6103256225585, 176.98898315429688, 1466.774104309082, 1080.0)
+2026-08-14 07:42:42 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.746
+2026-08-14 07:42:42 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.689 new_quality=0.692 person_display=855x908 face_display=310x511
+2026-08-14 07:42:42 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.692 evidence=(608.8674697875977, 172.5361328125, 1462.6063766479492, 1080.0)
+2026-08-14 07:42:43 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.692 new_quality=0.694 person_display=860x904 face_display=312x506
+2026-08-14 07:42:43 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.694 evidence=(605.8533447265625, 176.24343872070312, 1464.4662353515625, 1080.0)
+2026-08-14 07:42:43 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=60.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:44 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.694 new_quality=0.699 person_display=872x910 face_display=316x512
+2026-08-14 07:42:44 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.699 evidence=(604.9357307434082, 170.51104736328125, 1475.0314781188965, 1080.0)
+2026-08-14 07:42:44 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.753
+2026-08-14 07:42:45 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=73.0% mem=2.0% nvdec=65.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:46 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.750
+2026-08-14 07:42:47 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=6 conf=0.960 detector_conf=0.960 bbox=326x1022
+2026-08-14 07:42:47 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=6 reason=real_face age=0.000 max_conf=0.960 detector_observations=1 bbox_ratio=0.1700x0.9464
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=6 person_conf=0.960 quality=0.478
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=6 source=person_fallback quality=0.478
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=6 face_conf=0.796 quality=0.583 person_display=443x913 face_display=256x358
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=6 source=face_fallback quality=0.583 evidence=(1477.3568359375, 0.0, 1920.0, 912.9918777465821)
+2026-08-14 07:42:47 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=73.0% mem=2.0% nvdec=42.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=6 old_quality=0.583 new_quality=0.604 person_display=505x943 face_display=253x369
+2026-08-14 07:42:47 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=6 source=best_face quality=0.604 evidence=(1415.9022521972656, 0.0, 1920.0, 942.6191596984863)
+2026-08-14 07:42:47 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=6 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.732
+2026-08-14 07:42:48 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=1 reason=finalize_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.717
+2026-08-14 07:42:48 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=1 source=best_face identity=unknown similarity=-1.000 quality=0.695
+2026-08-14 07:42:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=6 old_quality=0.604 new_quality=0.613 person_display=528x937 face_display=253x360
+2026-08-14 07:42:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=6 source=best_face quality=0.613 evidence=(1392.8621398925782, 0.0, 1920.0, 936.0816711425781)
+2026-08-14 07:42:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=6 old_quality=0.613 new_quality=0.639 person_display=547x962 face_display=255x373
+2026-08-14 07:42:48 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=6 source=best_face quality=0.639 evidence=(1373.6772338867188, 0.0, 1920.0, 961.5587898254395)
+2026-08-14 07:42:48 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.738
+2026-08-14 07:42:49 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=2.0% nvdec=54.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:49 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=6 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.777
+2026-08-14 07:42:50 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.745
+2026-08-14 07:42:51 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.699 new_quality=0.699 person_display=870x896 face_display=316x500
+2026-08-14 07:42:51 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.699 evidence=(608.5379135131836, 184.349853515625, 1477.686360168457, 1080.0)
+2026-08-14 07:42:51 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=74.0% mem=3.0% nvdec=57.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:52 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.755
+2026-08-14 07:42:53 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=75.0% mem=2.0% nvdec=66.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:54 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.743
+2026-08-14 07:42:55 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=72.0% mem=2.0% nvdec=51.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:56 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.750
+2026-08-14 07:42:57 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=73.0% mem=2.0% nvdec=55.0% queue=0.0% drops_delta=0
+2026-08-14 07:42:59 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=71.0% mem=2.0% nvdec=68.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:01 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=7 conf=0.210 detector_conf=0.210 bbox=310x683
+2026-08-14 07:43:01 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_MERGE] camera=camera-01 raw=8 logical=5 gap=3.664 mode=face_continuity score=0.946 iou=0.515 face_iou=0.928 reid_similarity=0.826 center_ratio=0.237 area_ratio=1.028
+2026-08-14 07:43:01 | INFO     | deepstream_ai.face_anchored_continuity | [TRACK_CONTINUITY_FACE_TRUST] camera=camera-01 raw=8 logical=5 reid_similarity=0.826 person_iou=0.515 face_iou=0.928 status=trusted_geometry_only
+2026-08-14 07:43:01 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.723
+2026-08-14 07:43:01 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=75.0% mem=2.0% nvdec=44.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:02 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=6 source=best_face identity=unknown similarity=-1.000 quality=0.639
+2026-08-14 07:43:03 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.750
+2026-08-14 07:43:03 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=3.0% nvdec=72.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:05 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.726
+2026-08-14 07:43:05 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=85.0% mem=2.0% nvdec=29.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:07 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.754
+2026-08-14 07:43:07 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=3.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:09 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.738
+2026-08-14 07:43:09 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=3.0% nvdec=46.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:11 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.743
+2026-08-14 07:43:11 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=85.0% mem=3.0% nvdec=30.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:13 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.731
+2026-08-14 07:43:13 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=67.0% mem=2.0% nvdec=60.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:14 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=9 conf=0.941 detector_conf=0.941 bbox=501x1072
+2026-08-14 07:43:14 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=9 reason=detector_confidence age=0.000 max_conf=0.941 detector_observations=1 bbox_ratio=0.2611x0.9922
+2026-08-14 07:43:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=9 person_conf=0.941 quality=0.562
+2026-08-14 07:43:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=9 source=person_fallback quality=0.562
+2026-08-14 07:43:14 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_person quality=0.586
+2026-08-14 07:43:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_person quality=0.607
+2026-08-14 07:43:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_person quality=0.615
+2026-08-14 07:43:15 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.731
+2026-08-14 07:43:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_person quality=0.626
+2026-08-14 07:43:15 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=3.0% nvdec=53.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=9 face_conf=0.677 quality=0.596 person_display=438x898 face_display=176x511
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=9 source=face_fallback quality=0.596 evidence=(889.0075378417969, 182.94140625, 1326.7087265014648, 1080.0)
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=9 old_quality=0.596 new_quality=0.641 person_display=614x899 face_display=313x506
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_face quality=0.641 evidence=(861.4619140625, 181.91778564453125, 1474.9872444152832, 1080.0)
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=9 old_quality=0.641 new_quality=0.654 person_display=500x894 face_display=213x507
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_face quality=0.654 evidence=(866.9050506591797, 186.1513671875, 1365.7380893707275, 1080.0)
+2026-08-14 07:43:16 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.730
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=9 old_quality=0.654 new_quality=0.699 person_display=535x889 face_display=233x501
+2026-08-14 07:43:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=9 source=best_face quality=0.699 evidence=(855.1149841308594, 191.42578125, 1389.8935081481934, 1080.0)
+2026-08-14 07:43:17 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.744
+2026-08-14 07:43:17 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=3.0% nvdec=44.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:17 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.699 new_quality=0.700 person_display=864x891 face_display=313x502
+2026-08-14 07:43:17 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.700 evidence=(613.2409408569335, 189.2006378173828, 1476.450129699707, 1080.0)
+2026-08-14 07:43:18 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.776
+2026-08-14 07:43:19 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.755
+2026-08-14 07:43:19 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=53.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:20 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.700 new_quality=0.709 person_display=877x893 face_display=318x507
+2026-08-14 07:43:20 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.709 evidence=(612.0447158813477, 187.13685607910156, 1488.6984176635742, 1080.0)
+2026-08-14 07:43:20 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.629
+2026-08-14 07:43:21 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.767
+2026-08-14 07:43:21 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=87.0% mem=2.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:22 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.753
+2026-08-14 07:43:23 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.761
+2026-08-14 07:43:23 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=2.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:24 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.709 new_quality=0.714 person_display=870x902 face_display=315x511
+2026-08-14 07:43:24 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.714 evidence=(607.6252182006835, 178.06202697753906, 1476.204524230957, 1080.0)
+2026-08-14 07:43:24 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.749
+2026-08-14 07:43:25 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.772
+2026-08-14 07:43:25 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=86.0% mem=3.0% nvdec=68.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:26 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.743
+2026-08-14 07:43:27 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.762
+2026-08-14 07:43:27 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=87.0% mem=2.0% nvdec=61.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:29 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.613
+2026-08-14 07:43:29 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.769
+2026-08-14 07:43:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=58.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:31 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.668
+2026-08-14 07:43:31 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:31 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.757
+2026-08-14 07:43:33 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.676
+2026-08-14 07:43:33 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=94.0% mem=3.0% nvdec=46.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:33 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.748
+2026-08-14 07:43:35 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=2.0% nvdec=57.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:35 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.624
+2026-08-14 07:43:35 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.762
+2026-08-14 07:43:37 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=5 old_quality=0.714 new_quality=0.715 person_display=865x892 face_display=313x503
+2026-08-14 07:43:37 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=70.0% mem=2.0% nvdec=61.0% queue=1.6% drops_delta=0
+2026-08-14 07:43:37 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=5 source=best_face quality=0.715 evidence=(613.1754150390625, 188.78990173339844, 1477.6495361328125, 1080.0)
+2026-08-14 07:43:37 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.774
+2026-08-14 07:43:39 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=74.0% mem=2.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:39 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.761
+2026-08-14 07:43:40 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.705
+2026-08-14 07:43:41 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=83.0% mem=2.0% nvdec=73.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:42 | INFO     | deepstream_ai.track_continuity | [TRACK_CONTINUITY_MERGE] camera=camera-01 raw=10 logical=5 gap=3.606 mode=reid similarity=0.956 area_ratio=1.100
+2026-08-14 07:43:42 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.746
+2026-08-14 07:43:42 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.716
+2026-08-14 07:43:43 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=2.0% nvdec=50.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:44 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.759
+2026-08-14 07:43:44 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.711
+2026-08-14 07:43:45 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=67.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:46 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.743
+2026-08-14 07:43:47 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.482
+2026-08-14 07:43:47 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=82.0% mem=2.0% nvdec=71.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:48 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.762
+2026-08-14 07:43:49 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=90.0% mem=2.0% nvdec=50.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:50 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.765
+2026-08-14 07:43:51 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=87.0% mem=2.0% nvdec=43.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:52 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.764
+2026-08-14 07:43:53 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=2.0% nvdec=51.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:54 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.746
+2026-08-14 07:43:55 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=81.0% mem=2.0% nvdec=70.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:56 | INFO     | deepstream_ai.face_anchored_continuity | [TRACK_CONTINUITY_FACE_TRUST] camera=camera-01 raw=10 logical=5 reid_similarity=0.849 person_iou=0.848 face_iou=0.799 status=trusted_geometry_only
+2026-08-14 07:43:56 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.755
+2026-08-14 07:43:57 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=73.0% mem=2.0% nvdec=53.0% queue=0.0% drops_delta=0
+2026-08-14 07:43:58 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.769
+2026-08-14 07:43:59 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=76.0% mem=2.0% nvdec=57.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:01 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=11 conf=0.292 detector_conf=0.292 bbox=149x789
+2026-08-14 07:44:01 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=68.0% mem=2.0% nvdec=46.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:03 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=12 conf=0.444 detector_conf=0.444 bbox=551x687
+2026-08-14 07:44:03 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=12 reason=real_face age=0.000 max_conf=0.444 detector_observations=1 bbox_ratio=0.2871x0.6365
+2026-08-14 07:44:03 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=12 person_conf=0.444 quality=0.532
+2026-08-14 07:44:03 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=90.0% mem=2.0% nvdec=59.0% queue=1.6% drops_delta=0
+2026-08-14 07:44:03 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=12 source=person_fallback quality=0.532
+2026-08-14 07:44:03 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=12 face_conf=0.603 quality=0.538 person_display=880x772 face_display=318x452
+2026-08-14 07:44:03 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=12 source=face_fallback quality=0.538 evidence=(747.5128372192382, 308.6191101074219, 1626.5010482788086, 1080.0)
+2026-08-14 07:44:05 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=13 conf=0.518 detector_conf=0.518 bbox=932x339
+2026-08-14 07:44:05 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=13 reason=detector_confidence age=0.000 max_conf=0.518 detector_observations=1 bbox_ratio=0.4856x0.3139
+2026-08-14 07:44:05 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=13 person_conf=0.518 quality=0.470
+2026-08-14 07:44:05 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=13 source=person_fallback quality=0.470
+2026-08-14 07:44:05 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=12 reason=timeout_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.610
+2026-08-14 07:44:05 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=9 reason=finalize_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.615
+2026-08-14 07:44:05 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=9 source=best_face identity=unknown similarity=-1.000 quality=0.699
+2026-08-14 07:44:05 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=59.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:06 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=13 face_conf=0.558 quality=0.440 person_display=412x395 face_display=150x177
+2026-08-14 07:44:06 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=13 source=face_fallback quality=0.440 evidence=(1001.9013916015625, 685.7061309814453, 1412.0314697265626, 1080.0)
+2026-08-14 07:44:07 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=13 reason=timeout_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.511
+2026-08-14 07:44:07 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=77.0% mem=2.0% nvdec=36.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=13 old_quality=0.440 new_quality=0.531 person_display=1130x944 face_display=409x621
+2026-08-14 07:44:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=13 source=best_face quality=0.531 evidence=(476.4798828125, 136.77273559570312, 1605.1958984375, 1080.0)
+2026-08-14 07:44:09 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=13 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.593
+2026-08-14 07:44:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=13 old_quality=0.531 new_quality=0.598 person_display=1120x1019 face_display=406x652
+2026-08-14 07:44:09 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=13 source=best_face quality=0.598 evidence=(487.6852905273437, 61.729736328125, 1606.927868652344, 1080.0)
+2026-08-14 07:44:09 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=86.0% mem=2.0% nvdec=68.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:10 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=13 old_quality=0.598 new_quality=0.609 person_display=1055x1008 face_display=382x599
+2026-08-14 07:44:10 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=13 source=best_face quality=0.609 evidence=(540.6873565673828, 72.3076171875, 1594.048178100586, 1080.0)
+2026-08-14 07:44:11 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=13 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.685
+2026-08-14 07:44:11 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=85.0% mem=2.0% nvdec=62.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:12 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=5 reason=finalize_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.749
+2026-08-14 07:44:12 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=5 source=best_face identity=unknown similarity=-1.000 quality=0.715
+2026-08-14 07:44:13 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=80.0% mem=1.0% nvdec=71.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:14 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=14 conf=0.307 detector_conf=0.307 bbox=166x1071
+2026-08-14 07:44:15 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=14 reason=sustained_detector age=0.801 max_conf=0.346 detector_observations=5 bbox_ratio=0.1044x0.9823
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=14 person_conf=0.338 quality=0.283
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=person_fallback quality=0.283
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.354
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.354
+2026-08-14 07:44:15 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=72.0% mem=2.0% nvdec=58.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.356
+2026-08-14 07:44:15 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=15 conf=0.492 detector_conf=0.492 bbox=705x845
+2026-08-14 07:44:15 | INFO     | deepstream_ai.weak_track_guard | [PERSON_CONFIRMED] camera=camera-01 track=15 reason=real_face age=0.000 max_conf=0.492 detector_observations=1 bbox_ratio=0.3674x0.7828
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=15 person_conf=0.492 quality=0.599
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=15 source=person_fallback quality=0.599
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=15 face_conf=0.876 quality=0.681 person_display=1122x1060 face_display=422x670
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=face_fallback quality=0.681 evidence=(451.47890625, 20.109375, 1572.6798309326173, 1080.0)
+2026-08-14 07:44:15 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=high_quality candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=1 best_quality=0.739
+2026-08-14 07:44:15 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.369
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.372
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.681 new_quality=0.682 person_display=1155x1080 face_display=422x689
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.682 evidence=(456.4476013183594, 0.29974365234375, 1610.9701164245607, 1080.0)
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.374
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.378
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.682 new_quality=0.683 person_display=1187x1080 face_display=430x691
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.683 evidence=(431.5346382141113, 0.0, 1617.993972015381, 1080.0)
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=14 source=best_person quality=0.382
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.683 new_quality=0.684 person_display=1195x1080 face_display=433x699
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.684 evidence=(427.76220932006834, 0.0, 1621.038465118408, 1080.0)
+2026-08-14 07:44:16 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.684 new_quality=0.685 person_display=1196x1080 face_display=433x692
+2026-08-14 07:44:17 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.685 evidence=(426.8285453796386, 0.0, 1621.4183570861817, 1080.0)
+2026-08-14 07:44:17 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=12 source=face_fallback identity=unknown similarity=-1.000 quality=0.538
+2026-08-14 07:44:17 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.685 new_quality=0.687 person_display=1207x1080 face_display=437x696
+2026-08-14 07:44:17 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.687 evidence=(422.05270233154295, 0.0, 1628.7904678344726, 1080.0)
+2026-08-14 07:44:17 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=84.0% mem=2.0% nvdec=73.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:17 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.746
+2026-08-14 07:44:18 | INFO     | deepstream_ai.weak_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=16 conf=0.256 detector_conf=0.256 bbox=38x95
+2026-08-14 07:44:19 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=58.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:19 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.744
+2026-08-14 07:44:20 | WARNING  | deepstream_ai.weak_track_guard | [PERSON_FALSE_POSITIVE_SUPPRESSED] camera=camera-01 track=16 age=1.511 max_conf=0.256 detector_observations=8 bbox_ratio=0.0192x0.0867
+2026-08-14 07:44:21 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=79.0% mem=2.0% nvdec=67.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:21 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.738
+2026-08-14 07:44:23 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=15 old_quality=0.687 new_quality=0.695 person_display=1149x1080 face_display=431x699
+2026-08-14 07:44:23 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=15 source=best_face quality=0.695 evidence=(456.2961311340332, 0.0, 1604.544921875, 1080.0)
+2026-08-14 07:44:23 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=13 source=best_face identity=unknown similarity=-1.000 quality=0.609
+2026-08-14 07:44:23 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=78.0% mem=2.0% nvdec=54.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:23 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.751
+2026-08-14 07:44:25 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=91.0% mem=2.0% nvdec=61.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:25 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.747
+2026-08-14 07:44:27 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=83.0% mem=2.0% nvdec=72.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:27 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.742
+2026-08-14 07:44:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=68.0% mem=2.0% nvdec=58.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:29 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.739
+2026-08-14 07:44:30 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=14 source=best_person identity=unknown similarity=-1.000 quality=0.382
+2026-08-14 07:44:31 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=95.0% mem=2.0% nvdec=37.0% queue=0.0% drops_delta=0
+2026-08-14 07:44:32 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=unknown_retry candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=3 best_quality=0.735
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.runner | 收到停止请求
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.runner | [RTSP_STOP] live source: skip EOS and stop main loop immediately
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              5518
+Probe Frames:                 5518
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      3.258
+P95 Probe Time (ms):          24.000
+Max Probe Time (ms):          48.217
+Tracker ReID Vectors:         825
+Tracker ReID Missing:         4116
+=======================================
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW_SUMMARY] frames=0 objects=0 hidden_by_age=0 errors=0
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.runner | [PRETRACKER_GUARD_SUMMARY] frames=5523 verified_people=1685 suppressed=0 errors=0
+2026-08-14 07:44:32 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止
+2026-08-14 07:44:32 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=15 reason=finalize_fallback candidate_known=False candidate_similarity=-1.000 retained_known=False retained_similarity=-1.000 samples=2 best_quality=0.697
+2026-08-14 07:44:32 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_FINALIZE] camera=camera-01 track=15 source=best_face identity=unknown similarity=-1.000 quality=0.695
+2026-08-14 07:44:32 | INFO     | deepstream_ai.snapshot.rolling_manager | Evidence Summary tracks=11 finalized=11 success=11 failed=0 missing=0 best_face=9 face_fallback=1 best_person=1 person_fallback=0 know=0 unknown=10
