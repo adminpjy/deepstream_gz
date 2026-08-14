@@ -115,6 +115,18 @@ def _confidence(obj_meta: Any) -> float:
     return min(1.0, max(0.0, value))
 
 
+def _detector_confidence(obj_meta: Any) -> float | None:
+    """Return the PGIE confidence only when this NvDCF output is detector-backed."""
+
+    try:
+        value = float(getattr(obj_meta, "confidence", -1.0))
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(value) or value < 0.0:
+        return None
+    return min(1.0, max(0.0, value))
+
+
 def _hide_pgie_non_person_osd(
     obj_meta: Any,
     *,
@@ -174,8 +186,6 @@ def _tracker_reid_embedding(obj_meta: Any, pyds: Any) -> np.ndarray | None:
             norm = float(np.linalg.norm(view))
             if not np.isfinite(norm) or norm <= 1e-12:
                 return None
-            # The PyDS array points into tracker-owned host memory. Own the 1 KiB
-            # vector before this GstBuffer and its user metadata are released.
             result = np.array(view / norm, dtype=np.float32, copy=True)
             result.setflags(write=False)
             return result
@@ -232,12 +242,7 @@ def _face_landmarks(
     unique_id: int = 0,
     threshold: float = 0.65,
 ) -> tuple[tuple[float, float], ...]:
-    """Decode an explicit face-landmark transport without fabricating points.
-
-    ``tensor`` is the production SCRFD route: nvinfer attaches raw secondary
-    tensor output to the parent person, which is decoded and matched to this
-    face. ``mask`` remains available only for existing custom bridges.
-    """
+    """Decode an explicit face-landmark transport without fabricating points."""
 
     if source == "none":
         return ()
@@ -294,9 +299,6 @@ class MetadataProbe:
         self._cuda: Any | None = None
         self._cuda_context: Any | None = None
         self._timing_lock = Lock()
-        # One-millisecond lifetime buckets keep P95 bounded in memory while
-        # covering both short test clips and long-running streams.  The final
-        # bucket contains callbacks taking 60 seconds or longer.
         self._timing_histogram = array("Q", [0]) * (_PROBE_HISTOGRAM_MAX_MS + 1)
         self._timing_callbacks = 0
         self._timing_frames = 0
@@ -336,7 +338,6 @@ class MetadataProbe:
                     self._annotate_identities(batch_meta, packet.camera_id, person_meta)
                 except Exception:
                     errors += 1
-                    # A malformed metadata item must not tear down the streaming thread.
                     LOGGER.exception("处理 DeepStream metadata 失败，当前帧已跳过")
             return Gst.PadProbeReturn.OK
         finally:
@@ -442,8 +443,6 @@ class MetadataProbe:
             source = self.config.enabled_sources[pad_index]
             stream_time_ns = round(frame_number / source.nominal_fps * _NANOSECONDS)
         image = self._copy_gpu_surface(gst_buffer, int(frame_meta.batch_id))
-        # The probe caps and all downstream business adapters use RGBA. Keeping
-        # this representation avoids an extra full-frame channel-swizzle copy.
         image.setflags(write=False)
 
         tracks: list[Track] = []
@@ -465,11 +464,6 @@ class MetadataProbe:
             if class_id not in self.config.pipeline.person.person_class_ids:
                 continue
             native_track_id = _effective_nvdcf_track_id(obj_meta)
-            # NvDCF leaves a PGIE proposal as UNTRACKED_OBJECT_ID while the
-            # target is tentative or rejected. It is not an effective Person
-            # Track and must not create a one-frame business lifecycle,
-            # snapshot, or synthetic ID. The established mapping for every
-            # accepted NvDCF object_id remains unchanged.
             if native_track_id is None:
                 continue
             bbox = _box(obj_meta)
@@ -477,6 +471,12 @@ class MetadataProbe:
                 continue
             track_id = _track_id(obj_meta, frame_number, index)
             metadata: dict[str, Any] = {"class_id": class_id, "component_id": uid}
+            detector_confidence = _detector_confidence(obj_meta)
+            if detector_confidence is not None:
+                # Public metadata survives logical-ID resolution. Weak-new-track
+                # confirmation must not mistake later NvDCF tracker confidence
+                # for a fresh PeopleNet observation on skipped PGIE frames.
+                metadata["detector_confidence"] = detector_confidence
             reid_embedding = _tracker_reid_embedding(obj_meta, pyds)
             if reid_embedding is not None:
                 metadata[_TRACKER_REID_METADATA_KEY] = reid_embedding
@@ -585,13 +585,7 @@ class MetadataProbe:
         )
 
     def _copy_gpu_surface(self, gst_buffer: Any, batch_id: int) -> np.ndarray:
-        """Copy an RGBA NvBufSurface into owned host memory.
-
-        The PyDS CPU helper exposes a NumPy view over ``dataPtr`` and can
-        segfault when the SDK supplies device memory. The GPU helper gives us
-        the same pointer and layout without dereferencing it on the CPU, so an
-        explicit CUDA copy is safe for both device and unified surfaces.
-        """
+        """Copy an RGBA NvBufSurface into owned host memory."""
         dtype, shape, strides, capsule, size = self.runtime.pyds.get_nvds_buf_surface_gpu(
             hash(gst_buffer), batch_id
         )
@@ -620,17 +614,7 @@ class MetadataProbe:
         finally:
             self._cuda.Context.pop()
 
-        view = np.ndarray(
-            shape,
-            dtype=dtype,
-            buffer=host,
-            strides=strides,
-        )
-        # ``view`` owns the host allocation through its buffer reference.  It
-        # may be pitched, but downstream evidence code copies only selected
-        # ROIs.  Returning the view avoids a second full-frame host copy in the
-        # streaming thread.
-        return view
+        return np.ndarray(shape, dtype=dtype, buffer=host, strides=strides)
 
     def _tensor_face_landmarks(
         self, objects: Sequence[Any]
@@ -746,9 +730,6 @@ class MetadataProbe:
         if not updates:
             return
 
-        # Identity lookup may touch a worker-owned cache, so complete it before
-        # taking DeepStream's batch metadata lock. Hold the lock only while
-        # mutating NvOSD text pointers.
         pyds = self.runtime.pyds
         pyds.nvds_acquire_meta_lock(batch_meta)
         try:
