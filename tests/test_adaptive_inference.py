@@ -70,7 +70,9 @@ def test_interval_conversion_uses_detected_source_fps() -> None:
 def test_fraction_parser_handles_caps_style_values() -> None:
     assert _fraction_to_float("30000/1001") == pytest.approx(29.97002997)
     assert _fraction_to_float("30/1") == pytest.approx(30.0)
-    assert _fraction_to_float("0/1") is None
+    # A zero fraction is parsed but later rejected as a negotiated FPS, causing
+    # the controller to use the configured startup fallback instead.
+    assert _fraction_to_float("0/1") == pytest.approx(0.0)
 
 
 def test_queue_ratio_finds_analytics_queue_through_delegate_chain() -> None:
