@@ -1,17 +1,13 @@
-"""Small business-layer bridge for short NvDCF ID switches.
+"""Business-layer continuity for short NvDCF ID switches.
 
-NvDCF remains the authoritative tracker. This module only aliases a newly
-created raw object_id back to the most plausible existing logical track in the
-same camera. The first raw ID is preserved as the logical/business ID, so normal
-alarm semantics do not change.
+NvDCF remains the authoritative tracker. This resolver preserves the first raw
+object ID as the stable logical/business ID when a recently fragmented target
+can be recovered conservatively.
 
-Two cases are handled conservatively:
-1. a recently-lost raw ID is replaced after a brief stream/association glitch;
-2. NvDCF briefly emits two almost-identical raw tracks for the same person.
-
-For multi-person safety, ordinary simultaneously visible tracks are never
-merged. Same-frame merging requires nearly identical person boxes, or strongly
-overlapping person boxes corroborated by overlapping face detections.
+Normal recovery uses the tracker ReID gallery. A borderline ReID result may be
+accepted only when both the person geometry and a real SCRFD face are nearly
+continuous with trusted observations from the old logical track. Borderline
+observations never update the trusted ReID gallery.
 """
 
 from __future__ import annotations
@@ -59,9 +55,22 @@ class TrackContinuityConfig:
     fragment_max_center_distance_ratio: float = 0.13
     fragment_min_area_ratio: float = 0.70
     fragment_max_area_ratio: float = 1.35
+    face_override_max_gap_sec: float = 3.0
+    face_override_min_person_iou: float = 0.25
+    face_override_min_person_containment: float = 0.50
+    face_override_max_center_distance_ratio: float = 0.33
+    face_override_min_area_ratio: float = 0.60
+    face_override_max_area_ratio: float = 1.45
+    face_override_min_face_iou: float = 0.85
+    face_override_min_face_containment: float = 0.95
+    face_override_max_face_center_distance_ratio: float = 0.05
+    face_override_min_face_area_ratio: float = 0.85
+    face_override_max_face_area_ratio: float = 1.20
+    face_override_min_face_score: float = 0.70
+    face_override_min_reid: float = 0.80
 
     @classmethod
-    def from_file(cls, config_path: str | Path) -> TrackContinuityConfig:
+    def from_file(cls, config_path: str | Path) -> "TrackContinuityConfig":
         path = Path(config_path)
         try:
             raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -91,18 +100,47 @@ class TrackContinuityConfig:
             fragment_min_reid=float(section.get("fragment_min_reid", 0.82)),
             fragment_max_gap_sec=float(section.get("fragment_max_gap_sec", 0.12)),
             fragment_min_iou=float(section.get("fragment_min_iou", 0.65)),
-            fragment_min_containment=float(
-                section.get("fragment_min_containment", 0.85)
-            ),
+            fragment_min_containment=float(section.get("fragment_min_containment", 0.85)),
             fragment_max_center_distance_ratio=float(
                 section.get("fragment_max_center_distance_ratio", 0.13)
             ),
-            fragment_min_area_ratio=float(
-                section.get("fragment_min_area_ratio", 0.70)
+            fragment_min_area_ratio=float(section.get("fragment_min_area_ratio", 0.70)),
+            fragment_max_area_ratio=float(section.get("fragment_max_area_ratio", 1.35)),
+            face_override_max_gap_sec=float(section.get("face_override_max_gap_sec", 3.0)),
+            face_override_min_person_iou=float(
+                section.get("face_override_min_person_iou", 0.25)
             ),
-            fragment_max_area_ratio=float(
-                section.get("fragment_max_area_ratio", 1.35)
+            face_override_min_person_containment=float(
+                section.get("face_override_min_person_containment", 0.50)
             ),
+            face_override_max_center_distance_ratio=float(
+                section.get("face_override_max_center_distance_ratio", 0.33)
+            ),
+            face_override_min_area_ratio=float(
+                section.get("face_override_min_area_ratio", 0.60)
+            ),
+            face_override_max_area_ratio=float(
+                section.get("face_override_max_area_ratio", 1.45)
+            ),
+            face_override_min_face_iou=float(
+                section.get("face_override_min_face_iou", 0.85)
+            ),
+            face_override_min_face_containment=float(
+                section.get("face_override_min_face_containment", 0.95)
+            ),
+            face_override_max_face_center_distance_ratio=float(
+                section.get("face_override_max_face_center_distance_ratio", 0.05)
+            ),
+            face_override_min_face_area_ratio=float(
+                section.get("face_override_min_face_area_ratio", 0.85)
+            ),
+            face_override_max_face_area_ratio=float(
+                section.get("face_override_max_face_area_ratio", 1.20)
+            ),
+            face_override_min_face_score=float(
+                section.get("face_override_min_face_score", 0.70)
+            ),
+            face_override_min_reid=float(section.get("face_override_min_reid", 0.80)),
         )
         if (
             result.max_gap_sec <= 0
@@ -110,6 +148,8 @@ class TrackContinuityConfig:
             or result.stale_retention_sec < result.reid_max_gap_sec
             or result.fragment_max_gap_sec <= 0
             or result.fragment_max_gap_sec > result.max_gap_sec
+            or result.face_override_max_gap_sec <= 0
+            or result.face_override_max_gap_sec > result.max_gap_sec
         ):
             raise ValueError("track_continuity timing values are invalid")
         for name in (
@@ -128,6 +168,14 @@ class TrackContinuityConfig:
             "fragment_min_iou",
             "fragment_min_containment",
             "fragment_max_center_distance_ratio",
+            "face_override_min_person_iou",
+            "face_override_min_person_containment",
+            "face_override_max_center_distance_ratio",
+            "face_override_min_face_iou",
+            "face_override_min_face_containment",
+            "face_override_max_face_center_distance_ratio",
+            "face_override_min_face_score",
+            "face_override_min_reid",
         ):
             value = getattr(result, name)
             if not 0.0 <= value <= 1.0:
@@ -139,17 +187,16 @@ class TrackContinuityConfig:
                 "track_continuity reid_update_min must equal reid_match_min "
                 "to prevent gallery identity drift"
             )
-        if not (
-            0.0
-            < result.fragment_min_area_ratio
-            <= 1.0
-            <= result.fragment_max_area_ratio
-        ):
+        if not 0.0 < result.fragment_min_area_ratio <= 1.0 <= result.fragment_max_area_ratio:
             raise ValueError("track_continuity fragment area ratios are invalid")
+        if not 0.0 < result.face_override_min_area_ratio <= 1.0 <= result.face_override_max_area_ratio:
+            raise ValueError("track_continuity face override person area ratios are invalid")
+        if not 0.0 < result.face_override_min_face_area_ratio <= 1.0 <= result.face_override_max_face_area_ratio:
+            raise ValueError("track_continuity face override face area ratios are invalid")
         if result.fragment_min_reid >= result.reid_match_min:
-            raise ValueError(
-                "track_continuity fragment_min_reid must be below reid_match_min"
-            )
+            raise ValueError("track_continuity fragment_min_reid must be below reid_match_min")
+        if result.face_override_min_reid >= result.reid_match_min:
+            raise ValueError("track_continuity face_override_min_reid must be below reid_match_min")
         if not 0.0 < result.min_area_ratio <= 1.0 <= result.max_area_ratio:
             raise ValueError("track_continuity area ratios are invalid")
         return result
@@ -167,6 +214,8 @@ class _LogicalTrackState:
     reid_embedding: np.ndarray | None = None
     trusted_bbox: BoundingBox | None = None
     trusted_seen: datetime | None = None
+    trusted_face_bbox: BoundingBox | None = None
+    trusted_face_seen: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -186,6 +235,7 @@ class _GeometryCandidate:
     reid_similarity: float | None
     face_iou: float = 0.0
     fragment_override: bool = False
+    face_override: bool = False
 
 
 class TrackContinuityResolver:
@@ -213,7 +263,6 @@ class TrackContinuityResolver:
             assignments: dict[TrackId, TrackId] = {}
             occupied_logical: set[TrackId] = set()
 
-            # Existing raw IDs keep their established logical IDs.
             for track in packet.tracks:
                 logical = self._raw_to_logical.get((packet.camera_id, track.track_id))
                 if logical is None:
@@ -221,14 +270,7 @@ class TrackContinuityResolver:
                 assignments[track.track_id] = logical
                 occupied_logical.add(logical)
 
-            # A raw NvDCF ID can stay alive after jumping from one visible
-            # person to another. Quarantine only when the unexpected vector is
-            # also confirmed by another currently trustworthy target.
-            newly_quarantined = self._reid_hijacks(
-                packet,
-                assignments,
-                track_by_raw,
-            )
+            newly_quarantined = self._reid_hijacks(packet, assignments, track_by_raw)
             for raw_id, redirect_logical in newly_quarantined.items():
                 logical = assignments.pop(raw_id)
                 occupied_logical.discard(logical)
@@ -254,9 +296,7 @@ class TrackContinuityResolver:
                 incoming = _track_reid_embedding(track)
                 similarity = (
                     _cosine(incoming, state.reid_embedding)
-                    if incoming is not None
-                    and state is not None
-                    and state.reid_embedding is not None
+                    if incoming is not None and state is not None and state.reid_embedding is not None
                     else -1.0
                 )
                 if similarity >= self.config.reid_match_min:
@@ -282,8 +322,7 @@ class TrackContinuityResolver:
                     assignments[raw_id] = original_logical
                     occupied_logical.add(original_logical)
                     LOGGER.info(
-                        "[TRACK_CONTINUITY_REID_RESTORE] camera=%s raw=%s logical=%s "
-                        "similarity=%.3f",
+                        "[TRACK_CONTINUITY_REID_RESTORE] camera=%s raw=%s logical=%s similarity=%.3f",
                         packet.camera_id,
                         raw_id,
                         original_logical,
@@ -326,10 +365,8 @@ class TrackContinuityResolver:
                 if raw_id in assignments or raw_id in quarantined_raw_ids:
                     continue
 
-                # First handle the rare NvDCF duplicate-target case. A new raw
-                # track can share an existing logical ID only when the current
-                # boxes are almost identical, or when strong box overlap is
-                # corroborated by overlapping SCRFD face boxes.
+                # Same-frame duplicate fragments can be collapsed using strong
+                # face overlap even when the current frame has no ReID vector.
                 duplicate_candidates: list[tuple[float, TrackId, TrackId, float]] = []
                 for existing_raw, logical in assignments.items():
                     if existing_raw in quarantined_raw_ids:
@@ -338,9 +375,9 @@ class TrackContinuityResolver:
                     if existing is None:
                         continue
                     person_iou = _iou(existing.bbox, track.bbox)
+                    person_containment = _containment(existing.bbox, track.bbox)
                     face_iou = _max_face_iou(
-                        faces_by_raw.get(existing_raw, ()),
-                        faces_by_raw.get(raw_id, ()),
+                        faces_by_raw.get(existing_raw, ()), faces_by_raw.get(raw_id, ())
                     )
                     incoming_reid = _track_reid_embedding(track)
                     existing_reid = _track_reid_embedding(existing)
@@ -348,18 +385,25 @@ class TrackContinuityResolver:
                     existing_identity = (
                         existing_reid
                         if existing_reid is not None
-                        else (existing_state.reid_embedding if existing_state is not None else None)
+                        else existing_state.reid_embedding if existing_state is not None else None
                     )
-                    if (
-                        incoming_reid is not None
-                        and existing_identity is not None
-                        and _cosine(incoming_reid, existing_identity) < self.config.reid_update_min
-                    ):
-                        continue
+                    reid_similarity = (
+                        _cosine(incoming_reid, existing_identity)
+                        if incoming_reid is not None and existing_identity is not None
+                        else None
+                    )
+                    face_corroborated = face_iou >= self.config.face_override_min_face_iou
+                    if reid_similarity is not None and reid_similarity < self.config.reid_update_min:
+                        if not (
+                            reid_similarity >= self.config.face_override_min_reid
+                            and face_corroborated
+                        ):
+                            continue
                     if (
                         existing_state is not None
                         and existing_state.reid_embedding is not None
                         and incoming_reid is None
+                        and not face_corroborated
                     ):
                         continue
                     duplicate = (
@@ -367,6 +411,11 @@ class TrackContinuityResolver:
                         or (
                             person_iou >= self.config.duplicate_iou_with_face
                             and face_iou >= self.config.duplicate_face_iou
+                        )
+                        or (
+                            face_corroborated
+                            and person_containment
+                            >= self.config.face_override_min_person_containment
                         )
                     )
                     if duplicate:
@@ -397,9 +446,7 @@ class TrackContinuityResolver:
                         )
                         continue
 
-                active_duplicate_candidates: list[
-                    tuple[float, TrackId, TrackId, float, str]
-                ] = []
+                active_duplicate_candidates: list[tuple[float, TrackId, TrackId, float, str]] = []
                 incoming_reid = _track_reid_embedding(track)
                 if incoming_reid is not None and not faces_by_raw.get(raw_id):
                     for existing_raw, logical in assignments.items():
@@ -411,35 +458,22 @@ class TrackContinuityResolver:
                         if similarity < self.config.fragment_min_reid:
                             continue
                         iou, containment, center_ratio, area_ratio = _box_metrics(
-                            existing.bbox,
-                            track.bbox,
+                            existing.bbox, track.bbox
                         )
                         strict_identity = similarity >= self.config.reid_match_min
                         geometry_matches = (
                             iou >= (0.20 if strict_identity else self.config.fragment_min_iou)
                             and containment
-                            >= (
-                                0.40
-                                if strict_identity
-                                else self.config.fragment_min_containment
-                            )
+                            >= (0.40 if strict_identity else self.config.fragment_min_containment)
                             and center_ratio
                             <= (
                                 0.35
                                 if strict_identity
                                 else self.config.fragment_max_center_distance_ratio
                             )
-                            and (
-                                0.60
-                                if strict_identity
-                                else self.config.fragment_min_area_ratio
-                            )
+                            and (0.60 if strict_identity else self.config.fragment_min_area_ratio)
                             <= area_ratio
-                            <= (
-                                1.70
-                                if strict_identity
-                                else self.config.fragment_max_area_ratio
-                            )
+                            <= (1.70 if strict_identity else self.config.fragment_max_area_ratio)
                         )
                         if geometry_matches:
                             active_duplicate_candidates.append(
@@ -479,8 +513,6 @@ class TrackContinuityResolver:
                         )
                         continue
 
-                # Otherwise look only at recently missing logical tracks. This
-                # bridges a short RTSP flash or one failed NvDCF association.
                 geometry_candidates: list[_GeometryCandidate] = []
                 reid_candidates: list[tuple[float, _LogicalTrackState, float]] = []
                 incoming_reid = _track_reid_embedding(track)
@@ -503,7 +535,6 @@ class TrackContinuityResolver:
                     if gap < 0 or gap > self.config.reid_max_gap_sec:
                         continue
                     state_bbox = state.trusted_bbox or state.last_bbox
-                    state_seen = state.trusted_seen or state.last_seen
                     area_ratio = track.bbox.area / max(state_bbox.area, 1.0)
                     similarity: float | None = None
                     if incoming_reid is not None and state.reid_embedding is not None:
@@ -512,19 +543,17 @@ class TrackContinuityResolver:
                             reid_candidates.append((similarity, state, area_ratio))
                     if gap > self.config.max_gap_sec:
                         continue
-                    person_metrics = _box_metrics(state_bbox, track.bbox)
-                    iou, containment, center_ratio, area_ratio = person_metrics
+                    iou, containment, center_ratio, area_ratio = _box_metrics(
+                        state_bbox, track.bbox
+                    )
                     metrics = self._match_metrics(state_bbox, track.bbox)
                     score = metrics[0] if metrics is not None else 0.0
                     last_iou, last_containment, last_center, last_area = _box_metrics(
-                        state.last_bbox,
-                        track.bbox,
+                        state.last_bbox, track.bbox
                     )
                     fragment_override = (
                         similarity is not None
-                        and self.config.fragment_min_reid
-                        <= similarity
-                        < self.config.reid_match_min
+                        and self.config.fragment_min_reid <= similarity < self.config.reid_match_min
                         and not occupied_reid_match
                         and 0.0 <= gap <= self.config.fragment_max_gap_sec
                         and last_iou >= self.config.fragment_min_iou
@@ -534,7 +563,51 @@ class TrackContinuityResolver:
                         <= last_area
                         <= self.config.fragment_max_area_ratio
                     )
-                    if (metrics is None or score < self.config.min_match_score) and not fragment_override:
+
+                    face_iou = 0.0
+                    face_override = False
+                    if (
+                        best_incoming_face is not None
+                        and best_incoming_face.score >= self.config.face_override_min_face_score
+                        and state.trusted_face_bbox is not None
+                        and state.trusted_face_seen is not None
+                        and similarity is not None
+                        and self.config.face_override_min_reid
+                        <= similarity
+                        < self.config.reid_match_min
+                        and not occupied_reid_match
+                    ):
+                        face_gap = _seconds_between(
+                            best_incoming_face.timestamp, state.trusted_face_seen
+                        )
+                        face_iou, face_containment, face_center, face_area = _box_metrics(
+                            state.trusted_face_bbox, best_incoming_face.bbox
+                        )
+                        face_override = (
+                            0.0 <= face_gap <= self.config.face_override_max_gap_sec
+                            and iou >= self.config.face_override_min_person_iou
+                            and containment
+                            >= self.config.face_override_min_person_containment
+                            and center_ratio
+                            <= self.config.face_override_max_center_distance_ratio
+                            and self.config.face_override_min_area_ratio
+                            <= area_ratio
+                            <= self.config.face_override_max_area_ratio
+                            and face_iou >= self.config.face_override_min_face_iou
+                            and face_containment
+                            >= self.config.face_override_min_face_containment
+                            and face_center
+                            <= self.config.face_override_max_face_center_distance_ratio
+                            and self.config.face_override_min_face_area_ratio
+                            <= face_area
+                            <= self.config.face_override_max_face_area_ratio
+                        )
+
+                    if (
+                        (metrics is None or score < self.config.min_match_score)
+                        and not fragment_override
+                        and not face_override
+                    ):
                         continue
                     if fragment_override:
                         iou = last_iou
@@ -544,6 +617,10 @@ class TrackContinuityResolver:
                         fragment_metrics = self._match_metrics(state.last_bbox, track.bbox)
                         if fragment_metrics is not None:
                             score = fragment_metrics[0]
+                    if face_override:
+                        # Put a strongly face-corroborated candidate ahead of a
+                        # geometry-only candidate without altering identity data.
+                        score = max(score, 0.90 + 0.05 * face_iou)
                     geometry_candidates.append(
                         _GeometryCandidate(
                             score=score,
@@ -553,15 +630,9 @@ class TrackContinuityResolver:
                             center_ratio=center_ratio,
                             area_ratio=area_ratio,
                             reid_similarity=similarity,
-                            face_iou=(
-                                _max_face_iou(
-                                    faces_by_raw.get(raw_id, ()),
-                                    (),
-                                )
-                                if best_incoming_face is not None
-                                else 0.0
-                            ),
+                            face_iou=face_iou,
                             fragment_override=fragment_override,
+                            face_override=face_override,
                         )
                     )
 
@@ -601,11 +672,10 @@ class TrackContinuityResolver:
                         best.reid_similarity is not None
                         and best.reid_similarity < self.config.reid_match_min
                     )
-                    missing_identity = (
-                        incoming_reid is None and best.state.reid_embedding is not None
-                    )
+                    missing_identity = incoming_reid is None and best.state.reid_embedding is not None
+                    continuity_override = best.fragment_override or best.face_override
                     if best.score - second_score >= self.config.ambiguity_margin and (
-                        (not own_conflict and not missing_identity) or best.fragment_override
+                        (not own_conflict and not missing_identity) or continuity_override
                     ):
                         state = best.state
                         logical = state.logical_id
@@ -614,6 +684,13 @@ class TrackContinuityResolver:
                         self._raw_to_logical[(packet.camera_id, raw_id)] = logical
                         state.current_raw_id = raw_id
                         state.raw_ids.add(raw_id)
+                        mode = (
+                            "face_continuity"
+                            if best.face_override
+                            else "short_gap_fragment"
+                            if best.fragment_override
+                            else "geometry"
+                        )
                         LOGGER.info(
                             "[TRACK_CONTINUITY_MERGE] camera=%s raw=%s logical=%s gap=%.3f "
                             "mode=%s score=%.3f iou=%.3f face_iou=%.3f "
@@ -622,7 +699,7 @@ class TrackContinuityResolver:
                             raw_id,
                             logical,
                             _seconds_between(track.timestamp, state.last_seen),
-                            "short_gap_fragment" if best.fragment_override else "geometry",
+                            mode,
                             best.score,
                             best.iou,
                             best.face_iou,
@@ -653,6 +730,7 @@ class TrackContinuityResolver:
                     assignments[raw_id] = logical
                     occupied_logical.add(logical)
                     self._raw_to_logical[(packet.camera_id, raw_id)] = logical
+                    best_face = _best_face(faces_by_raw.get(raw_id, ()))
                     self._states[(packet.camera_id, logical)] = _LogicalTrackState(
                         camera_id=packet.camera_id,
                         logical_id=logical,
@@ -664,10 +742,10 @@ class TrackContinuityResolver:
                         reid_embedding=_track_reid_embedding(track),
                         trusted_bbox=track.bbox,
                         trusted_seen=track.timestamp,
+                        trusted_face_bbox=best_face.bbox if best_face is not None else None,
+                        trusted_face_seen=best_face.timestamp if best_face is not None else None,
                     )
 
-            # Deduplicate raw tracker fragments that now share one logical ID.
-            # Prefer a track carrying a face this frame, then detector confidence.
             resolved_by_logical = {}
             selected_raw_by_logical: dict[TrackId, TrackId] = {}
             for track in packet.tracks:
@@ -694,6 +772,7 @@ class TrackContinuityResolver:
 
             for logical, resolved in resolved_by_logical.items():
                 raw_id = selected_raw_by_logical[logical]
+                best_face = _best_face(faces_by_raw.get(raw_id, ()))
                 state = self._states.get((packet.camera_id, logical))
                 if state is None:
                     state = _LogicalTrackState(
@@ -707,6 +786,8 @@ class TrackContinuityResolver:
                         reid_embedding=_track_reid_embedding(track_by_raw[raw_id]),
                         trusted_bbox=resolved.bbox,
                         trusted_seen=resolved.timestamp,
+                        trusted_face_bbox=best_face.bbox if best_face is not None else None,
+                        trusted_face_seen=best_face.timestamp if best_face is not None else None,
                     )
                     self._states[(packet.camera_id, logical)] = state
                 else:
@@ -730,6 +811,9 @@ class TrackContinuityResolver:
                     if trusted:
                         state.trusted_bbox = resolved.bbox
                         state.trusted_seen = resolved.timestamp
+                        if best_face is not None:
+                            state.trusted_face_bbox = best_face.bbox
+                            state.trusted_face_seen = best_face.timestamp
 
             def logical_for(raw_id: TrackId) -> TrackId:
                 return assignments.get(
@@ -769,12 +853,8 @@ class TrackContinuityResolver:
             return self._raw_to_logical.get((camera_id, raw_track_id), raw_track_id)
 
     def presentation_track_id(
-        self,
-        camera_id: str,
-        raw_track_id: TrackId,
+        self, camera_id: str, raw_track_id: TrackId
     ) -> TrackId | None:
-        """Return the stable OSD ID, or hide a quarantined identity-swap box."""
-
         with self._lock:
             key = (camera_id, raw_track_id)
             if key in self._quarantined_raw and key not in self._raw_to_logical:
@@ -789,11 +869,6 @@ class TrackContinuityResolver:
     ) -> dict[TrackId, TrackId | None]:
         quarantined: dict[TrackId, TrackId | None] = {}
         for raw_id, logical in assignments.items():
-            # A quarantined raw ID must keep its first known owner as the
-            # recovery anchor.  Its persistent quarantine state below decides
-            # whether to restore, redirect, or suppress it; reclassifying it
-            # here could overwrite A -> B with B -> C after a second identity
-            # jump and make recovery to A impossible.
             if (packet.camera_id, raw_id) in self._quarantined_raw:
                 continue
             track = track_by_raw[raw_id]
@@ -815,10 +890,7 @@ class TrackContinuityResolver:
                 other_incoming = _track_reid_embedding(track_by_raw[other_raw])
                 if other_incoming is None:
                     continue
-                if (
-                    _cosine(other_incoming, other_state.reid_embedding)
-                    < self.config.reid_update_min
-                ):
+                if _cosine(other_incoming, other_state.reid_embedding) < self.config.reid_update_min:
                     continue
                 similarity = _cosine(incoming, other_incoming)
                 corroboration.append((similarity, other_logical))
@@ -839,8 +911,7 @@ class TrackContinuityResolver:
                 quarantined[raw_id] = redirect_logical
                 LOGGER.info(
                     "[TRACK_CONTINUITY_REID_HOLD] camera=%s raw=%s logical=%s "
-                    "own_similarity=%.3f corroborating_logical=%s other_similarity=%.3f "
-                    "redirect=%s",
+                    "own_similarity=%.3f corroborating_logical=%s other_similarity=%.3f redirect=%s",
                     packet.camera_id,
                     raw_id,
                     logical,
@@ -851,11 +922,7 @@ class TrackContinuityResolver:
                 )
         return quarantined
 
-    def _update_reid(
-        self,
-        state: _LogicalTrackState,
-        incoming: np.ndarray | None,
-    ) -> None:
+    def _update_reid(self, state: _LogicalTrackState, incoming: np.ndarray | None) -> None:
         if incoming is None:
             return
         if state.reid_embedding is None:
@@ -872,14 +939,11 @@ class TrackContinuityResolver:
         state.reid_embedding = result
 
     def _match_metrics(
-        self,
-        previous: BoundingBox,
-        current: BoundingBox,
+        self, previous: BoundingBox, current: BoundingBox
     ) -> tuple[float, float, float, float] | None:
         area_ratio = current.area / max(previous.area, 1.0)
         if not self.config.min_area_ratio <= area_ratio <= self.config.max_area_ratio:
             return None
-
         iou = _iou(previous, current)
         px, py = previous.center
         cx, cy = current.center
@@ -892,7 +956,6 @@ class TrackContinuityResolver:
         center_ratio = center_distance / scale
         if iou < self.config.min_iou and center_ratio > self.config.max_center_distance_ratio:
             return None
-
         center_score = max(
             0.0,
             1.0 - center_ratio / max(self.config.max_center_distance_ratio, 1e-6),
@@ -914,15 +977,9 @@ class TrackContinuityResolver:
                 if self._raw_to_logical.get(raw_key) == state.logical_id:
                     self._raw_to_logical.pop(raw_key, None)
             for raw_key, quarantine in tuple(self._quarantined_raw.items()):
-                if (
-                    raw_key[0] == state.camera_id
-                    and quarantine.original_logical == state.logical_id
-                ):
+                if raw_key[0] == state.camera_id and quarantine.original_logical == state.logical_id:
                     self._quarantined_raw.pop(raw_key, None)
-                elif (
-                    raw_key[0] == state.camera_id
-                    and quarantine.redirect_logical == state.logical_id
-                ):
+                elif raw_key[0] == state.camera_id and quarantine.redirect_logical == state.logical_id:
                     self._quarantined_raw[raw_key] = _QuarantinedRaw(
                         original_logical=quarantine.original_logical,
                         redirect_logical=None,
@@ -946,8 +1003,6 @@ def _track_reid_embedding(track) -> np.ndarray | None:
     norm = float(np.linalg.norm(value))
     if not np.isfinite(norm) or norm <= 1e-12:
         return None
-    # Metadata extraction already normalizes production vectors. Tests and
-    # non-DeepStream adapters are normalized defensively here as well.
     if abs(norm - 1.0) <= 1e-5:
         return value
     result = np.asarray(value / norm, dtype=np.float32)
@@ -985,8 +1040,7 @@ def _containment(first: BoundingBox, second: BoundingBox) -> float:
 
 
 def _box_metrics(
-    first: BoundingBox,
-    second: BoundingBox,
+    first: BoundingBox, second: BoundingBox
 ) -> tuple[float, float, float, float]:
     iou = _iou(first, second)
     containment = _containment(first, second)
