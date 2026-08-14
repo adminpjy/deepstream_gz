@@ -15,6 +15,7 @@ import numpy as np
 
 from deepstream_ai.domain import BoundingBox
 from deepstream_ai.pipeline.metadata import FramePacket
+from deepstream_ai.pipeline.shadow_tracking import current_shadow_tracks
 
 LOGGER = logging.getLogger(__name__)
 _STOP = object()
@@ -219,6 +220,27 @@ class PreviewWriter:
             )
             if projected is not None:
                 secondary_boxes.append(projected)
+
+        # NvDCF shadow tracks are display-only. The registry has already applied
+        # the configured 1-1.5 s age cap and business-ID presenter. Do not add
+        # these boxes to active_keys or any face/evidence flow.
+        for shadow in current_shadow_tracks(packet.camera_id, packet.frame_number):
+            key = (shadow.camera_id, shadow.track_id)
+            if key in active_keys:
+                continue
+            x1, y1, x2, y2 = (round(value * scale) for value in shadow.bbox.as_tuple())
+            color = (70, 160, 255)
+            cv2.rectangle(image, (x1, y1), (x2, y2), color, max(1, thickness - 1))
+            cv2.putText(
+                image,
+                f"person #{shadow.track_id} shadow",
+                (max(0, x1), max(18, y1 - 8)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                font_scale,
+                color,
+                max(1, thickness - 1),
+                cv2.LINE_AA,
+            )
 
         stale_keys = [
             key
