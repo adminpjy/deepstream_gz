@@ -7,8 +7,8 @@ source:
   camera_id: local-file-01
   path: /workspace/videos/test2.mp4
   enabled: true
-  # The shipped H.264 validation clip is 10 fps. Keep this equal to the
-  # real source rate so nvinfer interval calculations preserve requested FPS.
+  # Startup fallback only. Once PLAYING, the adaptive controller reads the
+  # negotiated source caps and recalculates model cadence from the real FPS.
   nominal_fps: 10.0
   latency_ms: 200
   reconnect_interval_sec: 10
@@ -20,7 +20,7 @@ sources: []
 #     type: rtsp
 #     url: ${GATE_01_RTSP_URL}
 #     enabled: true
-#     nominal_fps: 25.0
+#     nominal_fps: 30.0       # startup fallback; auto-corrected after PLAYING
 #     latency_ms: 500
 #     reconnect_interval_sec: 10
 #   - camera_id: gate-02
@@ -29,7 +29,9 @@ sources: []
 #     enabled: true
 #     nominal_fps: 25.0
 
-# Analysis rates are converted to nvinfer interval values from nominal_fps.
+# These values remain the safe startup profile. After the source reaches
+# PLAYING, adaptive_inference below can change nvinfer cadence without stopping
+# NvDCF or rebuilding the pipeline.
 inference:
   person_fps: 5.0
   # Match person detection cadence so a brief frontal/usable face is much less
@@ -37,6 +39,54 @@ inference:
   # is still quality/timeout gated below instead of running on every face.
   face_fps: 5.0
   behavior_fps: 1.0
+
+# Runtime inference-rate controller. Scheduling is based on the negotiated
+# source FPS plus shared GPU/NVDEC pressure and analytics queue backpressure.
+# Compressed bitrate is observability data, not a direct inference-load signal.
+# Decoder output and NvDCF continue at the source cadence in every profile.
+adaptive_inference:
+  enabled: true
+  initial_profile: normal
+  monitor:
+    sample_interval_sec: 2.0
+    decision_window_sec: 10.0
+    upgrade_stable_sec: 20.0
+    change_cooldown_sec: 10.0
+  load:
+    gpu_low: 55
+    gpu_high: 85
+    gpu_critical: 92
+    nvdec_low: 60
+    nvdec_high: 85
+    nvdec_critical: 95
+    queue_low_ratio: 0.25
+    queue_high_ratio: 0.60
+    queue_critical_ratio: 0.85
+  profiles:
+    boost:
+      person_fps: 8.0
+      face_fps: 8.0
+      behavior_fps: 2.0
+    normal:
+      person_fps: 5.0
+      face_fps: 5.0
+      behavior_fps: 1.0
+    balanced:
+      person_fps: 5.0
+      face_fps: 4.0
+      behavior_fps: 0.5
+    protect:
+      person_fps: 4.0
+      face_fps: 3.0
+      behavior_fps: 0.25
+    emergency:
+      person_fps: 3.0
+      face_fps: 3.0
+      behavior_fps: 0.2
+  overload:
+    # The worker emits SYSTEM_CAPACITY_EXCEEDED at this floor. Service-level
+    # admission control can consume this policy when global task rejection is enabled.
+    reject_new_tasks_at_floor: true
 
 pipeline:
   streammux:
