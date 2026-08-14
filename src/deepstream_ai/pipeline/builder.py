@@ -31,6 +31,7 @@ class PipelineGraph:
     pipeline: Any
     metadata_probe: MetadataProbe
     source_bins: tuple[SourceBin, ...]
+    inference_elements: dict[str, Any]
     pretracker_guard: PeopleNetPretrackerGuard | None = None
 
 
@@ -61,17 +62,18 @@ class DeepStreamPipelineBuilder:
             self.config.inference.person_fps,
             primary=True,
         )
+        inference_elements: dict[str, Any] = {"person": pgie}
         tracker = self._tracker_element()
         secondary_chain: list[Any] = []
         if self.config.pipeline.face.enabled:
-            secondary_chain.append(
-                self._infer_element(
-                    "face-detector",
-                    self.config.pipeline.face,
-                    self.config.inference.face_fps,
-                    primary=False,
-                )
+            face_element = self._infer_element(
+                "face-detector",
+                self.config.pipeline.face,
+                self.config.inference.face_fps,
+                primary=False,
             )
+            secondary_chain.append(face_element)
+            inference_elements["face"] = face_element
         for model in self.config.behavior:
             if not model.enabled:
                 LOGGER.info("行为模型已关闭，不创建 nvinfer: %s", model.name)
@@ -82,14 +84,14 @@ class DeepStreamPipelineBuilder:
                 unique_id=model.unique_id,
                 label=model.name,
             )
-            secondary_chain.append(
-                self._infer_element(
-                    f"behavior-{model.name}",
-                    component,
-                    self.config.inference.behavior_fps,
-                    primary=False,
-                )
+            behavior_element = self._infer_element(
+                f"behavior-{model.name}",
+                component,
+                self.config.inference.behavior_fps,
+                primary=False,
             )
+            secondary_chain.append(behavior_element)
+            inference_elements[f"behavior:{model.name}"] = behavior_element
 
         snapshot_convert = make_element(Gst, "nvvideoconvert", "snapshot-rgba-convert")
         # WSL must not expose CUDA unified NvBufSurface memory to CPU paths.
@@ -160,6 +162,7 @@ class DeepStreamPipelineBuilder:
             pipeline=pipeline,
             metadata_probe=probe,
             source_bins=sources,
+            inference_elements=inference_elements,
             pretracker_guard=pretracker_guard,
         )
 
