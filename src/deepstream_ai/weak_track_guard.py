@@ -1,9 +1,9 @@
 """Business-layer confirmation for weak new PeopleNet/NvDCF tracks.
 
 Low-confidence PeopleNet proposals remain available to NvDCF so an established
-person can survive crouching, partial occlusion, and pose changes.  A brand-new
+person can survive crouching, partial occlusion, and pose changes. A brand-new
 logical track is different: if it begins weak, it stays provisional until later
-evidence proves it is a real person.  Provisional tracks are hidden from OSD,
+evidence proves it is a real person. Provisional tracks are hidden from OSD,
 preview, snapshots, face recognition and downstream business logic.
 """
 
@@ -15,14 +15,14 @@ from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from threading import RLock
-from typing import Any
 
 import yaml
 
-from deepstream_ai.pipeline.metadata import _TRACKER_REID_METADATA_KEY, FramePacket
+from deepstream_ai.pipeline.metadata import FramePacket
 
 LOGGER = logging.getLogger(__name__)
 _SECTION = "weak_new_track"
+_DETECTOR_CONFIDENCE_KEY = "detector_confidence"
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,14 +135,26 @@ class WeakNewTrackGuard:
             for track in packet.tracks:
                 key = (track.camera_id, track.track_id)
                 state = self._states.get(key)
-                is_new = state is None
-                has_reid = _TRACKER_REID_METADATA_KEY in track.metadata
-                # The first effective NvDCF observation is detector-backed. On
-                # later skipped PGIE frames Track.confidence may be tracker
-                # confidence, so only treat later ReID-bearing observations as
-                # fresh detector evidence.
-                detector_observation = is_new or has_reid
-                detector_confidence = track.confidence if detector_observation else None
+                raw_detector_confidence = track.metadata.get(_DETECTOR_CONFIDENCE_KEY)
+                try:
+                    detector_confidence = (
+                        float(raw_detector_confidence)
+                        if raw_detector_confidence is not None
+                        else None
+                    )
+                except (TypeError, ValueError):
+                    detector_confidence = None
+                if detector_confidence is not None and not math.isfinite(detector_confidence):
+                    detector_confidence = None
+
+                # The first effective NvDCF object should normally carry a PGIE
+                # confidence. Fall back to Track.confidence only for synthetic
+                # tests/older metadata producers; subsequent skipped-PGIE frames
+                # must not let tracker confidence promote a background object.
+                if state is None and detector_confidence is None:
+                    detector_confidence = track.confidence
+                detector_observation = detector_confidence is not None
+
                 if state is None:
                     state = _WeakTrackState(
                         first_seen=track.timestamp,
@@ -152,10 +164,16 @@ class WeakNewTrackGuard:
                     )
                     self._states[key] = state
                     LOGGER.info(
-                        "[PERSON_PROVISIONAL] camera=%s track=%s conf=%.3f bbox=%.0fx%.0f",
+                        "[PERSON_PROVISIONAL] camera=%s track=%s conf=%.3f detector_conf=%s "
+                        "bbox=%.0fx%.0f",
                         track.camera_id,
                         track.track_id,
                         track.confidence,
+                        (
+                            f"{detector_confidence:.3f}"
+                            if detector_confidence is not None
+                            else "missing"
+                        ),
                         track.bbox.width,
                         track.bbox.height,
                     )
@@ -165,7 +183,7 @@ class WeakNewTrackGuard:
                         state.detector_observations += 1
                         state.max_detector_confidence = max(
                             state.max_detector_confidence,
-                            float(detector_confidence),
+                            detector_confidence,
                         )
 
                 if state.confirmed:
