@@ -317,7 +317,21 @@ class DeepStreamPipelineBuilder:
             set_if_supported(encoder, "idrinterval", 30)
         parser = make_element(Gst, f"{codec}parse", f"{codec}-parser")
         mux = make_element(Gst, "qtmux", "mp4-muxer")
-        set_if_supported(mux, "faststart", True)
+        live_rtsp = any(source.type == "rtsp" for source in self.config.enabled_sources)
+        if live_rtsp:
+            # Manual RTSP stop deliberately avoids EOS so nvurisrcbin cannot
+            # reconnect and reset NvDCF while the task is shutting down. Normal
+            # MP4 writes its final moov/index at EOS, so use 1-second fragments
+            # for live test recording: completed fragments remain reviewable even
+            # when the pipeline transitions directly to NULL.
+            set_if_supported(mux, "faststart", False)
+            set_if_supported(mux, "fragment-duration", 1000)
+            set_if_supported(mux, "streamable", True)
+            LOGGER.info(
+                "[TASK_RECORDING] mux=fragmented-mp4 fragment_ms=1000 stop_safe=true"
+            )
+        else:
+            set_if_supported(mux, "faststart", True)
         sink = make_element(Gst, "filesink", "result-file")
         sink.set_property("location", str(output_path))
         sink.set_property("sync", output.sync)
