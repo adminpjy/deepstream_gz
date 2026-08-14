@@ -75,8 +75,6 @@ def test_missing_reid_single_target_pose_change_keeps_first_business_id() -> Non
     first = resolver.resolve(_packet(1, NOW, (_track(0, NOW, first_box, person_a),)))
     assert first.tracks[0].track_id == 0
 
-    # Mirrors the live seated-pose failure: new raw ID after ~9 s, body moved
-    # substantially, and the first new object carries no exported ReID tensor.
     later = NOW + timedelta(seconds=9.05)
     changed_box = BoundingBox(367.0, 328.0, 1018.0, 1078.0)
     resolved = resolver.resolve(_packet(227, later, (_track(1, later, changed_box),)))
@@ -144,3 +142,39 @@ def test_multi_person_scene_disables_missing_reid_geometry_bridge() -> None:
     )
 
     assert {track.track_id for track in resolved.tracks} == {1, 2}
+
+
+def test_same_person_raw_id_reuse_after_reconnect_recovers_old_business_id() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    box = BoundingBox(500.0, 200.0, 1200.0, 1080.0)
+    first = resolver.resolve(_packet(1, NOW, (_track(0, NOW, box, person_a),)))
+    assert first.tracks[0].track_id == 0
+
+    resolver.begin_stream_generation("camera-a", 1)
+    later = NOW + timedelta(seconds=2)
+    recovered = resolver.resolve(
+        _packet(2, later, (_track(0, later, BoundingBox(510, 205, 1210, 1080), person_a),))
+    )
+
+    assert recovered.tracks[0].track_id == 0
+    assert recovered.tracks[0].metadata["raw_track_id"] == 0
+    assert resolver.presentation_track_id("camera-a", 0) == 0
+
+
+def test_different_person_reusing_raw_zero_after_reconnect_cannot_overwrite_business_zero() -> None:
+    resolver = _resolver()
+    person_a = np.eye(1, 256, 0, dtype=np.float32).reshape(-1)
+    person_b = np.eye(1, 256, 1, dtype=np.float32).reshape(-1)
+    box = BoundingBox(500.0, 200.0, 1200.0, 1080.0)
+    resolver.resolve(_packet(1, NOW, (_track(0, NOW, box, person_a),)))
+
+    resolver.begin_stream_generation("camera-a", 1)
+    later = NOW + timedelta(seconds=2)
+    new_person = resolver.resolve(
+        _packet(2, later, (_track(0, later, BoundingBox(1300, 200, 1850, 1080), person_b),))
+    )
+
+    assert new_person.tracks[0].track_id == "epoch-1:0"
+    assert new_person.tracks[0].metadata["raw_track_id"] == 0
+    assert resolver.presentation_track_id("camera-a", 0) == "epoch-1:0"
