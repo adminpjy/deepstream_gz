@@ -3,7 +3,9 @@
 # frame. Shadow/re-association settings therefore favor continuity: a person who
 # remains in view must survive short detector misses, pose changes and RTSP jitter.
 BaseConfig:
-  minDetectorConfidence: 0.1894
+  # Keep weak partial/crouched PeopleNet proposals available to the tracker.
+  # They are treated as tentative below instead of being discarded outright.
+  minDetectorConfidence: 0.1000
 
 TargetManagement:
   enableBboxUnClipping: 1
@@ -13,13 +15,15 @@ TargetManagement:
   # an existing/shadow target. Keep this independent from the rack false-positive
   # guard in the PGIE pre-tracker layer.
   minIouDiff4NewTarget: 0.2000
-  minTrackerConfidence: 0.1513
+  # A crouch/partial-body pose can reduce DCF confidence sharply even when the
+  # person is still visible. Keep the target active longer before shadow mode.
+  minTrackerConfidence: 0.0800
   probationAge: 2
-  # At 25 FPS this gives roughly ten seconds of shadow survival. A person can be
-  # partly out of frame or briefly missed without immediately receiving a new ID.
-  maxShadowTrackingAge: 250
-  # Must exceed the detector-skip count. 12 also gives tentative tracks more
-  # tolerance during startup/pose changes than the previous value of 8.
+  # At 25 FPS this is about four seconds of internal shadow survival. It is long
+  # enough for short misses without keeping departed people alive for ten seconds.
+  maxShadowTrackingAge: 100
+  # Must exceed the detector-skip count. 12 gives tentative tracks tolerance
+  # during startup/pose changes.
   earlyTerminationAge: 12
 
 TrajectoryManagement:
@@ -62,8 +66,11 @@ DataAssociator:
   matchingScoreWeight4VisualSimilarity: 0.3951
   matchingScoreWeight4SizeSimilarity: 0.6003
   matchingScoreWeight4Iou: 0.4033
-  tentativeDetectorConfidence: 0.1024
-  minMatchingScore4TentativeIou: 0.2852
+  # DeepStream defines detections between minDetectorConfidence and this value
+  # as tentative. They are matched to active targets primarily by IOU, which is
+  # exactly what we want for low-confidence crouched/partially-visible people.
+  tentativeDetectorConfidence: 0.1894
+  minMatchingScore4TentativeIou: 0.1500
 
 StateEstimator:
   stateEstimatorType: 1

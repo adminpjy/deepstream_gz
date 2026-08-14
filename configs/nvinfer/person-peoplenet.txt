@@ -24,7 +24,10 @@ gie-unique-id=1
 output-blob-names=output_cov/Sigmoid:0;output_bbox/BiasAdd:0
 
 [class-attrs-all]
-pre-cluster-threshold=0.1037
+# Partial/crouched people often have much lower confidence than an upright full
+# body. Keep those proposals through clustering so NvDCF can use them as
+# tentative matches instead of dropping the active target into shadow mode.
+pre-cluster-threshold=0.08
 nms-iou-threshold=0.4842
 minBoxes=4
 dbscan-min-score=1.1845
@@ -33,7 +36,7 @@ detected-min-w=20
 detected-min-h=20
 
 [class-attrs-0]
-# NVIDIA's DS9 NvDCF accuracy profile uses 0.1894 at the tracker boundary.
-# Apply the equivalent person-only cutoff here so rejected proposals never
-# escape as UNTRACKED_OBJECT_ID and cannot create one-frame business tracks.
-post-cluster-threshold=0.1894
+# Must stay aligned with BaseConfig.minDetectorConfidence in nvdcf.yml. Values
+# from 0.10 up to tentativeDetectorConfidence are deliberately retained as
+# tentative detections for IOU-based association to an existing person track.
+post-cluster-threshold=0.10

@@ -305,11 +305,14 @@ class AnalyticsDispatcher:
                     confidence=0.0,
                 )
             if identity is not None:
-                if self._snapshots is not None:
-                    self._snapshots.observe_identity(identity)
-                first_identity = self._store_identity(identity)
-                if first_identity:
-                    self._publish(AnalyticsEventType.IDENTITY, identity, identity)
+                self._handle_identity(identity)
+
+        # A low-quality face may be the only face we ever see. Tick the
+        # recognition policy on every processed video frame so the 1-2 second
+        # fallback still fires even if SCRFD sees no subsequent face.
+        if self._recognizer is not None:
+            for identity in self._recognizer.recognize_due(packet.timestamp):
+                self._handle_identity(identity)
 
         for behavior in packet.behaviors:
             self._publish(AnalyticsEventType.BEHAVIOR, behavior, behavior)
@@ -323,14 +326,33 @@ class AnalyticsDispatcher:
         quality = 0.65 * face.score + 0.35 * min(1.0, face.bbox.area / (112 * 112))
         self._snapshots.observe_face(image, track, face, quality=quality)
 
+    def _handle_identity(self, identity: IdentityResult) -> bool:
+        changed = self._store_identity(identity)
+        if not changed:
+            return False
+        if self._snapshots is not None:
+            self._snapshots.observe_identity(identity)
+        self._publish(AnalyticsEventType.IDENTITY, identity, identity)
+        return True
+
     def _store_identity(self, identity: IdentityResult) -> bool:
-        """Store the latest result and report whether this track is newly identified."""
+        """Keep the strongest identity without ever downgrading known to unknown."""
 
         key = (identity.camera_id, identity.track_id)
         with self._identity_lock:
-            first_identity = key not in self._identities
-            self._identities[key] = identity
-        return first_identity
+            previous = self._identities.get(key)
+            if previous is None:
+                self._identities[key] = identity
+                return True
+            if previous.known and not identity.known:
+                return False
+            if identity.known and not previous.known:
+                self._identities[key] = identity
+                return True
+            if identity.similarity > previous.similarity:
+                self._identities[key] = identity
+                return True
+            return False
 
     def _expire_missing(self, now: datetime) -> None:
         ttl = max(
@@ -347,6 +369,22 @@ class AnalyticsDispatcher:
 
     def _finalize_track(self, camera_id: str, track_id: TrackId, *, timestamp: datetime) -> None:
         key = (camera_id, track_id)
+
+        # Final no-miss identity fallback must happen before evidence is finalized
+        # so a last successful match can route the saved face into know/ rather
+        # than permanently finalizing it as unknown.
+        if self._recognizer is not None:
+            try:
+                identity = self._recognizer.finalize_track(camera_id, track_id)
+                if identity is not None:
+                    self._handle_identity(identity)
+            except Exception:
+                LOGGER.exception(
+                    "Track final face comparison failed camera_id=%s track=%s",
+                    camera_id,
+                    track_id,
+                )
+
         if self._snapshots is not None:
             self._publish_snapshot(self._snapshots.finalize_track(camera_id, track_id))
         self._publish(
