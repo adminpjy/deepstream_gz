@@ -25,6 +25,53 @@ LOGGER = logging.getLogger(__name__)
 _STOP = object()
 
 
+def _can_coalesce_frame(previous: FramePacket, current: FramePacket) -> bool:
+    """Return true when ``current`` safely supersedes a queued tracking-only frame.
+
+    Face/behavior packets are evidence-bearing and are never discarded. A queued
+    packet containing a track that disappeared from the newer packet is also
+    preserved so a short-lived person cannot vanish merely because analytics is
+    temporarily slower than the video stream.
+    """
+
+    if previous.camera_id != current.camera_id:
+        return False
+    if previous.faces or previous.behaviors:
+        return False
+    if current.frame_number < previous.frame_number:
+        return False
+    previous_tracks = {track.track_id for track in previous.tracks}
+    current_tracks = {track.track_id for track in current.tracks}
+    return previous_tracks.issubset(current_tracks)
+
+
+class _CoalescingFrameQueue(queue.Queue[FramePacket | object]):
+    """Bounded queue that keeps evidence frames plus the freshest tracking state."""
+
+    def __init__(self, maxsize: int) -> None:
+        super().__init__(maxsize=maxsize)
+        self.coalesced = 0
+
+    def put_latest(self, packet: FramePacket) -> bool:
+        # queue.Queue exposes ``mutex``/``queue`` to subclasses. Replacing an
+        # existing item leaves unfinished_tasks unchanged because exactly one
+        # worker task still represents that pending slot.
+        with self.not_full:
+            for index in range(self._qsize() - 1, -1, -1):
+                existing = self.queue[index]
+                if isinstance(existing, FramePacket) and _can_coalesce_frame(existing, packet):
+                    self.queue[index] = packet
+                    self.coalesced += 1
+                    self.not_empty.notify()
+                    return True
+            if self.maxsize > 0 and self._qsize() >= self.maxsize:
+                return False
+            self._put(packet)
+            self.unfinished_tasks += 1
+            self.not_empty.notify()
+            return True
+
+
 class JsonlEventJournal:
     """A backend-friendly durable stream of normalized analytics events."""
 
@@ -90,7 +137,7 @@ class AnalyticsDispatcher:
             raise ValueError("queue_size must be positive")
         self.config = config
         self.events = EventManager(strict=False)
-        self._queue: queue.Queue[FramePacket | object] = queue.Queue(maxsize=queue_size)
+        self._queue = _CoalescingFrameQueue(maxsize=queue_size)
         self._thread: threading.Thread | None = None
         self._ready = threading.Event()
         self._initialization_error: BaseException | None = None
@@ -121,11 +168,18 @@ class AnalyticsDispatcher:
     def submit(self, packet: FramePacket) -> bool:
         if not self._accepting:
             return False
-        try:
-            self._queue.put_nowait(packet)
-            return True
-        except queue.Full:
-            return False
+        return self._queue.put_latest(packet)
+
+    def queue_metrics(self) -> dict[str, float | int]:
+        size = self._queue.qsize()
+        capacity = self._queue.maxsize
+        ratio = size / capacity if capacity > 0 else 0.0
+        return {
+            "size": size,
+            "capacity": capacity,
+            "ratio": max(0.0, min(1.0, ratio)),
+            "coalesced": self._queue.coalesced,
+        }
 
     def identity_label(self, camera_id: str, track_id: TrackId) -> str | None:
         with self._identity_lock:
@@ -141,7 +195,8 @@ class AnalyticsDispatcher:
         if thread is None:
             return
         self._accepting = False
-        # Use a blocking put so all already accepted packets retain FIFO order.
+        # Evidence-bearing packets and the freshest coalesced tracking state are
+        # already ordered in the queue; stop only after those accepted items.
         self._queue.put(_STOP)
         thread.join(timeout)
         if thread.is_alive():
