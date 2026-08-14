@@ -41,8 +41,8 @@ class FaceRecognitionConfig:
     require_landmarks: bool = True
     fusion: FaceFusionConfig = field(default_factory=FaceFusionConfig)
     # Quality is the existing weighted detector/size/sharpness/frontal score.
-    # Around 0.72 has proven to represent a genuinely useful CCTV face without
-    # requiring a perfect frontal portrait.
+    # Around 0.72 represents a genuinely useful CCTV face without requiring a
+    # perfect frontal portrait.
     high_quality_threshold: float = 0.72
     # A later face must normally improve this much before re-comparing a known
     # track. Unknown tracks additionally get the bounded retry path below.
@@ -191,7 +191,34 @@ class FaceRecognitionService:
             *key,
             allow_single=True,
             reason=reason,
+            decision_time=detection.timestamp,
         )
+
+    def recognize_due(self, now: datetime) -> tuple[IdentityResult, ...]:
+        """Evaluate timeout/retry windows even on frames with no new face."""
+
+        results: list[IdentityResult] = []
+        for key in tuple(self._pending):
+            reason = self._comparison_reason(key, now)
+            if reason is None:
+                continue
+            try:
+                results.append(
+                    self.recognize_track(
+                        *key,
+                        allow_single=True,
+                        reason=reason,
+                        decision_time=now,
+                    )
+                )
+            except Exception:
+                LOGGER.exception(
+                    "Face comparison trigger failed camera=%s track=%s reason=%s",
+                    key[0],
+                    key[1],
+                    reason,
+                )
+        return tuple(results)
 
     def _comparison_reason(
         self,
@@ -236,6 +263,7 @@ class FaceRecognitionService:
         *,
         allow_single: bool = False,
         reason: str = "manual",
+        decision_time: datetime | None = None,
     ) -> IdentityResult:
         key = (camera_id, track_id)
         pending = tuple(self._pending.get(key, ()))
@@ -282,7 +310,7 @@ class FaceRecognitionService:
 
         preferred = self._prefer_result(self._recognized.get(key), result)
         self._recognized[key] = preferred
-        self._last_recognition_at[key] = best.detection.timestamp
+        self._last_recognition_at[key] = decision_time or best.detection.timestamp
         self._last_recognition_quality[key] = max(
             best.quality,
             self._last_recognition_quality.get(key, -1.0),
@@ -317,11 +345,13 @@ class FaceRecognitionService:
         previous = self._recognized.get(key)
         if previous is not None and previous.known:
             return None
+        decision_time = max(item.detection.timestamp for item in pending)
         return self.recognize_track(
             camera_id,
             track_id,
             allow_single=True,
             reason="finalize_fallback",
+            decision_time=decision_time,
         )
 
     @staticmethod
