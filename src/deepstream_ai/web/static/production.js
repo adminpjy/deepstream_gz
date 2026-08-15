@@ -85,7 +85,6 @@
         ${optionalCheck("吸烟", "prodSmoking")}
         ${optionalCheck("吃东西", "prodEating")}
         ${optionalCheck("喝水", "prodDrinking")}
-        ${optionalCheck("打电话", "prodPhone")}
         ${optionalCheck("物品遗留", "prodLeftObject")}
         <label class="production-check unavailable" title="火焰模型为全画面分类模型，当前生产 Session 暂未接入"><input id="prodFire" type="checkbox" disabled />火焰（待接入）</label>
         <label class="production-check unavailable" title="已预留，当前版本尚未实现"><input id="prodLargeObject" type="checkbox" disabled />大件物品搬运（预留）</label>
@@ -152,7 +151,7 @@
     try {
       const capabilities = await requestJson(API.capabilities);
       state.capabilities = capabilities;
-      for (const [feature, id] of [["smoking","prodSmoking"],["eating","prodEating"],["drinking","prodDrinking"],["phone","prodPhone"]]) {
+      for (const [feature, id] of [["smoking","prodSmoking"],["eating","prodEating"],["drinking","prodDrinking"]]) {
         const info = capabilities.optional && capabilities.optional[feature];
         const input = document.getElementById(id);
         const label = document.getElementById(`${id}Label`);
@@ -165,7 +164,7 @@
         } else {
           input.disabled = false;
           label.classList.remove("unavailable");
-          label.title = "";
+          label.title = info.mode === "person_crop_coco_proxy" ? "使用人员区域内的食物/餐具/饮料容器作为吃喝行为证据" : "";
         }
       }
     } catch (error) {
@@ -229,7 +228,6 @@
         smoking: Boolean(document.getElementById("prodSmoking").checked),
         eating: Boolean(document.getElementById("prodEating").checked),
         drinking: Boolean(document.getElementById("prodDrinking").checked),
-        phone: Boolean(document.getElementById("prodPhone").checked),
         leftObject: Boolean(document.getElementById("prodLeftObject").checked),
         largeObjectMoving: false,
       },
@@ -453,7 +451,7 @@
   }
 
   function featureLabel(value) {
-    return ({smoking:"吸烟",eating:"吃东西",drinking:"喝水",phone:"打电话",leftObject:"物品遗留",largeObjectMoving:"大件搬运"})[value] || value;
+    return ({smoking:"吸烟",eating:"吃东西",drinking:"喝水",leftObject:"物品遗留",largeObjectMoving:"大件搬运"})[value] || value;
   }
 
   function shortId(value) {
