@@ -40,6 +40,7 @@ class FeatureSet:
     smoking: bool = False
     eating: bool = False
     drinking: bool = False
+    phone: bool = False
     left_object: bool = False
     large_object_moving: bool = False
 
@@ -50,6 +51,7 @@ class FeatureSet:
             smoking=bool(data.get("smoking", False)),
             eating=bool(data.get("eating", False)),
             drinking=bool(data.get("drinking", False)),
+            phone=bool(data.get("phone", data.get("phoneCall", False))),
             left_object=bool(data.get("leftObject", data.get("left_object", False))),
             large_object_moving=bool(
                 data.get("largeObjectMoving", data.get("large_object_moving", False))
@@ -61,6 +63,7 @@ class FeatureSet:
             "smoking": self.smoking,
             "eating": self.eating,
             "drinking": self.drinking,
+            "phone": self.phone,
             "leftObject": self.left_object,
             "largeObjectMoving": self.large_object_moving,
         }
@@ -73,6 +76,8 @@ class FeatureSet:
             names.append("eating")
         if self.drinking:
             names.append("drinking")
+        if self.phone:
+            names.append("phone")
         return tuple(names)
 
 
