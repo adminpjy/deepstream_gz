@@ -21,6 +21,7 @@
           <div class="service-pill" id="servicePill" data-state="loading" aria-live="polite">
             <span class="status-dot" aria-hidden="true"></span><span id="serviceStatusText">正在检查服务</span>
           </div>
+          <a class="button button-ghost button-compact" href="/register">◎ 人脸注册</a>
           <button class="button button-ghost button-compact" id="restartServiceButton" type="button"><span class="button-icon" aria-hidden="true">↻</span>重启服务</button>
         </div>
       </header>
@@ -79,7 +80,7 @@
 
               <div id="rtspSourcePanel" class="source-panel" role="tabpanel" aria-labelledby="rtspTab" hidden>
                 <label class="field"><span>RTSP 地址</span><span class="input-wrap"><span class="input-prefix" aria-hidden="true">URL</span><input id="rtspUrl" name="rtspUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" value="rtsp://10.101.176.41:8554/camera" placeholder="rtsp://user:password@host:554/stream" /></span><small>已预置固定测试地址；修改地址不会自动连接，点击“开始分析”后才启动该路。</small></label>
-                <label class="field"><span>视频源帧率</span><span class="input-wrap"><input id="nominalFps" name="nominalFps" type="number" min="0.1" max="240" step="0.1" value="30" readonly aria-readonly="true" /><span class="input-suffix">自动</span></span><small>无需手工设置。30 FPS 仅作为启动阶段回退值；Pipeline 进入 PLAYING 后会自动检测实际 FPS/分辨率。PeopleNet 在正常/均衡/保护模式保持 5 FPS、仅紧急模式降到 4 FPS；SCRFD 固定按启动配置约 2 FPS。</small></label>
+                <label class="field"><span>视频源帧率</span><span class="input-wrap"><input id="nominalFps" name="nominalFps" type="number" min="0.1" max="240" step="0.1" value="30" readonly aria-readonly="true" /><span class="input-suffix">自动</span></span><small>无需手工设置。30 FPS 仅作为启动阶段回退值；Pipeline 进入 PLAYING 后会自动检测实际 FPS/分辨率。当前 PeopleNet 和 SCRFD 的安全下限均保持约 5 FPS。</small></label>
               </div>
 
               <div class="form-row">
