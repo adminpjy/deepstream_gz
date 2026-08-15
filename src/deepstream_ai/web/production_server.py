@@ -113,6 +113,23 @@ class ProductionRequestHandler(RecognitionRequestHandler):
             return
         super()._do_get()
 
+    def _validate_optional_model_availability(self, request: SessionRequest) -> None:
+        optional = self.server.production_service.capabilities.get("optional", {})
+        requested = {
+            "smoking": request.features.smoking,
+            "eating": request.features.eating,
+            "drinking": request.features.drinking,
+            "phone": request.features.phone,
+        }
+        for name, enabled in requested.items():
+            info = optional.get(name, {})
+            if enabled and not bool(info.get("available")):
+                raise ProductionServiceError(
+                    "FEATURE_UNAVAILABLE",
+                    f"识别能力 {name} 的模型资产尚未就绪",
+                    detail={"feature": name, "reason": info.get("reason")},
+                )
+
     def _do_post(self) -> None:
         parsed = urlsplit(self.path)
         path = parsed.path
@@ -120,6 +137,7 @@ class ProductionRequestHandler(RecognitionRequestHandler):
             self._require_content_type("json")
             body = self._read_json()
             request = SessionRequest.from_mapping(body)
+            self._validate_optional_model_availability(request)
             result = self.server.production_service.start_session(request)
             self._send_json(result, status=HTTPStatus.CREATED)
             return
