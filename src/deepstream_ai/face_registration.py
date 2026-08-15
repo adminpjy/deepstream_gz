@@ -24,7 +24,7 @@ import numpy as np
 from deepstream_ai.config import AppConfig
 from deepstream_ai.database import PgVectorFaceRepository, StoredFaceVector
 from deepstream_ai.domain import BoundingBox, FaceDetection
-from deepstream_ai.face import AdaFaceONNXAdapter, AdaFacePreprocessor, FivePointFaceAligner
+from deepstream_ai.face import FivePointFaceAligner
 from deepstream_ai.face.quality import FaceFusionConfig, FaceQualityScorer
 from deepstream_ai.pipeline.scrfd import ScrfdCandidate, decode_scrfd_outputs
 
@@ -192,29 +192,11 @@ class FaceRegistrationService:
 
     @classmethod
     def from_app_config(cls, config: AppConfig) -> "FaceRegistrationService":
-        if not config.face_recognition.enabled:
-            raise FaceRegistrationError("face_recognition 未启用，无法注册人脸")
-        face_model = config.resolve_path(config.pipeline.face.config_file)
-        # The runtime nvinfer config points to the same source ONNX used for
-        # DeepStream. Keep this explicit rather than maintaining a second model.
-        scrfd_onnx = config.resolve_path(config.models.face.onnx)
-        adaface_path = config.resolve_path(config.face_recognition.model)
-        if not face_model.is_file():
-            raise FaceRegistrationError(f"SCRFD 配置不存在: {face_model}")
-        detector = ScrfdOnnxRegistrationDetector(scrfd_onnx)
-        embedder = AdaFaceONNXAdapter(
-            model_path=adaface_path,
-            providers=["CPUExecutionProvider"],
-            input_name=config.face_recognition.input_name,
-            output_name=config.face_recognition.output_name or None,
-            preprocessor=AdaFacePreprocessor(
-                (config.face_recognition.input_width, config.face_recognition.input_height),
-                input_color="bgr",
-            ),
-        )
-        repository = PgVectorFaceRepository(config.database.dsn)
-        repository.ensure_schema()
-        return cls(detector, embedder, repository)
+        # Kept as a convenience entrypoint; the dedicated factory owns model
+        # path resolution so Web and root CLI cannot drift apart.
+        from deepstream_ai.face_registration_factory import build_face_registration_service
+
+        return build_face_registration_service(config)
 
     def worker_summary(self, worker_id: str) -> dict[str, Any]:
         worker = _validate_worker_id(worker_id)
@@ -529,7 +511,12 @@ def _pose_label(landmarks: Sequence[tuple[float, float]]) -> str:
 
 
 def _border_margin_ratio(bbox: BoundingBox, width: int, height: int) -> float:
-    margins = (bbox.x1 / width, bbox.y1 / height, (width - bbox.x2) / width, (height - bbox.y2) / height)
+    margins = (
+        bbox.x1 / width,
+        bbox.y1 / height,
+        (width - bbox.x2) / width,
+        (height - bbox.y2) / height,
+    )
     return max(0.0, min(float(item) for item in margins))
 
 
