@@ -11,10 +11,12 @@ on:
       - "src/deepstream_ai/web/production_server.py"
       - "src/deepstream_ai/web/static/production.js"
       - "scripts/prepare-local-behavior-models.py"
+      - "scripts/prepare-local-behavior-models-dynamic.py"
       - "scripts/convert-local-models.sh"
       - "configs/config.yaml"
       - "docker-compose.yml"
       - "docker/Dockerfile"
+      - "docker/Dockerfile.sdk"
       - "pyproject.toml"
       - "tests/test_production_*.py"
       - ".github/workflows/production-recognition-unit.yml"
@@ -41,6 +43,7 @@ jobs:
           src/deepstream_ai/domain.py
           src/deepstream_ai/web/production_server.py
           scripts/prepare-local-behavior-models.py
+          scripts/prepare-local-behavior-models-dynamic.py
       - name: Ruff production changes
         run: >-
           ruff check
@@ -48,6 +51,7 @@ jobs:
           src/deepstream_ai/domain.py
           src/deepstream_ai/web/production_server.py
           scripts/prepare-local-behavior-models.py
+          scripts/prepare-local-behavior-models-dynamic.py
           tests/test_production_contracts.py
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
