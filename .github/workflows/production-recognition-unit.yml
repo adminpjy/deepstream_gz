@@ -16,6 +16,10 @@ on:
       - "scripts/prepare-local-behavior-models-dynamic.py"
       - "scripts/convert-local-models.sh"
       - "configs/config.yaml"
+      - "configs/nvinfer/eat-drink.txt"
+      - "configs/nvinfer/eat-drink.labels.txt"
+      - "configs/nvinfer/smoking.txt"
+      - "native/yolo_parser/**"
       - "docker-compose.yml"
       - "docker/Dockerfile"
       - "docker/Dockerfile.sdk"
@@ -54,6 +58,7 @@ jobs:
           src/deepstream_ai/web/production_server.py
           scripts/prepare-local-behavior-models.py
           scripts/prepare-local-behavior-models-dynamic.py
+          tests/test_production_behavior_contract.py
           tests/test_production_contracts.py
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
@@ -67,6 +72,7 @@ jobs:
       - name: Production unit tests
         run: >-
           pytest -q
+          tests/test_production_behavior_contract.py
           tests/test_production_contracts.py
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
