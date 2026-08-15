@@ -31,11 +31,12 @@ sources: []
 
 # PeopleNet and SCRFD both stay at the tracking/evidence safety floor. 5 FPS
 # face sampling is intentional: pose changes can fragment NvDCF body ReID while
-# a real face remains the strongest continuity cue.
+# a real face remains the strongest continuity cue. Behavior sampling also uses
+# 5 FPS so short eating/drinking/smoking actions are less likely to be skipped.
 inference:
   person_fps: 5.0
   face_fps: 5.0
-  behavior_fps: 1.0
+  behavior_fps: 5.0
 
 # Runtime inference-rate controller. GPU utilization is capacity telemetry, not
 # by itself an overload signal: TensorRT is expected to run the GPU hard. The
@@ -63,23 +64,23 @@ adaptive_inference:
     boost:
       person_fps: 8.0
       face_fps: 5.0
-      behavior_fps: 1.0
+      behavior_fps: 5.0
     normal:
       person_fps: 5.0
       face_fps: 5.0
-      behavior_fps: 1.0
+      behavior_fps: 5.0
     balanced:
       person_fps: 5.0
       face_fps: 5.0
-      behavior_fps: 1.0
+      behavior_fps: 5.0
     protect:
       person_fps: 5.0
       face_fps: 5.0
-      behavior_fps: 1.0
+      behavior_fps: 5.0
     emergency:
       person_fps: 5.0
       face_fps: 5.0
-      behavior_fps: 1.0
+      behavior_fps: 5.0
   overload:
     # The worker emits SYSTEM_CAPACITY_EXCEEDED at this floor. Service-level
     # admission control can consume this policy when global task rejection is enabled.
@@ -261,17 +262,16 @@ face_recognition:
 # They remain disabled in the base config. Production workers warm only models
 # whose generated nvinfer config + TensorRT engine are actually present.
 behavior:
-  # One shared COCO YOLO11n SGIE runs only inside each person ROI. A dedicated
-  # parser maps food/tableware classes to EATING and drink-container classes to
-  # DRINKING. Either session switch enables this one inference element, so no
-  # additional model or duplicate YOLO inference is introduced.
+  # One shared COCO YOLO11n SGIE runs only inside each person ROI. The proxy
+  # rule is aligned with opsvision: prop confidence >= 0.45, prop center in the
+  # top 40% of the person box, and the same food/drink COCO class sets.
   eating:
     enabled: false
     config_file: /workspace/configs/nvinfer/eat-drink.txt
     model: /workspace/models/yolo11n.engine
     unique_id: 11
     labels: [eating, drinking]
-    threshold: 0.50
+    threshold: 0.45
   smoking:
     enabled: false
     config_file: /workspace/configs/nvinfer/smoking.txt
