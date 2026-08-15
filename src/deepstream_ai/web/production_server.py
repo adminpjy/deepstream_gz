@@ -199,9 +199,51 @@ class ProductionRequestHandler(RecognitionRequestHandler):
                     detail={"feature": name, "reason": info.get("reason")},
                 )
 
+    def _start_stable_task(self, body: dict[str, Any]) -> None:
+        """Keep /api/tasks on the proven one-source pipeline while honoring behavior switches."""
+
+        source_type = str(body.get("source_type", "")).lower()
+        camera_id = str(body.get("camera_id", "")).strip() or None
+        idle_timeout = body.get("idle_timeout_sec")
+        if source_type == "file":
+            upload_id = str(body.get("upload_id", "")).strip()
+            if not upload_id:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "upload_id 不能为空")
+            task = self.server.service.start_file(
+                upload_id,
+                camera_id=camera_id,
+                idle_timeout_sec=idle_timeout,
+            )
+        elif source_type == "rtsp":
+            raw_features = body.get("features")
+            if raw_features is not None and not isinstance(raw_features, dict):
+                raise ApiError(HTTPStatus.BAD_REQUEST, "features 必须是对象")
+            if raw_features is None:
+                task = self.server.service.start_rtsp(
+                    str(body.get("url", "")),
+                    camera_id=camera_id,
+                    nominal_fps=float(body.get("nominal_fps", 25.0)),
+                    idle_timeout_sec=idle_timeout,
+                )
+            else:
+                task = self.server.service.start_rtsp_with_features(
+                    str(body.get("url", "")),
+                    camera_id=camera_id,
+                    nominal_fps=float(body.get("nominal_fps", 25.0)),
+                    idle_timeout_sec=idle_timeout,
+                    behavior_features=raw_features,
+                )
+        else:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "source_type 仅支持 file 或 rtsp")
+        self._send_json(task, status=HTTPStatus.ACCEPTED)
+
     def _do_post(self) -> None:
         parsed = urlsplit(self.path)
         path = parsed.path
+        if path == "/api/tasks":
+            self._require_content_type("json")
+            self._start_stable_task(self._read_json())
+            return
         if path == "/api/v1/recognition/sessions/start":
             self._require_content_type("json")
             body = self._read_json()
