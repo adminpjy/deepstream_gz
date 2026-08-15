@@ -20,26 +20,30 @@ models = {item["name"]: item for item in data.get("models", [])}
 failures = list(data.get("failures", []))
 if failures:
     raise SystemExit("model conversion reported failures: " + "; ".join(failures))
-required = {"eat_drink", "smoking", "phone", "fire"}
+required = {"eat_drink", "smoking", "fire"}
 missing = sorted(required.difference(models))
 if missing:
     raise SystemExit("model conversion manifest missing: " + ", ".join(missing))
 
-# The current production config deliberately uses one shared SGIE for these
-# two independent business switches. Refuse reversed/unknown class order
-# rather than silently turning drinking into eating or vice versa.
+# yolo11n.onnx is the standard COCO detector. The converter keeps its source
+# labels in sourceLabels but exposes two business labels through the dedicated
+# person-crop proxy parser.
 expected = ["eating", "drinking"]
 actual = models["eat_drink"].get("labels")
 if actual != expected:
     raise SystemExit(
-        "yolo11n.onnx class order must be ['eating', 'drinking'] for the current "
-        f"production config; actual canonical labels are {actual!r}. "
-        "Do not start the recognition service until the model/config mapping is reviewed."
+        "eat/drink business labels must be ['eating', 'drinking']; "
+        f"actual={actual!r}."
     )
+source_labels = models["eat_drink"].get("sourceLabels") or []
+for required_source in ("bottle", "cup", "fork", "spoon", "bowl"):
+    if required_source not in source_labels:
+        raise SystemExit(
+            f"yolo11n.onnx source labels missing required COCO class {required_source!r}"
+        )
 
 for name, expected_labels in {
     "smoking": ["smoking"],
-    "phone": ["phone"],
     "fire": ["fire"],
 }.items():
     actual_labels = models[name].get("labels")
@@ -50,7 +54,7 @@ for name, expected_labels in {
         )
 
 print("Local behavior model contract verified:")
-for name in ("eat_drink", "smoking", "phone", "fire"):
+for name in ("eat_drink", "smoking", "fire"):
     item = models[name]
     print(
         f"  {name}: labels={item['labels']} engine={item['engine']} "
