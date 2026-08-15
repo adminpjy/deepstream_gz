@@ -10,6 +10,7 @@ import subprocess
 import sys
 import threading
 import time
+from collections import Counter
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,11 +63,25 @@ class SupervisorSession:
         }
 
 
+def _atomic_json(path: Path, document: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(document, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    os.replace(temporary, path)
+
+
 def discover_gpu_ids() -> tuple[int, ...]:
     configured = os.environ.get("SERVICE_GPU_IDS", "").strip()
     if configured:
         try:
-            values = tuple(dict.fromkeys(int(item.strip()) for item in configured.split(",") if item.strip()))
+            values = tuple(
+                dict.fromkeys(
+                    int(item.strip()) for item in configured.split(",") if item.strip()
+                )
+            )
         except ValueError as exc:
             raise ValueError("SERVICE_GPU_IDS 必须是逗号分隔的物理 GPU 编号") from exc
         if not values or min(values) < 0:
@@ -81,11 +96,7 @@ def discover_gpu_ids() -> tuple[int, ...]:
 
     try:
         result = subprocess.run(
-            [
-                "nvidia-smi",
-                "--query-gpu=index",
-                "--format=csv,noheader,nounits",
-            ],
+            ["nvidia-smi", "--query-gpu=index", "--format=csv,noheader,nounits"],
             check=True,
             capture_output=True,
             text=True,
@@ -100,12 +111,13 @@ def discover_gpu_ids() -> tuple[int, ...]:
             return tuple(dict.fromkeys(values))
     except (OSError, subprocess.SubprocessError):
         pass
-    # The existing single-GPU deployment always uses logical gpu-id=0. Keep a
-    # conservative fallback so development environments retain compatibility.
+    # Preserve the existing single-GPU development contract.
     return (0,)
 
 
 class GpuWorkerClient:
+    """Private AF_UNIX client plus subprocess lifecycle for one physical GPU."""
+
     def __init__(
         self,
         *,
@@ -127,52 +139,58 @@ class GpuWorkerClient:
         self.process: subprocess.Popen[bytes] | None = None
         self._log_stream: Any | None = None
         self.last_error: str | None = None
+        self._lifecycle_lock = threading.RLock()
 
     def spawn(self) -> None:
-        if self.process is not None and self.process.poll() is None:
-            return
-        self.socket_path.parent.mkdir(parents=True, exist_ok=True)
-        self.socket_path.unlink(missing_ok=True)
-        log_path = self.output_root / f"gpu-{self.gpu_id}" / "worker.log"
-        log_path.parent.mkdir(parents=True, exist_ok=True)
-        self._log_stream = log_path.open("ab", buffering=0)
-        env = os.environ.copy()
-        env["CUDA_VISIBLE_DEVICES"] = str(self.gpu_id)
-        env["DEEPSTREAM_PHYSICAL_GPU_ID"] = str(self.gpu_id)
-        command = [
-            sys.executable,
-            "-m",
-            "deepstream_ai.production.worker",
-            "--config",
-            str(self.config_path),
-            "--gpu-id",
-            str(self.gpu_id),
-            "--socket",
-            str(self.socket_path),
-            "--output-root",
-            str(self.output_root),
-            "--capacity",
-            str(self.capacity),
-            "--preview-fps",
-            str(self.preview_fps),
-            "--preview-width",
-            str(self.preview_width),
-        ]
-        self.process = subprocess.Popen(
-            command,
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=self._log_stream,
-            stderr=subprocess.STDOUT,
-            close_fds=True,
-        )
-        LOGGER.info(
-            "[GPU_SUPERVISOR_SPAWN] gpu=%d pid=%d socket=%s log=%s",
-            self.gpu_id,
-            self.process.pid,
-            self.socket_path,
-            log_path,
-        )
+        with self._lifecycle_lock:
+            if self.process is not None and self.process.poll() is None:
+                return
+            if self._log_stream is not None:
+                self._log_stream.close()
+                self._log_stream = None
+            self.socket_path.parent.mkdir(parents=True, exist_ok=True)
+            self.socket_path.unlink(missing_ok=True)
+            log_path = self.output_root / f"gpu-{self.gpu_id}" / "worker.log"
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            self._log_stream = log_path.open("ab", buffering=0)
+            env = os.environ.copy()
+            env["CUDA_VISIBLE_DEVICES"] = str(self.gpu_id)
+            env["DEEPSTREAM_PHYSICAL_GPU_ID"] = str(self.gpu_id)
+            command = [
+                sys.executable,
+                "-m",
+                "deepstream_ai.production.worker",
+                "--config",
+                str(self.config_path),
+                "--gpu-id",
+                str(self.gpu_id),
+                "--socket",
+                str(self.socket_path),
+                "--output-root",
+                str(self.output_root),
+                "--capacity",
+                str(self.capacity),
+                "--preview-fps",
+                str(self.preview_fps),
+                "--preview-width",
+                str(self.preview_width),
+            ]
+            self.process = subprocess.Popen(
+                command,
+                env=env,
+                stdin=subprocess.DEVNULL,
+                stdout=self._log_stream,
+                stderr=subprocess.STDOUT,
+                close_fds=True,
+            )
+            self.last_error = None
+            LOGGER.info(
+                "[GPU_SUPERVISOR_SPAWN] gpu=%d pid=%d socket=%s log=%s",
+                self.gpu_id,
+                self.process.pid,
+                self.socket_path,
+                log_path,
+            )
 
     def wait_ready(self, deadline: float) -> dict[str, Any]:
         while time.monotonic() < deadline:
@@ -188,7 +206,7 @@ class GpuWorkerClient:
                     result = self.request({"action": "ping"}, timeout=2.0)
                     worker = result.get("worker") or {}
                     if worker.get("status") == "ready":
-                        return worker
+                        return dict(worker)
                 except Exception:
                     pass
             time.sleep(0.25)
@@ -196,7 +214,10 @@ class GpuWorkerClient:
         raise TimeoutError(f"GPU {self.gpu_id}: {self.last_error}")
 
     def request(self, document: dict[str, Any], *, timeout: float = 20.0) -> dict[str, Any]:
-        payload = json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8") + b"\n"
+        payload = (
+            json.dumps(document, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            + b"\n"
+        )
         client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client.settimeout(timeout)
         try:
@@ -224,36 +245,29 @@ class GpuWorkerClient:
     def status(self) -> dict[str, Any]:
         process = self.process
         if process is None:
-            return {
-                "status": "not_started",
-                "physicalGpuId": self.gpu_id,
-                "capacity": self.capacity,
-                "activeSessions": 0,
-                "availableSlots": 0,
-                "error": self.last_error,
-            }
+            return self._offline("not_started", self.last_error)
         code = process.poll()
         if code is not None:
-            return {
-                "status": "failed",
-                "physicalGpuId": self.gpu_id,
-                "capacity": self.capacity,
-                "activeSessions": 0,
-                "availableSlots": 0,
-                "exitCode": code,
-                "error": self.last_error or f"worker exited with code {code}",
-            }
+            return self._offline(
+                "failed",
+                self.last_error or f"worker exited with code {code}",
+                exitCode=code,
+            )
         try:
             return dict(self.request({"action": "ping"}, timeout=2.0).get("worker") or {})
         except Exception as exc:
-            return {
-                "status": "unavailable",
-                "physicalGpuId": self.gpu_id,
-                "capacity": self.capacity,
-                "activeSessions": 0,
-                "availableSlots": 0,
-                "error": str(exc),
-            }
+            return self._offline("unavailable", str(exc))
+
+    def _offline(self, state: str, error: str | None, **extra: Any) -> dict[str, Any]:
+        return {
+            "status": state,
+            "physicalGpuId": self.gpu_id,
+            "capacity": self.capacity,
+            "activeSessions": 0,
+            "availableSlots": 0,
+            "error": error,
+            **extra,
+        }
 
     def send_shutdown(self) -> None:
         if self.process is None or self.process.poll() is not None:
@@ -281,6 +295,8 @@ class GpuWorkerClient:
 
 
 class ProductionRecognitionService:
+    """Own GPU workers, admission, camera uniqueness and persistent session state."""
+
     def __init__(
         self,
         config: AppConfig,
@@ -320,8 +336,16 @@ class ProductionRecognitionService:
         self._history: dict[str, dict[str, Any]] = {}
         self._lock = threading.RLock()
         self._closed = False
+        self._monitor_stop = threading.Event()
+        self._monitor_thread: threading.Thread | None = None
         self._load_history()
         self._start_workers()
+        self._monitor_thread = threading.Thread(
+            target=self._monitor_workers,
+            name="production-gpu-supervisor",
+            daemon=True,
+        )
+        self._monitor_thread.start()
 
     def _load_history(self) -> None:
         now = utc_now().isoformat()
@@ -340,16 +364,12 @@ class ProductionRecognitionService:
                 value["stopReason"] = "service_restart_manual_start_required"
                 value["updatedAt"] = now
                 with suppress(OSError):
-                    path.write_text(
-                        json.dumps(value, ensure_ascii=False, separators=(",", ":")),
-                        encoding="utf-8",
-                    )
+                    _atomic_json(path, value)
             value["historical"] = True
             self._history[directory.name] = value
 
     def _start_workers(self) -> None:
-        # Spawn first, wait second: model deserialization and CUDA initialization
-        # happen concurrently across all physical GPUs.
+        # Spawn all first: CUDA/TensorRT initialization happens concurrently.
         for worker in self.workers.values():
             worker.spawn()
         deadline = time.monotonic() + float(self.config.runtime.startup_timeout_sec) + 60.0
@@ -364,6 +384,10 @@ class ProductionRecognitionService:
                 worker.last_error = str(exc)
                 LOGGER.exception("GPU worker 启动失败 gpu=%d", gpu_id)
         if ready == 0:
+            for worker in self.workers.values():
+                worker.send_shutdown()
+            for worker in self.workers.values():
+                worker.wait_stopped(5.0)
             raise RuntimeError(f"没有可用的 GPU worker: {failures}")
         LOGGER.info(
             "[GPU_SUPERVISOR_READY] ready=%d total=%d failures=%s",
@@ -371,6 +395,46 @@ class ProductionRecognitionService:
             len(self.workers),
             failures,
         )
+
+    def _monitor_workers(self) -> None:
+        while not self._monitor_stop.wait(5.0):
+            for gpu_id, worker in self.workers.items():
+                if self._monitor_stop.is_set():
+                    return
+                process = worker.process
+                if process is None or process.poll() is None:
+                    continue
+                exit_code = process.poll()
+                error = f"GPU worker exited unexpectedly with code {exit_code}"
+                LOGGER.error("[GPU_WORKER_CRASH] gpu=%d error=%s", gpu_id, error)
+                self._fail_active_sessions_on_gpu(gpu_id, error)
+                try:
+                    worker.spawn()
+                    deadline = (
+                        time.monotonic()
+                        + float(self.config.runtime.startup_timeout_sec)
+                        + 60.0
+                    )
+                    worker.wait_ready(deadline)
+                    LOGGER.warning("[GPU_WORKER_RECOVERED] gpu=%d", gpu_id)
+                except Exception as exc:
+                    worker.last_error = str(exc)
+                    LOGGER.exception("GPU worker 自动恢复失败 gpu=%d", gpu_id)
+
+    def _fail_active_sessions_on_gpu(self, gpu_id: int, error: str) -> None:
+        with self._lock:
+            affected = [
+                item
+                for item in self._sessions.values()
+                if item.gpu_id == gpu_id and item.state in _ACTIVE_STATES
+            ]
+            for session in affected:
+                session.state = SessionState.FAILED.value
+                session.error = error
+                session.stop_reason = "gpu_worker_failed"
+                session.updated_at = utc_now().isoformat()
+                self._camera_to_session.pop(session.request.camera_id, None)
+                self._persist(session)
 
     def _validate_request(self, request: SessionRequest) -> Path | None:
         optional = self.capabilities["optional"]
@@ -410,37 +474,93 @@ class ProductionRecognitionService:
                 )
         return baseline
 
-    def _worker_candidates(self) -> list[tuple[GpuWorkerClient, dict[str, Any]]]:
-        values: list[tuple[GpuWorkerClient, dict[str, Any]]] = []
+    def _sync_worker_sessions(self, gpu_id: int) -> None:
+        worker = self.workers.get(gpu_id)
+        if worker is None:
+            return
+        process = worker.process
+        if process is None or process.poll() is not None:
+            self._fail_active_sessions_on_gpu(gpu_id, "GPU worker is not running")
+            return
+        try:
+            response = worker.request({"action": "sessions"}, timeout=3.0)
+        except Exception:
+            LOGGER.exception("同步 GPU Session 状态失败 gpu=%d", gpu_id)
+            return
+        remote = {
+            str(item.get("sessionId")): item
+            for item in response.get("sessions", [])
+            if isinstance(item, dict) and item.get("sessionId")
+        }
+        with self._lock:
+            local = [item for item in self._sessions.values() if item.gpu_id == gpu_id]
+            for session in local:
+                item = remote.get(session.session_id)
+                if item is None:
+                    if session.state in _ACTIVE_STATES:
+                        session.state = SessionState.FAILED.value
+                        session.error = "GPU worker session disappeared"
+                        session.stop_reason = "worker_session_missing"
+                        session.updated_at = utc_now().isoformat()
+                        self._camera_to_session.pop(session.request.camera_id, None)
+                        self._persist(session)
+                    continue
+                session.state = str(item.get("state", session.state))
+                session.updated_at = str(item.get("updatedAt", utc_now().isoformat()))
+                session.stop_reason = item.get("stopReason")
+                session.error = item.get("error")
+                if session.state in _TERMINAL_STATES:
+                    self._camera_to_session.pop(session.request.camera_id, None)
+                self._persist(session, overlay=item)
+
+    def _sync_all_workers(self) -> None:
+        for gpu_id in self.gpu_ids:
+            self._sync_worker_sessions(gpu_id)
+
+    def _active_camera_session(self, camera_id: str) -> SupervisorSession | None:
+        with self._lock:
+            session_id = self._camera_to_session.get(camera_id)
+            session = self._sessions.get(session_id) if session_id is not None else None
+        if session is None:
+            return None
+        self._sync_worker_sessions(session.gpu_id)
+        with self._lock:
+            session_id = self._camera_to_session.get(camera_id)
+            session = self._sessions.get(session_id) if session_id is not None else None
+            if session is None or session.state not in _ACTIVE_STATES:
+                return None
+            return session
+
+    def _worker_candidates(self) -> list[tuple[GpuWorkerClient, dict[str, Any], int]]:
+        with self._lock:
+            local_counts = Counter(
+                item.gpu_id for item in self._sessions.values() if item.state in _ACTIVE_STATES
+            )
+        values: list[tuple[GpuWorkerClient, dict[str, Any], int]] = []
         for worker in self.workers.values():
             status = worker.status()
             if status.get("status") != "ready":
                 continue
-            if int(status.get("availableSlots", 0)) <= 0:
+            effective_active = max(
+                int(status.get("activeSessions", 0)),
+                int(local_counts.get(worker.gpu_id, 0)),
+            )
+            if effective_active >= worker.capacity:
                 continue
-            values.append((worker, status))
-        return sorted(
-            values,
-            key=lambda item: (
-                int(item[1].get("activeSessions", 0)),
-                int(item[0].gpu_id),
-            ),
-        )
+            values.append((worker, status, effective_active))
+        return sorted(values, key=lambda item: (item[2], item[0].gpu_id))
 
     def start_session(self, request: SessionRequest) -> dict[str, Any]:
+        if self._closed:
+            raise ProductionServiceError("SERVICE_STOPPING", "识别服务正在停止")
         baseline = self._validate_request(request)
-        with self._lock:
-            existing_id = self._camera_to_session.get(request.camera_id)
-            if existing_id is not None:
-                existing = self._sessions[existing_id]
-                raise ProductionServiceError(
-                    "SESSION_ALREADY_ACTIVE",
-                    "该摄像头已经存在运行中的识别 Session",
-                    detail={
-                        "sessionId": existing.session_id,
-                        "gpuId": existing.gpu_id,
-                    },
-                )
+        existing = self._active_camera_session(request.camera_id)
+        if existing is not None:
+            raise ProductionServiceError(
+                "SESSION_ALREADY_ACTIVE",
+                "该摄像头已经存在运行中的识别 Session",
+                detail={"sessionId": existing.session_id, "gpuId": existing.gpu_id},
+            )
         candidates = self._worker_candidates()
         if not candidates:
             raise ProductionServiceError(
@@ -448,10 +568,9 @@ class ProductionRecognitionService:
                 "当前没有 READY 且有可用容量的 GPU Worker",
                 detail={"gpus": self.gpu_status()},
             )
-        worker, _status = candidates[0]
+        worker, _status, _effective_active = candidates[0]
         session_id = uuid4().hex[:16]
         output_dir = self.sessions_root / session_id
-        output_dir.mkdir(parents=True, exist_ok=False)
         now = utc_now().isoformat()
         session = SupervisorSession(
             session_id=session_id,
@@ -462,11 +581,22 @@ class ProductionRecognitionService:
             created_at=now,
             updated_at=now,
         )
+        # Reserve the camera atomically. This closes the concurrent START race
+        # without serializing unrelated cameras.
         with self._lock:
+            other_id = self._camera_to_session.get(request.camera_id)
+            if other_id is not None:
+                other = self._sessions[other_id]
+                raise ProductionServiceError(
+                    "SESSION_ALREADY_ACTIVE",
+                    "该摄像头已被另一个并发启动请求占用",
+                    detail={"sessionId": other.session_id, "gpuId": other.gpu_id},
+                )
             self._sessions[session_id] = session
             self._camera_to_session[request.camera_id] = session_id
-        self._persist(session)
         try:
+            output_dir.mkdir(parents=True, exist_ok=False)
+            self._persist(session)
             response = worker.request(
                 {
                     "action": "start",
@@ -482,14 +612,17 @@ class ProductionRecognitionService:
                 session.state = str(snapshot.get("state", SessionState.ACTIVE.value))
                 session.updated_at = utc_now().isoformat()
             self._persist(session, overlay=snapshot)
-            return self.session(session_id)
+            return {**session.as_dict(), **snapshot}
+        except ProductionServiceError:
+            raise
         except Exception as exc:
             with self._lock:
                 session.state = SessionState.FAILED.value
                 session.error = str(exc)
                 session.updated_at = utc_now().isoformat()
                 self._camera_to_session.pop(request.camera_id, None)
-            self._persist(session)
+            with suppress(OSError):
+                self._persist(session)
             raise ProductionServiceError(
                 "GPU_WORKER_START_FAILED",
                 f"GPU {worker.gpu_id} 启动识别 Session 失败: {exc}",
@@ -500,61 +633,44 @@ class ProductionRecognitionService:
         document = session.as_dict()
         if overlay:
             document.update(overlay)
-        path = session.output_dir / "status.json"
-        temp = path.with_suffix(".json.tmp")
-        temp.write_text(
-            json.dumps(document, ensure_ascii=False, separators=(",", ":")),
-            encoding="utf-8",
-        )
-        os.replace(temp, path)
-
-    def _refresh_from_worker(self, session: SupervisorSession) -> dict[str, Any]:
-        if session.state not in _ACTIVE_STATES:
-            return session.as_dict()
-        worker = self.workers.get(session.gpu_id)
-        if worker is None:
-            return session.as_dict()
-        try:
-            response = worker.request({"action": "sessions"}, timeout=3.0)
-            item = next(
-                (
-                    value
-                    for value in response.get("sessions", [])
-                    if value.get("sessionId") == session.session_id
-                ),
-                None,
-            )
-            if item is None:
-                return session.as_dict()
-            state = str(item.get("state", session.state))
-            with self._lock:
-                session.state = state
-                session.updated_at = str(item.get("updatedAt", utc_now().isoformat()))
-                session.stop_reason = item.get("stopReason")
-                session.error = item.get("error")
-                if state in _TERMINAL_STATES:
-                    self._camera_to_session.pop(session.request.camera_id, None)
-            self._persist(session, overlay=item)
-            return {**session.as_dict(), **item}
-        except Exception:
-            LOGGER.exception("刷新 Session 状态失败 session=%s", session.session_id)
-            return session.as_dict()
+        _atomic_json(session.output_dir / "status.json", document)
 
     def session(self, session_id: str) -> dict[str, Any]:
         with self._lock:
             current = self._sessions.get(session_id)
             historical = self._history.get(session_id)
         if current is not None:
-            return self._refresh_from_worker(current)
+            self._sync_worker_sessions(current.gpu_id)
+            with self._lock:
+                current = self._sessions[session_id]
+            path = current.output_dir / "status.json"
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(value, dict):
+                    return value
+            except (FileNotFoundError, OSError, ValueError):
+                pass
+            return current.as_dict()
         if historical is not None:
             return dict(historical)
         raise KeyError(session_id)
 
     def list_sessions(self) -> list[dict[str, Any]]:
+        self._sync_all_workers()
         with self._lock:
             current = tuple(self._sessions.values())
             history = dict(self._history)
-        values = [self._refresh_from_worker(item) for item in current]
+        values: list[dict[str, Any]] = []
+        for session in current:
+            path = session.output_dir / "status.json"
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(value, dict):
+                    values.append(value)
+                    continue
+            except (FileNotFoundError, OSError, ValueError):
+                pass
+            values.append(session.as_dict())
         current_ids = {item.session_id for item in current}
         values.extend(value for key, value in history.items() if key not in current_ids)
         return sorted(values, key=lambda item: str(item.get("createdAt", "")), reverse=True)
@@ -566,11 +682,14 @@ class ProductionRecognitionService:
             if session_id in self._history:
                 return dict(self._history[session_id])
             raise KeyError(session_id)
-        if session.state in _TERMINAL_STATES:
-            return self.session(session_id)
+        self._sync_worker_sessions(session.gpu_id)
+        with self._lock:
+            if session.state in _TERMINAL_STATES:
+                return self.session(session_id)
         worker = self.workers.get(session.gpu_id)
-        if worker is None:
-            raise ProductionServiceError("GPU_WORKER_UNAVAILABLE", "Session 对应的 GPU Worker 不存在")
+        if worker is None or worker.process is None or worker.process.poll() is not None:
+            self._fail_active_sessions_on_gpu(session.gpu_id, "GPU worker unavailable during stop")
+            return self.session(session_id)
         try:
             response = worker.request(
                 {"action": "stop", "sessionId": session_id, "reason": reason},
@@ -592,11 +711,10 @@ class ProductionRecognitionService:
             ) from exc
 
     def stop_camera(self, camera_id: str) -> dict[str, Any]:
-        with self._lock:
-            session_id = self._camera_to_session.get(camera_id)
-        if session_id is None:
+        active = self._active_camera_session(camera_id)
+        if active is None:
             raise KeyError(camera_id)
-        return self.stop_session(session_id)
+        return self.stop_session(active.session_id)
 
     def preview_path(self, session_id: str) -> Path:
         with self._lock:
@@ -620,6 +738,7 @@ class ProductionRecognitionService:
         return [self.workers[gpu_id].status() for gpu_id in self.gpu_ids]
 
     def status(self) -> dict[str, Any]:
+        self._sync_all_workers()
         gpus = self.gpu_status()
         ready = [item for item in gpus if item.get("status") == "ready"]
         with self._lock:
@@ -638,6 +757,9 @@ class ProductionRecognitionService:
         if self._closed:
             return
         self._closed = True
+        self._monitor_stop.set()
+        if self._monitor_thread is not None:
+            self._monitor_thread.join(6.0)
         # Send shutdown to every worker first so GPUs begin releasing together.
         for worker in self.workers.values():
             worker.send_shutdown()
