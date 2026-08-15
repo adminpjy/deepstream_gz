@@ -9,7 +9,28 @@ from deepstream_ai.config import AppConfig, BehaviorModelConfig
 from deepstream_ai.domain import BehaviorType
 from deepstream_ai.preflight import inspect_nvinfer_config
 
-_OPTIONAL_BEHAVIOR_FEATURES = ("smoking", "eating", "drinking", "phone")
+_OPTIONAL_BEHAVIOR_FEATURES = ("smoking", "eating", "drinking")
+_EAT_DRINK_PROXY_REQUIRED_LABELS = frozenset(
+    {
+        "bottle",
+        "wine_glass",
+        "cup",
+        "fork",
+        "knife",
+        "spoon",
+        "bowl",
+        "banana",
+        "apple",
+        "sandwich",
+        "orange",
+        "broccoli",
+        "carrot",
+        "hot_dog",
+        "pizza",
+        "donut",
+        "cake",
+    }
+)
 
 
 def _model_features(model: BehaviorModelConfig) -> tuple[str, ...]:
@@ -40,6 +61,20 @@ def _labels_from_report(auxiliary_files: tuple[Path, ...]) -> tuple[str, ...] | 
         return None
 
 
+def _normalized_labels(labels: tuple[str, ...]) -> frozenset[str]:
+    return frozenset(
+        value.strip().lower().replace("-", "_").replace(" ", "_")
+        for value in labels
+        if value.strip()
+    )
+
+
+def _is_eat_drink_proxy(model: BehaviorModelConfig, labels: tuple[str, ...] | None) -> bool:
+    if model.name != "eating" or labels is None:
+        return False
+    return _EAT_DRINK_PROXY_REQUIRED_LABELS.issubset(_normalized_labels(labels))
+
+
 def _asset_status(config: AppConfig, model: BehaviorModelConfig) -> dict[str, Any]:
     if not model.config_file:
         return {"available": False, "reason": "not_configured", "model": model.name}
@@ -48,7 +83,8 @@ def _asset_status(config: AppConfig, model: BehaviorModelConfig) -> dict[str, An
     if model.model and not config.resolve_path(model.model).is_file():
         missing.append(f"model missing: {config.resolve_path(model.model)}")
     deployed_labels = _labels_from_report(report.auxiliary_files)
-    if deployed_labels is not None and deployed_labels != model.labels:
+    proxy_mode = _is_eat_drink_proxy(model, deployed_labels)
+    if deployed_labels is not None and deployed_labels != model.labels and not proxy_mode:
         missing.append(
             "label order mismatch: "
             f"config={list(model.labels)!r} deployed={list(deployed_labels)!r}"
@@ -57,6 +93,7 @@ def _asset_status(config: AppConfig, model: BehaviorModelConfig) -> dict[str, An
         "available": not missing,
         "reason": None if not missing else "; ".join(missing),
         "model": model.name,
+        "mode": "person_crop_coco_proxy" if proxy_mode else None,
     }
 
 
@@ -71,8 +108,8 @@ def behavior_capabilities(config: AppConfig) -> dict[str, dict[str, Any]]:
             continue
         status = _asset_status(config, model)
         for feature in features:
-            # A single multi-class model can provide several independent business
-            # features (the local yolo11n.onnx provides eating + drinking).
+            # A single person-crop model can provide several independent business
+            # features (the deployed COCO YOLO11n provides eating + drinking proxy evidence).
             result[feature] = dict(status)
     return result
 
@@ -103,7 +140,6 @@ def production_capabilities(config: AppConfig) -> dict[str, Any]:
             "smoking": behavior["smoking"],
             "eating": behavior["eating"],
             "drinking": behavior["drinking"],
-            "phone": behavior["phone"],
             "leftObject": {
                 "available": True,
                 "reason": None,
