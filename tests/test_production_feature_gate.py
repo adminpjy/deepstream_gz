@@ -1,7 +1,12 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
+from deepstream_ai.config import SourceConfig
 from deepstream_ai.production.contracts import FeatureSet
 from deepstream_ai.production.feature_gate import FeatureRegistry
+from deepstream_ai.production.pipeline import DynamicSourceController
+import deepstream_ai.production.pipeline as production_pipeline
 
 
 def test_feature_registry_is_per_source_and_independent() -> None:
@@ -47,3 +52,126 @@ def test_shared_eat_drink_gate_does_not_enable_other_models() -> None:
     assert registry.enabled(0, "drinking") is True
     assert registry.enabled(0, "smoking") is False
     assert registry.enabled(0, "phone") is False
+
+
+class _FakePad:
+    def link(self, _other):
+        return "ok"
+
+    def unlink(self, _other):
+        return True
+
+
+class _FakeBin:
+    def __init__(self, name: str) -> None:
+        self.name = name
+        self.src_pad = _FakePad()
+        self.state = None
+
+    def get_static_pad(self, name: str):
+        return self.src_pad if name == "src" else None
+
+    def sync_state_with_parent(self) -> bool:
+        return True
+
+    def set_state(self, state):
+        self.state = state
+        return None
+
+
+class _FakeSourceBin:
+    def __init__(self, _runtime, _config, source, index: int) -> None:
+        self.config = source
+        self.bin = _FakeBin(f"source-bin-{index:02d}")
+
+
+class _FakeStreamMux:
+    def __init__(self) -> None:
+        self.pads: dict[str, _FakePad] = {}
+
+    def request_pad_simple(self, name: str):
+        pad = _FakePad()
+        self.pads[name] = pad
+        return pad
+
+    def release_request_pad(self, pad) -> None:
+        for name, current in list(self.pads.items()):
+            if current is pad:
+                self.pads.pop(name, None)
+
+
+class _FakePipeline:
+    """Mirror PyGObject Gst.Bin add/remove: success returns None, failure raises."""
+
+    def __init__(self, streammux: _FakeStreamMux) -> None:
+        self.streammux = streammux
+        self.children: dict[str, _FakeBin] = {}
+
+    def get_by_name(self, name: str):
+        if name == "stream-muxer":
+            return self.streammux
+        return self.children.get(name)
+
+    def add(self, child: _FakeBin) -> None:
+        if child.name in self.children:
+            raise RuntimeError(f"duplicate child: {child.name}")
+        self.children[child.name] = child
+        return None
+
+    def remove(self, child: _FakeBin) -> None:
+        if self.children.get(child.name) is not child:
+            raise RuntimeError(f"child not found: {child.name}")
+        self.children.pop(child.name, None)
+        return None
+
+
+def _source(camera_id: str) -> SourceConfig:
+    return SourceConfig(
+        camera_id=camera_id,
+        type="rtsp",
+        url="rtsp://127.0.0.1/live",
+        enabled=True,
+        nominal_fps=30.0,
+        latency_ms=200,
+        reconnect_interval_sec=10,
+    )
+
+
+def test_dynamic_source_accepts_none_return_and_recovers_orphan(monkeypatch) -> None:
+    monkeypatch.setattr(production_pipeline, "SourceBin", _FakeSourceBin)
+    gst = SimpleNamespace(
+        PadLinkReturn=SimpleNamespace(OK="ok"),
+        State=SimpleNamespace(NULL="null"),
+    )
+    runtime = SimpleNamespace(Gst=gst)
+    streammux = _FakeStreamMux()
+    pipeline = _FakePipeline(streammux)
+    graph = SimpleNamespace(
+        pipeline=pipeline,
+        metadata_probe=SimpleNamespace(camera_by_pad={}),
+        source_bins=(),
+    )
+    registry = FeatureRegistry()
+    controller = DynamicSourceController(
+        runtime,
+        SimpleNamespace(),
+        graph,
+        registry,
+        capacity=1,
+    )
+
+    # Gst.Bin.add succeeds with None. The controller must not interpret that as failure.
+    assert controller.add(_source("camera-a"), FeatureSet()) == 0
+    assert controller.active_count() == 1
+    assert pipeline.get_by_name("source-bin-00") is not None
+
+    # Gst.Bin.remove also succeeds with None.
+    assert controller.remove("camera-a") is True
+    assert controller.active_count() == 0
+    assert pipeline.get_by_name("source-bin-00") is None
+
+    # A stale unregistered bin from an interrupted old attach is reclaimed before reuse.
+    pipeline.children["source-bin-00"] = _FakeBin("source-bin-00")
+    assert controller.add(_source("camera-b"), FeatureSet(phone=True)) == 0
+    assert controller.slot_for_camera("camera-b") == 0
+    assert registry.enabled(0, "phone") is True
