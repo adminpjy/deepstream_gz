@@ -4492,3 +4492,30 @@ Traceback (most recent call last):
   File "/workspace/src/deepstream_ai/pipeline/elements.py", line 15, in make_element
     raise PipelineError(
 deepstream_ai.errors.PipelineError: 无法创建 GStreamer 元素 nvmultiurisrcbin (production-multiuri-source)；请确认 DeepStream 插件已安装并可被 gst-inspect-1.0 发现
+2026-08-15 10:49:21 | INFO     | __main__ | [GPU_WORKER_START] physical_gpu=0 logical_gpu=0 capacity=16 warm_behaviors=['eating', 'smoking']
+2026-08-15 10:49:22 | INFO     | __main__ | [GPU_WORKER_PREFLIGHT] physical_gpu=0 engines=['/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine', '/workspace/models/face.engine', '/workspace/models/yolo11n.engine', '/workspace/models/smoking.engine']
+2026-08-15 10:49:22 | INFO     | __main__ | [GPU_WORKER_RUNTIME] physical_gpu=0 versions={'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-15 10:49:22.782119709 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+0:00:02.152903821 [36m   65[00m      0x688c170 [33;01mWARN   [00m [00;01;37;41m GST_ELEMENT_FACTORY gstelementfactory.c:765:gst_element_factory_make_valist:[00m no such element factory "nvmultiurisrcbin"!
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/src/deepstream_ai/production/worker.py", line 620, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/workspace/src/deepstream_ai/production/worker.py", line 615, in main
+    worker.serve()
+  File "/workspace/src/deepstream_ai/production/worker.py", line 493, in serve
+    self.start()
+  File "/workspace/src/deepstream_ai/production/worker.py", line 183, in start
+    self.graph = self.builder.build()
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/src/deepstream_ai/production/multiuri_pipeline.py", line 178, in build
+    multi_source = self._multiuri_source(capacity)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/src/deepstream_ai/production/multiuri_pipeline.py", line 127, in _multiuri_source
+    source = make_element(Gst, "nvmultiurisrcbin", "production-multiuri-source")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/src/deepstream_ai/pipeline/elements.py", line 15, in make_element
+    raise PipelineError(
+deepstream_ai.errors.PipelineError: 无法创建 GStreamer 元素 nvmultiurisrcbin (production-multiuri-source)；请确认 DeepStream 插件已安装并可被 gst-inspect-1.0 发现
