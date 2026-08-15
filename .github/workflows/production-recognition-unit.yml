@@ -7,8 +7,15 @@ on:
   pull_request:
     paths:
       - "src/deepstream_ai/production/**"
+      - "src/deepstream_ai/domain.py"
       - "src/deepstream_ai/web/production_server.py"
       - "src/deepstream_ai/web/static/production.js"
+      - "scripts/prepare-local-behavior-models.py"
+      - "scripts/convert-local-models.sh"
+      - "configs/config.yaml"
+      - "docker-compose.yml"
+      - "docker/Dockerfile"
+      - "pyproject.toml"
       - "tests/test_production_*.py"
       - ".github/workflows/production-recognition-unit.yml"
 
@@ -27,17 +34,26 @@ jobs:
           cache: pip
       - name: Install project and development checks
         run: python -m pip install -e ".[dev]"
-      - name: Compile production Python modules
-        run: python -m compileall -q src/deepstream_ai/production src/deepstream_ai/web/production_server.py
+      - name: Compile production Python modules and converter
+        run: >-
+          python -m compileall -q
+          src/deepstream_ai/production
+          src/deepstream_ai/domain.py
+          src/deepstream_ai/web/production_server.py
+          scripts/prepare-local-behavior-models.py
       - name: Ruff production changes
         run: >-
           ruff check
           src/deepstream_ai/production
+          src/deepstream_ai/domain.py
           src/deepstream_ai/web/production_server.py
+          scripts/prepare-local-behavior-models.py
           tests/test_production_contracts.py
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+      - name: Shell syntax
+        run: bash -n scripts/convert-local-models.sh
       - name: Production unit tests
         run: >-
           pytest -q
