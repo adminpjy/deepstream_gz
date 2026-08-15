@@ -16,10 +16,11 @@ import signal
 import socket
 import threading
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from deepstream_ai.config import SourceConfig, load_config
 from deepstream_ai.logging_config import configure_logging
@@ -524,7 +525,7 @@ class ProductionGpuWorker:
                     raise RuntimeError("GPU worker pipeline terminated") from self._fatal_error
                 try:
                     connection, _address = server.accept()
-                except socket.timeout:
+                except TimeoutError:
                     continue
                 threading.Thread(
                     target=self._serve_connection,
