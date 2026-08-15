@@ -4,15 +4,104 @@
 #include "nvdsinfer_custom_impl.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <iostream>
+#include <utility>
 #include <vector>
 
 namespace {
 
 float clamp_value(float value, float lower, float upper) {
     return std::min(upper, std::max(lower, value));
+}
+
+struct TensorView {
+    const float* data;
+    int rows;
+    int attributes;
+    bool row_major;
+
+    float value_at(int row, int attribute) const {
+        return row_major ? data[row * attributes + attribute]
+                         : data[attribute * rows + row];
+    }
+};
+
+bool make_tensor_view(
+    const NvDsInferLayerInfo& layer,
+    int attributes,
+    TensorView& view,
+    const char* parser_name) {
+    if (layer.buffer == nullptr || layer.inferDims.numElements <= 0 ||
+        layer.inferDims.numDims < 1 || attributes <= 4) {
+        std::cerr << parser_name << ": invalid output tensor" << std::endl;
+        return false;
+    }
+    if (layer.inferDims.numElements % attributes != 0) {
+        std::cerr << parser_name << ": tensor element count "
+                  << layer.inferDims.numElements << " is not divisible by attributes="
+                  << attributes << std::endl;
+        return false;
+    }
+    const int rows = layer.inferDims.numElements / attributes;
+    const int first = layer.inferDims.d[0];
+    const int last = layer.inferDims.d[layer.inferDims.numDims - 1];
+    const bool row_major = last == attributes;
+    const bool channel_major = first == attributes;
+    if (!row_major && !channel_major) {
+        std::cerr << parser_name << ": expected [rows," << attributes << "] or ["
+                  << attributes << ",rows], got first=" << first << " last=" << last
+                  << std::endl;
+        return false;
+    }
+    view = TensorView{
+        static_cast<const float*>(layer.buffer),
+        rows,
+        attributes,
+        row_major,
+    };
+    return true;
+}
+
+bool append_object(
+    const TensorView& view,
+    int row,
+    int class_id,
+    float score,
+    const NvDsInferNetworkInfo& network,
+    std::vector<NvDsInferParseObjectInfo>& objects) {
+    const float center_x = view.value_at(row, 0);
+    const float center_y = view.value_at(row, 1);
+    const float width = view.value_at(row, 2);
+    const float height = view.value_at(row, 3);
+    if (!std::isfinite(center_x) || !std::isfinite(center_y) ||
+        !std::isfinite(width) || !std::isfinite(height) || width <= 0.0F ||
+        height <= 0.0F) {
+        return false;
+    }
+    const float x1 = clamp_value(center_x - width / 2.0F, 0.0F,
+                                 static_cast<float>(network.width));
+    const float y1 = clamp_value(center_y - height / 2.0F, 0.0F,
+                                 static_cast<float>(network.height));
+    const float x2 = clamp_value(center_x + width / 2.0F, 0.0F,
+                                 static_cast<float>(network.width));
+    const float y2 = clamp_value(center_y + height / 2.0F, 0.0F,
+                                 static_cast<float>(network.height));
+    if (x2 - x1 < 1.0F || y2 - y1 < 1.0F) {
+        return false;
+    }
+
+    NvDsInferParseObjectInfo object{};
+    object.left = x1;
+    object.top = y1;
+    object.width = x2 - x1;
+    object.height = y2 - y1;
+    object.classId = class_id;
+    object.detectionConfidence = score;
+    objects.push_back(object);
+    return true;
 }
 
 }  // namespace
@@ -27,43 +116,20 @@ extern "C" bool NvDsInferParseCustomYoloDynamic(
         return false;
     }
     const NvDsInferLayerInfo& layer = output_layers.front();
-    if (layer.buffer == nullptr || layer.inferDims.numElements <= 0 ||
-        layer.inferDims.numDims < 1) {
-        std::cerr << "YOLO dynamic parser: invalid output tensor" << std::endl;
-        return false;
-    }
-
     const int classes = static_cast<int>(detection.numClassesConfigured);
     const int attributes = 4 + classes;
-    if (layer.inferDims.numElements % attributes != 0) {
-        std::cerr << "YOLO dynamic parser: tensor element count "
-                  << layer.inferDims.numElements << " is not divisible by 4+C="
-                  << attributes << std::endl;
-        return false;
-    }
-    const int rows = layer.inferDims.numElements / attributes;
-    const int first = layer.inferDims.d[0];
-    const int last = layer.inferDims.d[layer.inferDims.numDims - 1];
-    const bool row_major = last == attributes;
-    const bool channel_major = first == attributes;
-    if (!row_major && !channel_major) {
-        std::cerr << "YOLO dynamic parser: expected [rows,4+C] or [4+C,rows], got first="
-                  << first << " last=" << last << " C=" << classes << std::endl;
+    TensorView view{};
+    if (!make_tensor_view(layer, attributes, view, "YOLO dynamic parser")) {
         return false;
     }
 
-    const float* data = static_cast<const float*>(layer.buffer);
-    const auto value_at = [=](int row, int attribute) -> float {
-        return row_major ? data[row * attributes + attribute]
-                         : data[attribute * rows + row];
-    };
     objects.clear();
-    objects.reserve(static_cast<std::size_t>(std::min(rows, 1000)));
-    for (int row = 0; row < rows; ++row) {
+    objects.reserve(static_cast<std::size_t>(std::min(view.rows, 1000)));
+    for (int row = 0; row < view.rows; ++row) {
         int best_class = 0;
-        float best_score = value_at(row, 4);
+        float best_score = view.value_at(row, 4);
         for (int class_id = 1; class_id < classes; ++class_id) {
-            const float score = value_at(row, 4 + class_id);
+            const float score = view.value_at(row, 4 + class_id);
             if (score > best_score) {
                 best_score = score;
                 best_class = class_id;
@@ -76,39 +142,104 @@ extern "C" bool NvDsInferParseCustomYoloDynamic(
         if (best_score < threshold) {
             continue;
         }
+        append_object(view, row, best_class, best_score, network, objects);
+    }
+    return true;
+}
 
-        const float center_x = value_at(row, 0);
-        const float center_y = value_at(row, 1);
-        const float width = value_at(row, 2);
-        const float height = value_at(row, 3);
-        if (!std::isfinite(center_x) || !std::isfinite(center_y) ||
-            !std::isfinite(width) || !std::isfinite(height) || width <= 0.0F ||
-            height <= 0.0F) {
+// yolo11n.onnx is a standard 80-class COCO detector, not a purpose-trained
+// two-class eating/drinking network. In production it runs as a secondary GIE
+// on each PeopleNet person ROI. This parser intentionally exposes only two
+// business classes to the rest of the existing behavior pipeline:
+//   0 = EATING   : food / bowl / cutlery evidence
+//   1 = DRINKING : bottle / wine-glass / cup evidence
+// Restrict evidence to the upper 65% of the person crop so a cup on a desk or
+// food near the feet does not immediately become a behavior event. This is a
+// lightweight object-proxy heuristic; it adds no model and does not touch the
+// tuned person/face pipeline.
+extern "C" bool NvDsInferParseCustomYoloEatDrinkCoco(
+    const std::vector<NvDsInferLayerInfo>& output_layers,
+    const NvDsInferNetworkInfo& network,
+    const NvDsInferParseDetectionParams& detection,
+    std::vector<NvDsInferParseObjectInfo>& objects) {
+    constexpr int kCocoClasses = 80;
+    constexpr int kAttributes = 4 + kCocoClasses;
+    constexpr int kEating = 0;
+    constexpr int kDrinking = 1;
+    constexpr float kUpperBodyCenterRatio = 0.65F;
+
+    // COCO class ids from models/yolo11n-coco.labels.txt.
+    constexpr std::array<std::pair<int, int>, 17> kBusinessClasses{{
+        {39, kDrinking},  // bottle
+        {40, kDrinking},  // wine glass
+        {41, kDrinking},  // cup
+        {42, kEating},    // fork
+        {43, kEating},    // knife
+        {44, kEating},    // spoon
+        {45, kEating},    // bowl
+        {46, kEating},    // banana
+        {47, kEating},    // apple
+        {48, kEating},    // sandwich
+        {49, kEating},    // orange
+        {50, kEating},    // broccoli
+        {51, kEating},    // carrot
+        {52, kEating},    // hot dog
+        {53, kEating},    // pizza
+        {54, kEating},    // donut
+        {55, kEating},    // cake
+    }};
+
+    if (output_layers.empty() || detection.numClassesConfigured < 2 ||
+        detection.perClassPreclusterThreshold.size() < 2) {
+        std::cerr << "YOLO eat/drink parser: requires output and 2 business classes"
+                  << std::endl;
+        return false;
+    }
+
+    TensorView view{};
+    if (!make_tensor_view(
+            output_layers.front(), kAttributes, view, "YOLO eat/drink parser")) {
+        return false;
+    }
+
+    objects.clear();
+    objects.reserve(static_cast<std::size_t>(std::min(view.rows, 512)));
+    for (int row = 0; row < view.rows; ++row) {
+        int best_business_class = -1;
+        float best_score = -1.0F;
+        for (const auto& mapping : kBusinessClasses) {
+            const int coco_class = mapping.first;
+            const int business_class = mapping.second;
+            const float score = view.value_at(row, 4 + coco_class);
+            if (score > best_score) {
+                best_score = score;
+                best_business_class = business_class;
+            }
+        }
+        if (best_business_class < 0 || !std::isfinite(best_score) ||
+            best_score < 0.0F || best_score > 1.0F) {
             continue;
         }
-        const float x1 = clamp_value(center_x - width / 2.0F, 0.0F,
-                                     static_cast<float>(network.width));
-        const float y1 = clamp_value(center_y - height / 2.0F, 0.0F,
-                                     static_cast<float>(network.height));
-        const float x2 = clamp_value(center_x + width / 2.0F, 0.0F,
-                                     static_cast<float>(network.width));
-        const float y2 = clamp_value(center_y + height / 2.0F, 0.0F,
-                                     static_cast<float>(network.height));
-        if (x2 - x1 < 1.0F || y2 - y1 < 1.0F) {
+        const float threshold =
+            detection.perClassPreclusterThreshold.at(best_business_class);
+        if (best_score < threshold) {
             continue;
         }
-
-        NvDsInferParseObjectInfo object{};
-        object.left = x1;
-        object.top = y1;
-        object.width = x2 - x1;
-        object.height = y2 - y1;
-        object.classId = best_class;
-        object.detectionConfidence = best_score;
-        objects.push_back(object);
+        const float center_y = view.value_at(row, 1);
+        if (!std::isfinite(center_y) ||
+            center_y > static_cast<float>(network.height) * kUpperBodyCenterRatio) {
+            continue;
+        }
+        append_object(
+            view,
+            row,
+            best_business_class,
+            best_score,
+            network,
+            objects);
     }
     return true;
 }
 
 CHECK_CUSTOM_PARSE_FUNC_PROTOTYPE(NvDsInferParseCustomYoloDynamic);
-
+CHECK_CUSTOM_PARSE_FUNC_PROTOTYPE(NvDsInferParseCustomYoloEatDrinkCoco);
