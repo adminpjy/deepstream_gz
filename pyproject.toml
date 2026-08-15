@@ -20,6 +20,10 @@ dependencies = [
 
 [project.optional-dependencies]
 onnx = ["onnxruntime-gpu>=1.18,<2"]
+convert = [
+  "onnx>=1.16,<2",
+  "ultralytics>=8.3,<9",
+]
 dev = [
   "onnx>=1.16,<2",
   "pytest>=8,<9",
