@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python3 /workspace/scripts/prepare-local-behavior-models.py \
+python3 /workspace/scripts/prepare-local-behavior-models-dynamic.py \
   --model-root /workspace/models \
   --config-root /workspace/configs/nvinfer \
   --device "${MODEL_CONVERTER_DEVICE:-0}" \
   --precision "${MODEL_CONVERTER_PRECISION:-fp16}" \
+  --imgsz "${MODEL_CONVERTER_IMGSZ:-640}" \
   --force
 
 python3 - /workspace/models/deepstream-local-models.manifest.json <<'PY'
@@ -25,7 +26,7 @@ if missing:
     raise SystemExit("model conversion manifest missing: " + ", ".join(missing))
 
 # The current production config deliberately uses one shared SGIE for these
-# two independent business switches.  Refuse reversed/unknown class order
+# two independent business switches. Refuse reversed/unknown class order
 # rather than silently turning drinking into eating or vice versa.
 expected = ["eating", "drinking"]
 actual = models["eat_drink"].get("labels")
