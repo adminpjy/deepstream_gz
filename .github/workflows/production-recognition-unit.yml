@@ -8,6 +8,7 @@ on:
     paths:
       - "src/deepstream_ai/production/**"
       - "src/deepstream_ai/domain.py"
+      - "src/deepstream_ai/preview.py"
       - "src/deepstream_ai/task_behavior.py"
       - "src/deepstream_ai/task_worker.py"
       - "src/deepstream_ai/manual_task_service.py"
@@ -51,6 +52,7 @@ jobs:
           python -m compileall -q
           src/deepstream_ai/production
           src/deepstream_ai/domain.py
+          src/deepstream_ai/preview.py
           src/deepstream_ai/task_behavior.py
           src/deepstream_ai/task_worker.py
           src/deepstream_ai/manual_task_service.py
@@ -62,6 +64,7 @@ jobs:
           ruff check
           src/deepstream_ai/production
           src/deepstream_ai/domain.py
+          src/deepstream_ai/preview.py
           src/deepstream_ai/task_behavior.py
           src/deepstream_ai/task_worker.py
           src/deepstream_ai/manual_task_service.py
