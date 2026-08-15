@@ -256,35 +256,39 @@ face_recognition:
   input_height: 112
   require_landmarks: true
 
-# behavior.<name>.enabled is the authoritative load switch. Disabled models are
-# absent from the pipeline and consume no model GPU memory.
+# Local behavior models are converted by:
+#   docker compose --profile tools run --rm model-converter
+# They remain disabled in the base config. Production workers warm only models
+# whose generated nvinfer config + TensorRT engine are actually present.
 behavior:
+  # One shared two-class SGIE. Either eating or drinking session switch enables
+  # this single inference element, avoiding duplicate YOLO inference.
+  eating:
+    enabled: false
+    config_file: /workspace/configs/nvinfer/eat-drink.txt
+    model: /workspace/models/yolo11n.engine
+    unique_id: 11
+    labels: [eating, drinking]
+    threshold: 0.50
   smoking:
     enabled: false
     config_file: /workspace/configs/nvinfer/smoking.txt
     model: /workspace/models/smoking.engine
-    unique_id: 11
+    unique_id: 12
     labels: [smoking]
     threshold: 0.50
-  eating:
+  phone:
     enabled: false
-    config_file: /workspace/configs/nvinfer/eating.txt
-    model: /workspace/models/eating.engine
-    unique_id: 12
-    labels: [eating]
-    threshold: 0.50
-  drinking:
-    enabled: false
-    config_file: /workspace/configs/nvinfer/drinking.txt
-    model: /workspace/models/drinking.engine
+    config_file: /workspace/configs/nvinfer/phone.txt
+    model: /workspace/models/phone.engine
     unique_id: 13
-    labels: [drinking]
+    labels: [phone]
     threshold: 0.50
   carrying:
     enabled: false
     config_file: /workspace/configs/nvinfer/carrying.txt
     model: /workspace/models/carrying.engine
-    unique_id: 14
+    unique_id: 15
     labels: [carrying]
     threshold: 0.50
 
@@ -310,6 +314,18 @@ models:
     onnx: /workspace/models/adaface_ir50.onnx
   behaviors:
     metadata_template: /workspace/configs/models/behavior.metadata.example.json
+    local_eat_drink_onnx: /workspace/models/yolo11n.onnx
+    local_eat_drink_engine: /workspace/models/yolo11n.engine
+    local_smoking_checkpoint: /workspace/models/smoking.pt
+    local_smoking_engine: /workspace/models/smoking.engine
+    local_phone_checkpoint: /workspace/models/phone.pt
+    local_phone_engine: /workspace/models/phone.engine
+    # Fire is deliberately prepared as a full-frame model. It is not wired into
+    # the per-person optional SGIE chain because doing so would crop away fires
+    # that are not inside a person's bounding box.
+    local_fire_onnx: /workspace/models/fire.onnx
+    local_fire_engine: /workspace/models/fire.engine
+    local_fire_nvinfer: /workspace/configs/nvinfer/fire.txt
 
 snapshot:
   enabled: true
