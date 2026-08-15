@@ -47,6 +47,11 @@ class FeatureRegistry:
         binding = self.binding(pad_index)
         if binding is None:
             return False
+        # The local yolo11n.onnx is one two-class eating/drinking detector.
+        # Keep one inference element and let either independent business switch
+        # activate it. Metadata still emits EATING and DRINKING separately.
+        if feature_name == "eating":
+            return bool(binding.features.eating or binding.features.drinking)
         return bool(getattr(binding.features, feature_name, False))
 
     def any_enabled(self, pad_index: int, feature_names: tuple[str, ...]) -> bool:
@@ -78,15 +83,17 @@ class BehaviorInferenceGate:
         runtime: Any,
         registry: FeatureRegistry,
         *,
-        feature_names: tuple[str, ...],
         person_unique_id: int,
         gate_unique_id: int,
+        feature_name: str | None = None,
+        feature_names: tuple[str, ...] | None = None,
     ) -> None:
-        if not feature_names:
-            raise ValueError("feature_names cannot be empty")
+        names = feature_names or ((feature_name,) if feature_name else ())
+        if not names:
+            raise ValueError("feature_name/feature_names cannot be empty")
         self.runtime = runtime
         self.registry = registry
-        self.feature_names = tuple(dict.fromkeys(feature_names))
+        self.feature_names = tuple(dict.fromkeys(names))
         self.person_unique_id = int(person_unique_id)
         self.mask_unique_id = 1_000_000 + int(gate_unique_id)
         self._masked_objects = 0
