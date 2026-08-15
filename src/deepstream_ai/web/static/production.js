@@ -7,12 +7,15 @@
     capabilities: "/api/v1/recognition/capabilities",
     service: "/api/v1/recognition/service",
   });
+  const MAX_LIVE_TILES = 4;
   const state = {
     initialized: false,
     submitting: false,
     sessions: [],
     capabilities: null,
     pollTimer: null,
+    previewNodes: new Map(),
+    legacyPreviewObserver: null,
   };
 
   document.addEventListener("DOMContentLoaded", initializeProductionUi);
@@ -25,7 +28,7 @@
     state.initialized = true;
     installStyles();
     injectFeatureControls(form);
-    injectSessionPanel();
+    installLiveWallBridge();
     form.addEventListener("submit", handleProductionSubmit, true);
     void refreshCapabilities();
     void refreshProductionSessions();
@@ -34,6 +37,8 @@
     }, 3000);
     window.addEventListener("pagehide", () => {
       if (state.pollTimer !== null) window.clearInterval(state.pollTimer);
+      if (state.legacyPreviewObserver) state.legacyPreviewObserver.disconnect();
+      for (const entry of state.previewNodes.values()) disconnectProductionPreview(entry);
     });
   }
 
@@ -49,16 +54,9 @@
       .production-baseline{display:grid;gap:7px;margin-top:10px;padding-top:12px;border-top:1px solid rgba(116,229,255,.12)}
       .production-baseline input[type=file]{width:100%;font-size:12px}
       .production-hint{margin:0;color:var(--muted,#8aa4ad);font-size:12px;line-height:1.5}
-      .production-session-panel{margin-top:20px}
-      .production-session-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px;padding:16px}
-      .production-session-card{border:1px solid rgba(116,229,255,.16);border-radius:12px;overflow:hidden;background:rgba(5,18,24,.72)}
-      .production-session-card img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#02080b}
-      .production-session-meta{padding:12px;display:grid;gap:7px;font-size:12px}
-      .production-session-title{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:700}
-      .production-session-tags{display:flex;flex-wrap:wrap;gap:5px}
-      .production-session-tags span{border:1px solid rgba(116,229,255,.15);border-radius:999px;padding:3px 7px;color:var(--muted,#9db2ba)}
-      .production-session-actions{display:flex;justify-content:flex-end;margin-top:4px}
-      .production-empty{padding:20px;color:var(--muted,#9db2ba);text-align:center}
+      .production-live-meta{display:flex;flex-wrap:wrap;gap:6px;padding:8px 2px 2px;color:var(--muted,#9db2ba);font-size:11px}
+      .production-live-meta span{border:1px solid rgba(116,229,255,.15);border-radius:999px;padding:3px 7px}
+      #productionPreviewGridBody:empty{display:none}
       @media(max-width:700px){.production-core-grid,.production-optional-grid{grid-template-columns:1fr}}
     `;
     document.head.appendChild(style);
@@ -86,7 +84,7 @@
         ${optionalCheck("喝水", "prodDrinking")}
         ${optionalCheck("打电话", "prodPhone")}
         ${optionalCheck("物品遗留", "prodLeftObject")}
-        <label class="production-check unavailable" title="火焰模型已支持转换，当前生产 Session 暂未接入全画面检测链路"><input id="prodFire" type="checkbox" disabled />火焰（已转换，待接入）</label>
+        <label class="production-check unavailable" title="火焰模型为全画面分类模型，当前生产 Session 暂未接入"><input id="prodFire" type="checkbox" disabled />火焰（待接入）</label>
         <label class="production-check unavailable" title="已预留，当前版本尚未实现"><input id="prodLargeObject" type="checkbox" disabled />大件物品搬运（预留）</label>
       </div>
       <div class="production-baseline" id="prodBaselineArea" hidden>
@@ -117,21 +115,16 @@
     return `<label class="production-check" id="${id}Label"><input id="${id}" type="checkbox" />${escapeHtml(label)}</label>`;
   }
 
-  function injectSessionPanel() {
-    const main = document.querySelector("main");
-    if (!main) return;
-    const panel = document.createElement("section");
-    panel.className = "panel production-session-panel";
-    panel.setAttribute("aria-labelledby", "productionSessionsTitle");
-    panel.innerHTML = `
-      <div class="panel-heading tasks-heading">
-        <div><p class="section-index">04 / PRODUCTION</p><h2 id="productionSessionsTitle">生产 GPU Session</h2></div>
-        <div class="tasks-tools"><span id="productionGpuSummary">GPU 初始化中</span><button class="button button-ghost button-compact" id="refreshProductionSessions" type="button"><span class="button-icon" aria-hidden="true">↻</span>刷新</button></div>
-      </div>
-      <div id="productionSessionGrid" class="production-session-grid"></div>
-    `;
-    main.appendChild(panel);
-    document.getElementById("refreshProductionSessions").addEventListener("click", () => void refreshProductionSessions(true));
+  function installLiveWallBridge() {
+    const legacyBody = document.getElementById("previewGridBody");
+    const productionBody = document.getElementById("productionPreviewGridBody");
+    if (!legacyBody || !productionBody) return;
+    state.legacyPreviewObserver = new MutationObserver(() => {
+      renderProductionLiveWall();
+      syncLiveWallIndicator();
+    });
+    state.legacyPreviewObserver.observe(legacyBody, {childList: true, subtree: true});
+    syncLiveWallIndicator();
   }
 
   async function refreshCapabilities() {
@@ -242,49 +235,168 @@
 
   async function refreshProductionSessions(surfaceErrors = false) {
     try {
-      const [sessions, service] = await Promise.all([
+      const [sessions] = await Promise.all([
         requestJson(API.sessions),
         requestJson(API.service),
       ]);
       state.sessions = Array.isArray(sessions.sessions) ? sessions.sessions : [];
-      const summary = document.getElementById("productionGpuSummary");
-      if (summary) summary.textContent = `${service.readyGpuCount || 0}/${service.gpuCount || 0} GPU READY · ${service.activeSessions || 0} 路活动`;
-      renderProductionSessions();
+      renderProductionLiveWall();
+      syncLiveWallIndicator();
     } catch (error) {
       if (surfaceErrors) showProductionError(errorMessage(error));
     }
   }
 
-  function renderProductionSessions() {
-    const grid = document.getElementById("productionSessionGrid");
-    if (!grid) return;
+  function renderProductionLiveWall() {
+    const body = document.getElementById("productionPreviewGridBody");
+    if (!body) return;
     const active = state.sessions.filter((item) => ["starting","active","stopping"].includes(String(item.state || "")));
-    if (!active.length) {
-      grid.innerHTML = `<div class="production-empty">暂无生产 RTSP Session。切换到 RTSP，选择识别场景并点击“开始分析”。</div>`;
-      return;
+    const legacyCount = legacyPreviewCount();
+    const visible = active.slice(0, Math.max(0, MAX_LIVE_TILES - legacyCount));
+    const visibleIds = new Set(visible.map((item) => String(item.sessionId || "")));
+
+    for (const [sessionId, entry] of state.previewNodes.entries()) {
+      if (!visibleIds.has(sessionId)) {
+        disconnectProductionPreview(entry);
+        entry.cell.remove();
+        state.previewNodes.delete(sessionId);
+      }
     }
-    grid.innerHTML = active.map((item) => {
-      const features = Object.entries(item.features || {}).filter(([, enabled]) => enabled).map(([name]) => featureLabel(name));
-      const preview = item.previewUrl || `/api/v1/recognition/sessions/${encodeURIComponent(item.sessionId)}/preview.jpg`;
-      return `<article class="production-session-card" data-session-id="${escapeHtml(item.sessionId)}">
-        <img src="${escapeHtml(preview)}?t=${Date.now()}" alt="${escapeHtml(item.cameraId || "摄像头")} 实时预览" loading="lazy" />
-        <div class="production-session-meta">
-          <div class="production-session-title"><span>${escapeHtml(item.cameraId || "-")}</span><span>${escapeHtml(String(item.state || "-"))}</span></div>
-          <div>GPU ${escapeHtml(String(item.gpuId ?? "-"))} · Session ${escapeHtml(item.sessionId || "-")}</div>
-          <div>无人计时 ${Number(item.idleSeconds || 0).toFixed(1)}s / ${Number((item.exitPolicy || {}).personAbsentSeconds || 0).toFixed(0)}s</div>
-          <div class="production-session-tags">${features.length ? features.map((name) => `<span>${escapeHtml(name)}</span>`).join("") : "<span>仅基础识别</span>"}</div>
-          <div class="production-session-actions"><button type="button" class="button button-ghost button-compact production-stop" data-session-id="${escapeHtml(item.sessionId)}">停止识别</button></div>
-        </div>
-      </article>`;
-    }).join("");
-    grid.querySelectorAll(".production-stop").forEach((button) => {
-      button.addEventListener("click", () => void stopProductionSession(button.dataset.sessionId, button));
+
+    for (const item of visible) {
+      const sessionId = String(item.sessionId || "");
+      if (!sessionId) continue;
+      let entry = state.previewNodes.get(sessionId);
+      if (!entry) {
+        entry = createProductionPreviewEntry(item);
+        state.previewNodes.set(sessionId, entry);
+      }
+      updateProductionPreviewEntry(entry, item);
+    }
+
+    body.replaceChildren();
+    const entries = visible.map((item) => state.previewNodes.get(String(item.sessionId || ""))).filter(Boolean);
+    for (let index = 0; index < entries.length; index += 2) {
+      const row = document.createElement("tr");
+      row.append(entries[index].cell);
+      if (entries[index + 1]) row.append(entries[index + 1].cell);
+      else row.append(document.createElement("td"));
+      body.append(row);
+    }
+    body.dataset.count = String(entries.length);
+  }
+
+  function createProductionPreviewEntry(item) {
+    const sessionId = String(item.sessionId || "");
+    const cell = document.createElement("td");
+    cell.dataset.productionSessionId = sessionId;
+
+    const heading = document.createElement("div");
+    heading.className = "selected-task-summary";
+    const camera = document.createElement("div");
+    const cameraLabel = document.createElement("span");
+    cameraLabel.textContent = "摄像头";
+    const cameraValue = document.createElement("strong");
+    camera.append(cameraLabel, cameraValue);
+    const gpu = document.createElement("div");
+    const gpuLabel = document.createElement("span");
+    gpuLabel.textContent = "生产 GPU";
+    const gpuValue = document.createElement("strong");
+    gpu.append(gpuLabel, gpuValue);
+    const stop = document.createElement("button");
+    stop.type = "button";
+    stop.className = "button button-danger button-compact";
+    stop.textContent = "■ 停止";
+    stop.addEventListener("click", () => void stopProductionSession(sessionId, stop));
+    heading.append(camera, gpu, stop);
+
+    const stage = document.createElement("div");
+    stage.className = "preview-stage";
+    const image = document.createElement("img");
+    image.alt = `${item.cameraId || sessionId} 实时生产分析画面`;
+    const placeholder = document.createElement("div");
+    placeholder.className = "preview-placeholder";
+    placeholder.innerHTML = "<strong>连接中</strong><span>正在等待生产 MJPEG 画面…</span>";
+    const error = document.createElement("div");
+    error.className = "preview-error";
+    error.hidden = true;
+    error.innerHTML = "<strong>预览暂时不可用</strong><span>将在 Session 状态刷新后重新连接</span>";
+    stage.append(image, placeholder, error);
+
+    const meta = document.createElement("div");
+    meta.className = "production-live-meta";
+    cell.append(heading, stage, meta);
+
+    const entry = {sessionId, cell, cameraValue, gpuValue, stop, image, placeholder, error, meta, url: null};
+    image.addEventListener("load", () => {
+      entry.placeholder.hidden = true;
+      entry.error.hidden = true;
+      entry.image.hidden = false;
     });
+    image.addEventListener("error", () => {
+      entry.image.hidden = true;
+      entry.placeholder.hidden = true;
+      entry.error.hidden = false;
+      entry.url = null;
+    });
+    return entry;
+  }
+
+  function updateProductionPreviewEntry(entry, item) {
+    entry.cameraValue.textContent = item.cameraId || "—";
+    entry.gpuValue.textContent = `GPU ${item.gpuId ?? "—"}`;
+    entry.stop.disabled = String(item.state || "") === "stopping";
+    const features = Object.entries(item.features || {}).filter(([, enabled]) => enabled).map(([name]) => featureLabel(name));
+    entry.meta.replaceChildren();
+    for (const text of [`Session ${shortId(item.sessionId)}`, ...features]) {
+      const badge = document.createElement("span");
+      badge.textContent = text;
+      entry.meta.append(badge);
+    }
+    if (!features.length) {
+      const badge = document.createElement("span");
+      badge.textContent = "仅基础识别";
+      entry.meta.append(badge);
+    }
+    const url = `/api/v1/recognition/sessions/${encodeURIComponent(item.sessionId)}/stream.mjpg`;
+    if (entry.url !== url || !entry.image.getAttribute("src")) {
+      entry.url = url;
+      entry.error.hidden = true;
+      entry.placeholder.hidden = false;
+      entry.image.hidden = false;
+      entry.image.src = `${url}?t=${Date.now()}`;
+    }
+  }
+
+  function disconnectProductionPreview(entry) {
+    if (!entry) return;
+    entry.image.removeAttribute("src");
+    entry.url = null;
+  }
+
+  function legacyPreviewCount() {
+    const body = document.getElementById("previewGridBody");
+    if (!body) return 0;
+    return body.querySelectorAll("td .preview-stage").length;
+  }
+
+  function syncLiveWallIndicator() {
+    const productionBody = document.getElementById("productionPreviewGridBody");
+    const productionCount = Number(productionBody && productionBody.dataset.count || 0);
+    const total = legacyPreviewCount() + productionCount;
+    const empty = document.getElementById("previewEmpty");
+    const indicator = document.getElementById("liveIndicator");
+    if (empty) empty.hidden = total > 0;
+    if (indicator) {
+      indicator.dataset.active = total > 0 ? "true" : "false";
+      const text = indicator.querySelector("span");
+      if (text) text.textContent = `${total} 路预览`;
+    }
   }
 
   async function stopProductionSession(sessionId, button) {
-    if (!sessionId || button.disabled) return;
-    button.disabled = true;
+    if (!sessionId || (button && button.disabled)) return;
+    if (button) button.disabled = true;
     try {
       await requestJson(`/api/v1/recognition/sessions/${encodeURIComponent(sessionId)}/stop`, {
         method: "POST",
@@ -295,7 +407,7 @@
       await refreshProductionSessions(true);
     } catch (error) {
       showProductionError(errorMessage(error));
-      button.disabled = false;
+      if (button) button.disabled = false;
     }
   }
 
@@ -320,6 +432,11 @@
 
   function featureLabel(value) {
     return ({smoking:"吸烟",eating:"吃东西",drinking:"喝水",phone:"打电话",leftObject:"物品遗留",largeObjectMoving:"大件搬运"})[value] || value;
+  }
+
+  function shortId(value) {
+    const text = String(value || "");
+    return text.length <= 8 ? text : `${text.slice(0, 8)}…`;
   }
 
   function incrementCameraId() {
