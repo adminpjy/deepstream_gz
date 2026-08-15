@@ -149,14 +149,15 @@ extern "C" bool NvDsInferParseCustomYoloDynamic(
 
 // yolo11n.onnx is a standard 80-class COCO detector, not a purpose-trained
 // two-class eating/drinking network. In production it runs as a secondary GIE
-// on each PeopleNet person ROI. This parser intentionally exposes only two
-// business classes to the rest of the existing behavior pipeline:
-//   0 = EATING   : food / bowl / cutlery evidence
-//   1 = DRINKING : bottle / wine-glass / cup evidence
-// Restrict evidence to the upper 65% of the person crop so a cup on a desk or
-// food near the feet does not immediately become a behavior event. This is a
-// lightweight object-proxy heuristic; it adds no model and does not touch the
-// tuned person/face pipeline.
+// on each PeopleNet person ROI. The business rule intentionally mirrors the
+// previously validated opsvision EatingDrinking rule:
+//   - prop confidence >= 0.45
+//   - prop center must lie in the top 40% of the person box (mouth/upper-body area)
+//   - drinking: bottle, cup, wine glass, bowl
+//   - eating: apple, banana, sandwich, orange, pizza, donut, cake, hot dog
+// The parser exposes only two business classes to the existing behavior layer:
+//   0 = EATING
+//   1 = DRINKING
 extern "C" bool NvDsInferParseCustomYoloEatDrinkCoco(
     const std::vector<NvDsInferLayerInfo>& output_layers,
     const NvDsInferNetworkInfo& network,
@@ -166,23 +167,18 @@ extern "C" bool NvDsInferParseCustomYoloEatDrinkCoco(
     constexpr int kAttributes = 4 + kCocoClasses;
     constexpr int kEating = 0;
     constexpr int kDrinking = 1;
-    constexpr float kUpperBodyCenterRatio = 0.65F;
+    constexpr float kMouthRegionRatio = 0.40F;
 
-    // COCO class ids from models/yolo11n-coco.labels.txt.
-    constexpr std::array<std::pair<int, int>, 17> kBusinessClasses{{
+    // COCO class ids. Keep this set aligned with opsvision/eating_drinking.py.
+    constexpr std::array<std::pair<int, int>, 12> kBusinessClasses{{
         {39, kDrinking},  // bottle
         {40, kDrinking},  // wine glass
         {41, kDrinking},  // cup
-        {42, kEating},    // fork
-        {43, kEating},    // knife
-        {44, kEating},    // spoon
-        {45, kEating},    // bowl
+        {45, kDrinking},  // bowl
         {46, kEating},    // banana
         {47, kEating},    // apple
         {48, kEating},    // sandwich
         {49, kEating},    // orange
-        {50, kEating},    // broccoli
-        {51, kEating},    // carrot
         {52, kEating},    // hot dog
         {53, kEating},    // pizza
         {54, kEating},    // donut
@@ -227,7 +223,7 @@ extern "C" bool NvDsInferParseCustomYoloEatDrinkCoco(
         }
         const float center_y = view.value_at(row, 1);
         if (!std::isfinite(center_y) ||
-            center_y > static_cast<float>(network.height) * kUpperBodyCenterRatio) {
+            center_y > static_cast<float>(network.height) * kMouthRegionRatio) {
             continue;
         }
         append_object(
