@@ -159,3 +159,11 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["python3", "-m", "deepstream_ai", "serve", "--config", "/workspace/configs/config.yaml", "--host", "0.0.0.0", "--port", "8080"]
 HEALTHCHECK --interval=20s --timeout=5s --start-period=120s --retries=5 \
     CMD ["/workspace/scripts/healthcheck.sh"]
+
+# Tool-only image. Ultralytics/PyTorch are deliberately excluded from the
+# production runtime image so model conversion cannot increase steady-state
+# memory, attack surface or startup time of the recognition service.
+FROM final AS model-converter
+RUN python3 -m pip install --no-cache-dir --break-system-packages ".[convert]" \
+    && python3 -m pip check
+CMD ["python3", "/workspace/scripts/prepare-local-behavior-models.py", "--model-root", "/workspace/models", "--config-root", "/workspace/configs/nvinfer", "--device", "0"]
