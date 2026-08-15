@@ -338,6 +338,15 @@ class ScenarioManager:
                     publisher=publisher,
                 )
             )
+        if features.phone:
+            processors.append(
+                BehaviorScenarioProcessor(
+                    session_id=session_id,
+                    camera_id=camera_id,
+                    behavior=BehaviorType.PHONE,
+                    publisher=publisher,
+                )
+            )
         if features.left_object:
             if baseline_path is None:
                 raise ValueError("leftObject=true 时必须提供进入前基准图片")
