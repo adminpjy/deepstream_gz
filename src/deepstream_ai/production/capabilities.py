@@ -10,25 +10,21 @@ from deepstream_ai.domain import BehaviorType
 from deepstream_ai.preflight import inspect_nvinfer_config
 
 _OPTIONAL_BEHAVIOR_FEATURES = ("smoking", "eating", "drinking")
+# Keep the COCO evidence contract aligned with opsvision/eating_drinking.py.
 _EAT_DRINK_PROXY_REQUIRED_LABELS = frozenset(
     {
         "bottle",
-        "wine_glass",
         "cup",
-        "fork",
-        "knife",
-        "spoon",
+        "wine_glass",
         "bowl",
-        "banana",
         "apple",
+        "banana",
         "sandwich",
         "orange",
-        "broccoli",
-        "carrot",
-        "hot_dog",
         "pizza",
         "donut",
         "cake",
+        "hot_dog",
     }
 )
 
@@ -148,7 +144,7 @@ def production_capabilities(config: AppConfig) -> dict[str, Any]:
             },
             "fire": {
                 "available": False,
-                "reason": "converted_as_full_frame_model_not_yet_wired_to_session_gate",
+                "reason": "classification_model_requires_label_and_preprocessing_contract",
                 "model": "fire",
                 "mode": "full_frame",
             },
