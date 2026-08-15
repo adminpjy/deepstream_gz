@@ -27,6 +27,7 @@ from deepstream_ai.production.manager import (
     ProductionRecognitionService,
     ProductionServiceError,
 )
+from deepstream_ai.production.unavailable import UnavailableProductionRecognitionService
 from deepstream_ai.web.server import ApiError, RecognitionRequestHandler
 from deepstream_ai.web.server import RecognitionHTTPServer as LegacyRecognitionHTTPServer
 
@@ -44,7 +45,9 @@ class ProductionHTTPServer(LegacyRecognitionHTTPServer):
         self,
         address: tuple[str, int],
         legacy_service: ManualRecognitionTaskService,
-        production_service: ProductionRecognitionService,
+        production_service: (
+            ProductionRecognitionService | UnavailableProductionRecognitionService
+        ),
         static_root: Path,
         face_registration: FaceRegistrationService,
     ) -> None:
@@ -67,14 +70,23 @@ class ProductionRequestHandler(RecognitionRequestHandler):
         if path == "/health/ready":
             legacy = self.server.service.status()
             production = self.server.production_service.status()
-            ready = legacy.get("status") == "ready" and production.get("status") == "ready"
+            legacy_ready = legacy.get("status") == "ready"
+            production_ready = production.get("status") == "ready"
+            if legacy_ready and production_ready:
+                overall = "ready"
+            elif legacy_ready:
+                # Production is additive. Keep the proven `/api/tasks` path
+                # healthy when a host cannot start the new multi-GPU workers.
+                overall = "degraded"
+            else:
+                overall = "unavailable"
             self._send_json(
                 {
-                    "status": "ready" if ready else "unavailable",
+                    "status": overall,
                     "legacy": legacy,
                     "production": production,
                 },
-                status=HTTPStatus.OK if ready else HTTPStatus.SERVICE_UNAVAILABLE,
+                status=HTTPStatus.OK if legacy_ready else HTTPStatus.SERVICE_UNAVAILABLE,
             )
             return
         if path == "/api/v1/recognition/service":
@@ -307,6 +319,7 @@ def run_web_service(
     production_root = Path(
         os.environ.get("PRODUCTION_OUTPUT_ROOT", "/workspace/output/production")
     )
+    production_service: ProductionRecognitionService | UnavailableProductionRecognitionService
     try:
         production_service = ProductionRecognitionService(
             config,
@@ -315,9 +328,15 @@ def run_web_service(
             preview_fps=preview_fps,
             preview_width=preview_width,
         )
-    except Exception:
-        legacy_service.close()
-        raise
+    except Exception as exc:
+        LOGGER.exception(
+            "[PRODUCTION_DEGRADED] production workers unavailable; preserving legacy /api/tasks"
+        )
+        production_service = UnavailableProductionRecognitionService(
+            config,
+            output_root=production_root,
+            error=exc,
+        )
 
     face_registration = build_face_registration_service(config)
     static_root = Path(__file__).resolve().parent / "static"
