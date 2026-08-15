@@ -9,6 +9,8 @@ on:
       - "src/deepstream_ai/production/**"
       - "src/deepstream_ai/domain.py"
       - "src/deepstream_ai/web/production_server.py"
+      - "src/deepstream_ai/web/static/app.js"
+      - "src/deepstream_ai/web/static/index.html"
       - "src/deepstream_ai/web/static/production.js"
       - "scripts/prepare-local-behavior-models.py"
       - "scripts/prepare-local-behavior-models-dynamic.py"
@@ -56,6 +58,10 @@ jobs:
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+      - name: JavaScript syntax
+        run: >-
+          node --check src/deepstream_ai/web/static/app.js &&
+          node --check src/deepstream_ai/web/static/production.js
       - name: Shell syntax
         run: bash -n scripts/convert-local-models.sh
       - name: Production unit tests
