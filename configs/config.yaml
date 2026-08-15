@@ -261,8 +261,10 @@ face_recognition:
 # They remain disabled in the base config. Production workers warm only models
 # whose generated nvinfer config + TensorRT engine are actually present.
 behavior:
-  # One shared two-class SGIE. Either eating or drinking session switch enables
-  # this single inference element, avoiding duplicate YOLO inference.
+  # One shared COCO YOLO11n SGIE runs only inside each person ROI. A dedicated
+  # parser maps food/tableware classes to EATING and drink-container classes to
+  # DRINKING. Either session switch enables this one inference element, so no
+  # additional model or duplicate YOLO inference is introduced.
   eating:
     enabled: false
     config_file: /workspace/configs/nvinfer/eat-drink.txt
@@ -276,13 +278,6 @@ behavior:
     model: /workspace/models/smoking.engine
     unique_id: 12
     labels: [smoking]
-    threshold: 0.50
-  phone:
-    enabled: false
-    config_file: /workspace/configs/nvinfer/phone.txt
-    model: /workspace/models/phone.engine
-    unique_id: 13
-    labels: [phone]
     threshold: 0.50
   carrying:
     enabled: false
@@ -318,8 +313,6 @@ models:
     local_eat_drink_engine: /workspace/models/yolo11n.engine
     local_smoking_checkpoint: /workspace/models/smoking.pt
     local_smoking_engine: /workspace/models/smoking.engine
-    local_phone_checkpoint: /workspace/models/phone.pt
-    local_phone_engine: /workspace/models/phone.engine
     # Fire is deliberately prepared as a full-frame model. It is not wired into
     # the per-person optional SGIE chain because doing so would crop away fires
     # that are not inside a person's bounding box.
