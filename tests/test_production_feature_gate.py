@@ -15,20 +15,18 @@ def test_feature_registry_is_per_source_and_independent() -> None:
     registry.register(
         0,
         "camera-a",
-        FeatureSet(smoking=True, drinking=False, eating=False, phone=False),
+        FeatureSet(smoking=True, drinking=False, eating=False),
     )
     registry.register(
         1,
         "camera-b",
-        FeatureSet(smoking=False, drinking=True, eating=False, phone=True),
+        FeatureSet(smoking=False, drinking=True, eating=False),
     )
 
     assert registry.enabled(0, "smoking") is True
     assert registry.enabled(0, "drinking") is False
-    assert registry.enabled(0, "phone") is False
     assert registry.enabled(1, "smoking") is False
     assert registry.enabled(1, "drinking") is True
-    assert registry.enabled(1, "phone") is True
 
     # The production config uses the `eating` model entry for one shared
     # eating/drinking TensorRT SGIE. Either independent business switch must
@@ -52,7 +50,6 @@ def test_shared_eat_drink_gate_does_not_enable_other_models() -> None:
     assert registry.enabled(0, "eating") is True
     assert registry.enabled(0, "drinking") is True
     assert registry.enabled(0, "smoking") is False
-    assert registry.enabled(0, "phone") is False
 
 
 class _FakePad:
@@ -173,9 +170,10 @@ def test_dynamic_source_accepts_none_return_and_recovers_orphan(monkeypatch) -> 
 
     # A stale unregistered bin from an interrupted old attach is reclaimed before reuse.
     pipeline.children["source-bin-00"] = _FakeBin("source-bin-00")
-    assert controller.add(_source("camera-b"), FeatureSet(phone=True)) == 0
+    assert controller.add(_source("camera-b"), FeatureSet(drinking=True)) == 0
     assert controller.slot_for_camera("camera-b") == 0
-    assert registry.enabled(0, "phone") is True
+    assert registry.enabled(0, "drinking") is True
+    assert registry.enabled(0, "eating") is True
 
 
 def test_multiuri_source_uses_official_rest_lifecycle_and_metrics_mapping(monkeypatch) -> None:
@@ -215,12 +213,13 @@ def test_multiuri_source_uses_official_rest_lifecycle_and_metrics_mapping(monkey
     monkeypatch.setattr(controller, "_request_json", request_json)
 
     source = _source("camera-prod")
-    assert controller.add(source, FeatureSet(smoking=True, phone=True)) == 3
+    assert controller.add(source, FeatureSet(smoking=True, drinking=True)) == 3
     assert controller.active_count() == 1
     assert controller.slot_for_camera("camera-prod") == 3
     assert graph.metadata_probe.camera_by_pad == {3: "camera-prod"}
     assert registry.enabled(3, "smoking") is True
-    assert registry.enabled(3, "phone") is True
+    assert registry.enabled(3, "drinking") is True
+    assert registry.enabled(3, "eating") is True
 
     add_call = calls[0]
     assert add_call[0:2] == ("POST", "/stream/add")
