@@ -3,12 +3,11 @@
 
 Expected local inputs under ``models/``:
 
-- yolo11n.onnx : eating/drinking detector (shared SGIE)
+- yolo11n.onnx : standard COCO detector reused for eating/drinking proxy evidence
 - smoking.pt    : smoking detector
-- phone.pt      : phone/calling detector
 - fire.onnx     : fire/flame detector (full-frame config generated for later use)
 
-The model weights remain local and ignored by Git.  This tool is intended to run
+The model weights remain local and ignored by Git. This tool is intended to run
 inside the repository's ``model-converter`` Docker target so TensorRT engines are
 built with the same DeepStream/TensorRT stack used in production.
 """
@@ -29,6 +28,8 @@ from typing import Any
 
 PARSER_LIB = "/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_yolo_dynamic.so"
 PARSER_FUNC = "NvDsInferParseCustomYoloDynamic"
+EAT_DRINK_PARSER_FUNC = "NvDsInferParseCustomYoloEatDrinkCoco"
+EAT_DRINK_BUSINESS_LABELS = ("eating", "drinking")
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +54,9 @@ SPECS = (
         labels_name="yolo11n.labels.txt",
         config_name="eat-drink.txt",
         unique_id=11,
-        fallback_labels=("eating", "drinking"),
+        # This fallback is used only when model metadata is absent. Production
+        # expects the actual local model to expose standard COCO names.
+        fallback_labels=EAT_DRINK_BUSINESS_LABELS,
         scope="person",
     ),
     ModelSpec(
@@ -65,17 +68,6 @@ SPECS = (
         config_name="smoking.txt",
         unique_id=12,
         fallback_labels=("smoking",),
-        scope="person",
-    ),
-    ModelSpec(
-        name="phone",
-        source_name="phone.pt",
-        onnx_name="phone.onnx",
-        engine_name="phone.engine",
-        labels_name="phone.labels.txt",
-        config_name="phone.txt",
-        unique_id=13,
-        fallback_labels=("phone",),
         scope="person",
     ),
     ModelSpec(
@@ -114,12 +106,6 @@ _CANONICAL_LABELS = {
     "smoke": "smoking",
     "smoking": "smoking",
     "cigarette": "smoking",
-    "phone": "phone",
-    "calling": "phone",
-    "call": "phone",
-    "cell_phone": "phone",
-    "cellphone": "phone",
-    "mobile_phone": "phone",
     "fire": "fire",
     "flame": "fire",
 }
@@ -233,8 +219,6 @@ def _inspect_onnx(path: Path, spec: ModelSpec) -> OnnxContract:
     expected_channels = 4 + len(labels)
     static_tail = {value for value in output_shape[1:] if value is not None}
     if expected_channels not in static_tail:
-        # If metadata names were absent, allow the declared local fallback only
-        # when the output tensor itself proves the same class count.
         fallback_channels = 4 + len(spec.fallback_labels)
         if metadata_labels or fallback_channels not in static_tail:
             raise ValueError(
@@ -338,6 +322,16 @@ def _config_reference(config_path: Path, target: Path) -> str:
     return os.path.relpath(target.resolve(), config_path.parent.resolve()).replace(os.sep, "/")
 
 
+def _business_labels(spec: ModelSpec, contract: OnnxContract) -> tuple[str, ...]:
+    if spec.name == "eat_drink":
+        return EAT_DRINK_BUSINESS_LABELS
+    return contract.labels
+
+
+def _parser_func(spec: ModelSpec) -> str:
+    return EAT_DRINK_PARSER_FUNC if spec.name == "eat_drink" else PARSER_FUNC
+
+
 def _write_nvinfer_config(
     spec: ModelSpec,
     contract: OnnxContract,
@@ -350,6 +344,7 @@ def _write_nvinfer_config(
 ) -> None:
     _, _channels, height, width = contract.input_shape
     network_mode = 2 if precision == "fp16" else 0
+    business_labels = _business_labels(spec, contract)
     properties = [
         ("gpu-id", "0"),
         ("net-scale-factor", "0.00392156862745098"),
@@ -360,7 +355,7 @@ def _write_nvinfer_config(
         ("infer-dims", f"3;{height};{width}"),
         ("batch-size", str(contract.batch_size)),
         ("network-mode", str(network_mode)),
-        ("num-detected-classes", str(len(contract.labels))),
+        ("num-detected-classes", str(len(business_labels))),
         ("gie-unique-id", str(spec.unique_id)),
         ("network-type", "0"),
         ("process-mode", "2" if spec.scope == "person" else "1"),
@@ -381,7 +376,7 @@ def _write_nvinfer_config(
             ("maintain-aspect-ratio", "1"),
             ("symmetric-padding", "1"),
             ("scaling-filter", "1"),
-            ("parse-bbox-func-name", PARSER_FUNC),
+            ("parse-bbox-func-name", _parser_func(spec)),
             ("disable-output-host-copy", "0"),
             ("custom-lib-path", PARSER_LIB),
         ]
@@ -440,7 +435,8 @@ def _convert_one(
         raise ValueError(
             f"{spec.name}: checkpoint labels {exported_labels} != exported ONNX labels {contract.labels}"
         )
-    _atomic_text(labels_path, "\n".join(contract.labels) + "\n")
+    business_labels = _business_labels(spec, contract)
+    _atomic_text(labels_path, "\n".join(business_labels) + "\n")
     engine_path.unlink(missing_ok=True)
     _build_engine(
         onnx_path,
@@ -459,7 +455,7 @@ def _convert_one(
         config_path=config_path,
         precision=precision,
     )
-    return {
+    result = {
         "name": spec.name,
         "scope": spec.scope,
         "source": str(source),
@@ -469,17 +465,21 @@ def _convert_one(
         "engine": str(engine_path),
         "engineSha256": _sha256(engine_path),
         "labelsFile": str(labels_path),
-        "labels": list(contract.labels),
+        "labels": list(business_labels),
         "nvinferConfig": str(config_path),
         "dynamicBatch": contract.dynamic_batch,
         "nvinferBatchSize": contract.batch_size,
         "inputName": contract.input_name,
         "inputShape": [value if value is not None else -1 for value in contract.input_shape],
         "outputShape": [value if value is not None else -1 for value in contract.output_shape],
-        "parser": PARSER_FUNC,
+        "parser": _parser_func(spec),
         "precision": precision,
         "productionSessionIntegrated": spec.scope == "person" and spec.name != "fire",
     }
+    if spec.name == "eat_drink":
+        result["sourceLabels"] = list(contract.labels)
+        result["mode"] = "person_crop_coco_proxy"
+    return result
 
 
 def build_parser() -> argparse.ArgumentParser:
