@@ -16,7 +16,6 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
