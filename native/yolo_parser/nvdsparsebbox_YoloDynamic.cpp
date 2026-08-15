@@ -151,6 +151,7 @@ extern "C" bool NvDsInferParseCustomYoloDynamic(
 // two-class eating/drinking network. In production it runs as a secondary GIE
 // on each PeopleNet person ROI. The business rule intentionally mirrors the
 // previously validated opsvision EatingDrinking rule:
+//   - YOLO first chooses the candidate's highest COCO class
 //   - prop confidence >= 0.45
 //   - prop center must lie in the top 40% of the person box (mouth/upper-body area)
 //   - drinking: bottle, cup, wine glass, bowl
@@ -201,21 +202,30 @@ extern "C" bool NvDsInferParseCustomYoloEatDrinkCoco(
     objects.clear();
     objects.reserve(static_cast<std::size_t>(std::min(view.rows, 512)));
     for (int row = 0; row < view.rows; ++row) {
-        int best_business_class = -1;
-        float best_score = -1.0F;
-        for (const auto& mapping : kBusinessClasses) {
-            const int coco_class = mapping.first;
-            const int business_class = mapping.second;
+        int best_coco_class = 0;
+        float best_score = view.value_at(row, 4);
+        for (int coco_class = 1; coco_class < kCocoClasses; ++coco_class) {
             const float score = view.value_at(row, 4 + coco_class);
             if (score > best_score) {
                 best_score = score;
-                best_business_class = business_class;
+                best_coco_class = coco_class;
             }
         }
-        if (best_business_class < 0 || !std::isfinite(best_score) ||
-            best_score < 0.0F || best_score > 1.0F) {
+        if (!std::isfinite(best_score) || best_score < 0.0F || best_score > 1.0F) {
             continue;
         }
+
+        int best_business_class = -1;
+        for (const auto& mapping : kBusinessClasses) {
+            if (mapping.first == best_coco_class) {
+                best_business_class = mapping.second;
+                break;
+            }
+        }
+        if (best_business_class < 0) {
+            continue;
+        }
+
         const float threshold =
             detection.perClassPreclusterThreshold.at(best_business_class);
         if (best_score < threshold) {
