@@ -49,6 +49,9 @@ class FeatureRegistry:
             return False
         return bool(getattr(binding.features, feature_name, False))
 
+    def any_enabled(self, pad_index: int, feature_names: tuple[str, ...]) -> bool:
+        return any(self.enabled(pad_index, name) for name in feature_names)
+
     def snapshot(self) -> dict[int, SourceFeatureBinding]:
         with self._lock:
             return dict(self._by_pad)
@@ -75,13 +78,15 @@ class BehaviorInferenceGate:
         runtime: Any,
         registry: FeatureRegistry,
         *,
-        feature_name: str,
+        feature_names: tuple[str, ...],
         person_unique_id: int,
         gate_unique_id: int,
     ) -> None:
+        if not feature_names:
+            raise ValueError("feature_names cannot be empty")
         self.runtime = runtime
         self.registry = registry
-        self.feature_name = feature_name
+        self.feature_names = tuple(dict.fromkeys(feature_names))
         self.person_unique_id = int(person_unique_id)
         self.mask_unique_id = 1_000_000 + int(gate_unique_id)
         self._masked_objects = 0
@@ -98,8 +103,8 @@ class BehaviorInferenceGate:
         sink.add_probe(Gst.PadProbeType.BUFFER, self._before, None)
         src.add_probe(Gst.PadProbeType.BUFFER, self._after, None)
         LOGGER.info(
-            "[OPTIONAL_GATE] feature=%s person_uid=%d mask_uid=%d",
-            self.feature_name,
+            "[OPTIONAL_GATE] features=%s person_uid=%d mask_uid=%d",
+            list(self.feature_names),
             self.person_unique_id,
             self.mask_unique_id,
         )
@@ -126,7 +131,7 @@ class BehaviorInferenceGate:
                 pyds.NvDsFrameMeta.cast,
             ):
                 pad_index = int(frame_meta.pad_index)
-                if mask and self.registry.enabled(pad_index, self.feature_name):
+                if mask and self.registry.any_enabled(pad_index, self.feature_names):
                     continue
                 for obj_meta in _iter_glist(
                     frame_meta.obj_meta_list,
@@ -146,10 +151,10 @@ class BehaviorInferenceGate:
                 self._masked_objects += changed
         return Gst.PadProbeReturn.OK
 
-    def stats(self) -> dict[str, int | str]:
+    def stats(self) -> dict[str, int | list[str]]:
         with self._lock:
             return {
-                "feature": self.feature_name,
+                "features": list(self.feature_names),
                 "masked_objects": self._masked_objects,
             }
 
