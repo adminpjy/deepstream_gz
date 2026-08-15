@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# The production behavior path currently integrates only eating/drinking and
+# smoking. fire.onnx is a rank-2 whole-frame classifier and must not be forced
+# through the raw-YOLO detector converter.
 python3 /workspace/scripts/prepare-local-behavior-models-dynamic.py \
   --model-root /workspace/models \
   --config-root /workspace/configs/nvinfer \
   --device "${MODEL_CONVERTER_DEVICE:-0}" \
   --precision "${MODEL_CONVERTER_PRECISION:-fp16}" \
   --imgsz "${MODEL_CONVERTER_IMGSZ:-640}" \
+  --only eat_drink \
+  --only smoking \
   --force
 
 python3 - /workspace/models/deepstream-local-models.manifest.json <<'PY'
@@ -20,7 +25,7 @@ models = {item["name"]: item for item in data.get("models", [])}
 failures = list(data.get("failures", []))
 if failures:
     raise SystemExit("model conversion reported failures: " + "; ".join(failures))
-required = {"eat_drink", "smoking", "fire"}
+required = {"eat_drink", "smoking"}
 missing = sorted(required.difference(models))
 if missing:
     raise SystemExit("model conversion manifest missing: " + ", ".join(missing))
@@ -48,16 +53,12 @@ if missing_source:
         + ", ".join(missing_source)
     )
 
-for name, expected_labels in {
-    "smoking": ["smoking"],
-    "fire": ["fire"],
-}.items():
-    actual_labels = models[name].get("labels")
-    if actual_labels != expected_labels:
-        raise SystemExit(
-            f"{name} model labels must be {expected_labels!r}; actual={actual_labels!r}. "
-            "Review the trained checkpoint classes before production use."
-        )
+actual_smoking = models["smoking"].get("labels")
+if actual_smoking != ["smoking"]:
+    raise SystemExit(
+        f"smoking model labels must be ['smoking']; actual={actual_smoking!r}. "
+        "Review the trained checkpoint classes before production use."
+    )
 
 config_path = Path(models["eat_drink"]["nvinferConfig"])
 config_text = config_path.read_text(encoding="utf-8")
@@ -70,7 +71,7 @@ for required_line in (
         raise SystemExit(f"eat/drink nvinfer config missing {required_line!r}")
 
 print("Local behavior model contract verified:")
-for name in ("eat_drink", "smoking", "fire"):
+for name in ("eat_drink", "smoking"):
     item = models[name]
     print(
         f"  {name}: labels={item['labels']} engine={item['engine']} "
