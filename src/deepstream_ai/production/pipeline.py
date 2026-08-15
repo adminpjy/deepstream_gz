@@ -1,15 +1,17 @@
 """Warm dynamic DeepStream pipeline for production RTSP sessions.
 
 The tuned person/face chain is reused from :mod:`deepstream_ai.pipeline.builder`.
-Only source lifecycle and optional behavior admission are added here.  Each GPU
+Only source lifecycle and optional behavior admission are added here. Each GPU
 worker is isolated with CUDA_VISIBLE_DEVICES, therefore the validated DeepStream
 configuration continues to use logical gpu-id=0 unchanged.
 """
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import threading
+from contextlib import suppress
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable
@@ -19,12 +21,14 @@ from deepstream_ai.errors import PipelineError
 from deepstream_ai.pipeline.adaptive import NvidiaSmiMonitor
 from deepstream_ai.pipeline.builder import DeepStreamPipelineBuilder, PipelineGraph
 from deepstream_ai.pipeline.elements import add_many, link_many, make_element, set_if_supported
+from deepstream_ai.pipeline.nvinfer_config import materialize_nvinfer_config
 from deepstream_ai.pipeline.peoplenet_pretracker_guard import (
     PeopleNetPretrackerGuard,
     PeopleNetPretrackerGuardConfig,
 )
 from deepstream_ai.pipeline.runner import PipelineRunner
 from deepstream_ai.pipeline.source import SourceBin
+from deepstream_ai.preflight import inspect_nvinfer_config
 from deepstream_ai.production.contracts import FeatureSet
 from deepstream_ai.production.feature_gate import BehaviorInferenceGate, FeatureRegistry
 from deepstream_ai.stream_epoch import bump_stream_generation
@@ -107,6 +111,72 @@ class WarmDynamicPipelineBuilder(DeepStreamPipelineBuilder):
         self.feature_registry = feature_registry
         self.behavior_gates: dict[str, BehaviorInferenceGate] = {}
 
+    def _primary_engine_fingerprint(self, component: InferComponentConfig) -> str:
+        source_config = self.config.resolve_path(component.config_file)
+        digest = hashlib.sha256(source_config.read_bytes())
+        report = inspect_nvinfer_config(self.config, component.config_file)
+        for model_path in report.source_models:
+            try:
+                stat = model_path.stat()
+                digest.update(str(model_path).encode("utf-8"))
+                digest.update(str(stat.st_size).encode("ascii"))
+                digest.update(str(stat.st_mtime_ns).encode("ascii"))
+            except OSError:
+                digest.update(str(model_path).encode("utf-8"))
+        return digest.hexdigest()[:12]
+
+    def _infer_element(
+        self,
+        name: str,
+        config: InferComponentConfig,
+        target_fps: float,
+        *,
+        primary: bool,
+    ) -> Any:
+        """Reuse the existing nvinfer setup, isolating only the multi-stream PGIE engine.
+
+        The deployed PeopleNet engine is a tuned batch-1 asset used by the
+        existing task pipeline. A multi-stream worker needs batch=capacity. We
+        must never let Gst-nvinfer rebuild and overwrite the legacy b1 file, so
+        the production PGIE gets a persistent worker-local engine path. Face and
+        behavior SGIE contracts remain exactly as deployed.
+        """
+
+        element = super()._infer_element(name, config, target_fps, primary=primary)
+        if not primary:
+            return element
+        source_path = self.config.resolve_path(config.config_file)
+        capacity = len(self.config.enabled_sources)
+        worker_root = self.config.resolve_path(self.config.output.path).parent
+        fingerprint = self._primary_engine_fingerprint(config)
+        engine_path = (
+            worker_root
+            / ".engines"
+            / f"{name}-b{capacity}-{fingerprint}.engine"
+        )
+        engine_path.parent.mkdir(parents=True, exist_ok=True)
+        runtime_path = worker_root / ".runtime" / "nvinfer" / f"{name}.txt"
+        skip_interval = self.config.interval_for(target_fps)
+        materialize_nvinfer_config(
+            source_path,
+            runtime_path,
+            {
+                "gie-unique-id": config.unique_id,
+                "gpu-id": self.config.pipeline.streammux.gpu_id,
+                "interval": skip_interval,
+                "batch-size": capacity,
+                "model-engine-file": str(engine_path),
+            },
+        )
+        element.set_property("config-file-path", str(runtime_path))
+        LOGGER.info(
+            "[PRODUCTION_ENGINE] component=%s batch=%d isolated_engine=%s legacy_engine_untouched=true",
+            name,
+            capacity,
+            engine_path,
+        )
+        return element
+
     def build(self) -> PipelineGraph:
         Gst = self.runtime.Gst
         pipeline = Gst.Pipeline.new("deepstream-ai-production-worker")
@@ -180,6 +250,8 @@ class WarmDynamicPipelineBuilder(DeepStreamPipelineBuilder):
         sink.set_property("sync", False)
         sink.set_property("async", False)
 
+        # Keep the tuned core ordering identical to DeepStreamPipelineBuilder:
+        # PGIE -> NvDCF -> RGBA -> face SGIE -> optional behavior SGIEs -> probe.
         elements = [
             pgie,
             tracker,
@@ -326,7 +398,9 @@ class DynamicSourceController:
                 self._sources[slot] = source_bin
                 self._sink_pads[slot] = sink_pad
                 self._camera_to_slot[source.camera_id] = slot
-                self.graph.source_bins = tuple(self._sources[index] for index in sorted(self._sources))
+                self.graph.source_bins = tuple(
+                    self._sources[index] for index in sorted(self._sources)
+                )
             bump_stream_generation(source.camera_id, reason="production_session_attach")
             if not source_bin.bin.sync_state_with_parent():
                 raise PipelineError(f"视频源 {source.camera_id} 无法同步到 PLAYING")
@@ -342,11 +416,11 @@ class DynamicSourceController:
             self.feature_registry.unregister(slot)
             self.graph.metadata_probe.camera_by_pad.pop(slot, None)
             if sink_pad is not None:
-                with __import__("contextlib").suppress(Exception):
+                with suppress(Exception):
                     streammux.release_request_pad(sink_pad)
-            with __import__("contextlib").suppress(Exception):
+            with suppress(Exception):
                 source_bin.bin.set_state(Gst.State.NULL)
-            with __import__("contextlib").suppress(Exception):
+            with suppress(Exception):
                 pipeline.remove(source_bin.bin)
             raise
 
@@ -363,10 +437,10 @@ class DynamicSourceController:
         src_pad = source_bin.bin.get_static_pad("src")
         source_bin.bin.set_state(Gst.State.NULL)
         if src_pad is not None and sink_pad is not None:
-            with __import__("contextlib").suppress(Exception):
+            with suppress(Exception):
                 src_pad.unlink(sink_pad)
         if sink_pad is not None:
-            with __import__("contextlib").suppress(Exception):
+            with suppress(Exception):
                 streammux.release_request_pad(sink_pad)
         if not pipeline.remove(source_bin.bin):
             LOGGER.warning("动态视频源已置 NULL 但从 Pipeline 移除失败 camera=%s", camera_id)
@@ -379,7 +453,9 @@ class DynamicSourceController:
             self._sources.pop(slot, None)
             self._sink_pads.pop(slot, None)
             self._camera_to_slot.pop(camera_id, None)
-            self.graph.source_bins = tuple(self._sources[index] for index in sorted(self._sources))
+            self.graph.source_bins = tuple(
+                self._sources[index] for index in sorted(self._sources)
+            )
         bump_stream_generation(camera_id, reason="production_session_detach")
         LOGGER.info(
             "[SESSION_DETACH] camera=%s slot=%d active=%d",
@@ -406,16 +482,10 @@ class DynamicPipelineRunner(PipelineRunner):
         super().__init__(*args, **kwargs)
         self.physical_gpu_id = int(physical_gpu_id)
         self.source_controller: DynamicSourceController | None = None
-        self.started_event = threading.Event()
 
     @property
     def shadow_registry(self) -> Any | None:
         return self._shadow
-
-    def run(self) -> None:
-        # Preserve PipelineRunner's lifecycle; its on_started callback marks the
-        # worker ready only after PLAYING and all model initialization completes.
-        super().run()
 
     def _mark_rtsp_reconnect(self, source_name: str) -> None:
         if self.source_controller is not None:
