@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from deepstream_ai.activity import ActivityAwareConsumer, PersonActivityTracker
 from deepstream_ai.pipeline.metadata import FramePacket
