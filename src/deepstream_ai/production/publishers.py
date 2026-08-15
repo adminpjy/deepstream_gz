@@ -1,4 +1,4 @@
-"""Replaceable production result-publishing boundary."""
+"""Replaceable, non-blocking production result-publishing boundary."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ _STOP = object()
 
 class ResultPublisher(Protocol):
     def publish(self, event: RecognitionEvent) -> None: ...
-
     def close(self) -> None: ...
 
 
@@ -37,7 +36,7 @@ class NullResultPublisher:
 
 
 class JsonlResultPublisher:
-    """Durable local event journal used regardless of external integration."""
+    """Durable local event journal."""
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path).resolve()
@@ -46,9 +45,9 @@ class JsonlResultPublisher:
         self._lock = threading.RLock()
 
     def publish(self, event: RecognitionEvent) -> None:
-        encoded = json.dumps(event.as_dict(), ensure_ascii=False, separators=(",", ":"))
+        line = json.dumps(event.as_dict(), ensure_ascii=False, separators=(",", ":"))
         with self._lock:
-            self._stream.write(encoded + "\n")
+            self._stream.write(line + "\n")
 
     def close(self) -> None:
         with self._lock:
@@ -73,16 +72,18 @@ class HttpPublisherConfig:
 
 
 class HttpResultPublisher:
-    """REST adapter. Endpoint-specific DTO mapping lives only here."""
+    """Formal REST adapter; external DTO mapping is isolated here."""
 
     def __init__(self, config: HttpPublisherConfig) -> None:
         self.config = config
 
+    @staticmethod
+    def to_external_payload(event: RecognitionEvent) -> dict[str, object]:
+        return event.as_dict()
+
     def publish(self, event: RecognitionEvent) -> None:
         payload = json.dumps(
-            self.to_external_payload(event),
-            ensure_ascii=False,
-            separators=(",", ":"),
+            self.to_external_payload(event), ensure_ascii=False, separators=(",", ":")
         ).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
@@ -94,10 +95,7 @@ class HttpResultPublisher:
         last_error: BaseException | None = None
         for attempt in range(1, self.config.max_attempts + 1):
             request = urllib.request.Request(
-                self.config.url,
-                data=payload,
-                headers=headers,
-                method="POST",
+                self.config.url, data=payload, headers=headers, method="POST"
             )
             try:
                 with urllib.request.urlopen(request, timeout=self.config.timeout_sec) as response:
@@ -112,18 +110,12 @@ class HttpResultPublisher:
         assert last_error is not None
         raise RuntimeError("result publish failed after bounded retries") from last_error
 
-    @staticmethod
-    def to_external_payload(event: RecognitionEvent) -> dict[str, object]:
-        """Formal-system field mapping is intentionally isolated in this adapter."""
-
-        return event.as_dict()
-
     def close(self) -> None:
         return
 
 
 class CompositeResultPublisher:
-    """Publish to every destination while preserving each destination's failure."""
+    """Publish to all configured destinations and report partial failures."""
 
     def __init__(self, *publishers: ResultPublisher) -> None:
         self.publishers = tuple(publishers)
@@ -140,10 +132,6 @@ class CompositeResultPublisher:
                     type(publisher).__name__,
                     event.event_id,
                 )
-        # The queued boundary catches this and writes one dead-letter record.
-        # Raising here is deliberate even when the local journal succeeded: it
-        # lets operations distinguish "event persisted" from "formal endpoint
-        # delivered" without ever propagating transport failure to recognition.
         if errors:
             raise RuntimeError("one or more result publishers failed") from errors[0]
 
@@ -156,13 +144,7 @@ class CompositeResultPublisher:
 
 
 class QueuedResultPublisher:
-    """Keep all result I/O and backpressure away from recognition threads.
-
-    Recognition correctness has higher priority than downstream transport.  A
-    saturated or unavailable formal endpoint therefore degrades to local
-    dead-letter persistence; publish() never raises transport/backpressure
-    errors into DeepStream, AdaFace, alarm lifecycle or scenario processors.
-    """
+    """Keep transport latency/backpressure completely outside recognition threads."""
 
     def __init__(
         self,
@@ -178,17 +160,15 @@ class QueuedResultPublisher:
         self._dead_letter = (
             JsonlResultPublisher(dead_letter_path) if dead_letter_path is not None else None
         )
-        self._thread = threading.Thread(
-            target=self._run,
-            name="result-publisher",
-            daemon=True,
-        )
         self._closed = threading.Event()
         self._stats_lock = threading.RLock()
         self._queued = 0
         self._delivered = 0
         self._dead_lettered = 0
         self._queue_full = 0
+        self._thread = threading.Thread(
+            target=self._run, name="result-publisher", daemon=True
+        )
         self._thread.start()
 
     def publish(self, event: RecognitionEvent) -> None:
@@ -202,23 +182,18 @@ class QueuedResultPublisher:
         except queue.Full:
             with self._stats_lock:
                 self._queue_full += 1
-            LOGGER.error(
-                "结果队列已满，事件转入死信但不影响识别 event=%s",
-                event.event_id,
-            )
+            LOGGER.error("结果队列已满，转入死信 event=%s", event.event_id)
             self._write_dead_letter(event)
 
     def _write_dead_letter(self, event: RecognitionEvent) -> None:
         if self._dead_letter is None:
-            LOGGER.error("结果事件无法投递且未配置死信文件 event=%s", event.event_id)
+            LOGGER.error("结果无法投递且未配置死信 event=%s", event.event_id)
             return
         try:
             self._dead_letter.publish(event)
             with self._stats_lock:
                 self._dead_lettered += 1
         except Exception:
-            # Even disk failure must not escape into recognition. It is logged
-            # loudly so the host's log/health monitoring can alert operations.
             LOGGER.exception("写入结果死信失败 event=%s", event.event_id)
 
     def _run(self) -> None:
@@ -249,8 +224,6 @@ class QueuedResultPublisher:
             }
 
     def _spill_pending_to_dead_letter(self) -> None:
-        """Bound shutdown time even when an external endpoint is unavailable."""
-
         while True:
             try:
                 item = self._queue.get_nowait()
@@ -266,25 +239,22 @@ class QueuedResultPublisher:
         if self._closed.is_set():
             return
         self._closed.set()
-        # Do not wait for a potentially long HTTP retry backlog during service
-        # shutdown. Persist queued items locally, then stop the delivery thread.
         self._spill_pending_to_dead_letter()
         try:
             self._queue.put_nowait(_STOP)
         except queue.Full:
-            # A delivery may have raced with the spill; free one slot safely.
             self._spill_pending_to_dead_letter()
             self._queue.put_nowait(_STOP)
         self._thread.join(10.0)
         if self._thread.is_alive():
-            LOGGER.error("结果 Publisher 未在 10 秒内退出；守护线程将在进程退出时结束")
+            LOGGER.error("结果 Publisher 未在 10 秒内退出；守护线程随进程退出")
         self.delegate.close()
         if self._dead_letter is not None:
             self._dead_letter.close()
 
 
 class AlarmResultAdapter(AlarmPublisher):
-    """Bridge the tuned person/face alarm lifecycle to ResultPublisher."""
+    """Bridge the tuned person/face alarm lifecycle to RecognitionEvent."""
 
     def __init__(
         self,
@@ -311,9 +281,7 @@ class AlarmResultAdapter(AlarmPublisher):
             camera_root = self.evidence_root / notification.camera_id
             camera_root.mkdir(parents=True, exist_ok=True)
             path = camera_root / f"{uuid4().hex}.jpg"
-            if not cv2.imwrite(str(path), image):
-                return None
-            return str(path)
+            return str(path) if cv2.imwrite(str(path), image) else None
         except Exception:
             LOGGER.exception(
                 "保存核心识别报警证据失败 camera=%s tracker=%s",
@@ -324,11 +292,8 @@ class AlarmResultAdapter(AlarmPublisher):
 
     def publish(self, notification: AlarmNotification) -> None:
         session_id = self.session_id_for_camera(notification.camera_id)
-        if session_id is None:
-            session_id = f"detached:{notification.camera_id}"
-        snapshot = self._save_evidence(notification)
         event = RecognitionEvent.create(
-            session_id=session_id,
+            session_id=session_id or f"detached:{notification.camera_id}",
             camera_id=notification.camera_id,
             event_type=notification.alarm_type.value,
             action=notification.action.value,
@@ -340,7 +305,7 @@ class AlarmResultAdapter(AlarmPublisher):
                 else max(0.0, min(1.0, (notification.similarity + 1.0) / 2.0))
             ),
             timestamp=notification.timestamp,
-            snapshot=snapshot,
+            snapshot=self._save_evidence(notification),
             extra={
                 "previousType": (
                     notification.previous_type.value
@@ -360,21 +325,32 @@ class AlarmResultAdapter(AlarmPublisher):
         self.publisher.publish(event)
 
 
+def _publisher_root(output_root: str | Path) -> Path:
+    """Give every GPU process its own append-only journal/dead-letter files."""
+
+    base = Path(output_root).resolve()
+    physical_gpu = os.environ.get("DEEPSTREAM_PHYSICAL_GPU_ID", "").strip()
+    expected_name = f"gpu-{physical_gpu}" if physical_gpu else ""
+    if expected_name and base.name != expected_name:
+        return base / expected_name
+    return base
+
+
 def build_result_publisher(output_root: str | Path) -> QueuedResultPublisher:
-    root = Path(output_root).resolve()
-    local = JsonlResultPublisher(root / "recognition-events.jsonl")
-    delegates: list[ResultPublisher] = [local]
+    root = _publisher_root(output_root)
+    root.mkdir(parents=True, exist_ok=True)
+    delegates: list[ResultPublisher] = [
+        JsonlResultPublisher(root / "recognition-events.jsonl")
+    ]
     url = os.environ.get("RESULT_PUBLISH_URL", "").strip()
     if url:
-        timeout = float(os.environ.get("RESULT_PUBLISH_TIMEOUT_SEC", "3"))
-        attempts = int(os.environ.get("RESULT_PUBLISH_MAX_ATTEMPTS", "3"))
         delegates.append(
             HttpResultPublisher(
                 HttpPublisherConfig(
                     url=url,
                     token=os.environ.get("RESULT_PUBLISH_TOKEN", ""),
-                    timeout_sec=timeout,
-                    max_attempts=attempts,
+                    timeout_sec=float(os.environ.get("RESULT_PUBLISH_TIMEOUT_SEC", "3")),
+                    max_attempts=int(os.environ.get("RESULT_PUBLISH_MAX_ATTEMPTS", "3")),
                 )
             )
         )
