@@ -7,9 +7,13 @@ an old record, or upload/enter a new source and click Start.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
+from uuid import uuid4
 
+from deepstream_ai.task_behavior import normalize_task_behavior_features
 from deepstream_ai.task_service import RecognitionTaskService, _atomic_json, _read_json, _utc_now
 
 _ACTIVE_STATES = {"starting", "running", "stopping"}
@@ -42,6 +46,48 @@ class ManualRecognitionTaskService(RecognitionTaskService):
             [*current.values(), *history.values()],
             key=lambda item: str(item.get("created_at", "")),
             reverse=True,
+        )
+
+    def start_rtsp_with_features(
+        self,
+        url: str,
+        *,
+        camera_id: str | None = None,
+        nominal_fps: float = 25.0,
+        idle_timeout_sec: float | None = None,
+        behavior_features: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Start the proven one-source RTSP pipeline with selected behavior SGIEs."""
+
+        parsed = urlsplit(url.strip())
+        if parsed.scheme.lower() not in {"rtsp", "rtsps"} or not parsed.hostname:
+            raise ValueError("RTSP 地址必须以 rtsp:// 或 rtsps:// 开头并包含主机")
+        if not 0 < float(nominal_fps) <= 240:
+            raise ValueError("nominal_fps 必须在 0 到 240 之间")
+        selected = normalize_task_behavior_features(behavior_features)
+        resolved_camera_id = self._camera_id(camera_id or f"rtsp-{uuid4().hex[:8]}")
+        source = {
+            "type": "rtsp",
+            "camera_id": resolved_camera_id,
+            "url": url.strip(),
+            "nominal_fps": float(nominal_fps),
+            "enabled": True,
+            "behavior_features": selected,
+        }
+        redacted = urlunsplit(
+            (
+                parsed.scheme,
+                parsed.hostname + (f":{parsed.port}" if parsed.port else ""),
+                parsed.path,
+                "",
+                "",
+            )
+        )
+        return self._start(
+            source,
+            source_label=redacted,
+            upload_id=None,
+            idle_timeout_sec=idle_timeout_sec,
         )
 
     def start_existing(self, task_id: str) -> dict[str, Any]:
