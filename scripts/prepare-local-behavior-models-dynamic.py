@@ -3,9 +3,13 @@
 
 The primary converter intentionally validates the raw YOLO detector contract.
 Older/custom Ultralytics exports can make batch, channel and spatial dimensions
-symbolic even though deployment always feeds RGB 640x640 tensors.  This entry
+symbolic even though deployment always feeds RGB 640x640 tensors. This entry
 point keeps those ONNX graphs intact and supplies an explicit TensorRT profile
 instead of rejecting them solely because H/W (or C) is symbolic.
+
+For the shared eat/drink COCO proxy, the generated nvinfer config is normalized
+to the previously validated opsvision rule: prop confidence >= 0.45. The custom
+DeepStream parser owns the matching top-40%-of-person and COCO class mapping.
 """
 
 from __future__ import annotations
@@ -173,6 +177,22 @@ def _build_engine(
         raise RuntimeError(f"TensorRT engine was not created: {engine_path}")
 
 
+def _normalize_eat_drink_config(config_path: Path) -> None:
+    value = config_path.read_text(encoding="utf-8")
+    required = "parse-bbox-func-name=NvDsInferParseCustomYoloEatDrinkCoco"
+    if required not in value:
+        raise RuntimeError(
+            "generated eat/drink config is not using NvDsInferParseCustomYoloEatDrinkCoco"
+        )
+    old = "pre-cluster-threshold=0.35"
+    new = "pre-cluster-threshold=0.45"
+    if old in value:
+        value = value.replace(old, new, 1)
+    elif new not in value:
+        raise RuntimeError("generated eat/drink config has no recognized confidence threshold")
+    config_path.write_text(value, encoding="utf-8", newline="\n")
+
+
 def _write_nvinfer_config(
     spec: Any,
     contract: DynamicOnnxContract,
@@ -188,6 +208,8 @@ def _write_nvinfer_config(
         output_shape=contract.output_shape,
     )
     _ORIGINAL_WRITE_CONFIG(spec, concrete, **kwargs)
+    if spec.name == "eat_drink":
+        _normalize_eat_drink_config(Path(kwargs["config_path"]))
 
 
 base._inspect_onnx = _inspect_onnx
