@@ -236,17 +236,34 @@ class BehaviorType(str, Enum):
     SMOKING = "smoking"
     EATING = "eating"
     DRINKING = "drinking"
+    PHONE = "phone"
+    FIRE = "fire"
     CARRYING = "carrying"
 
     @classmethod
     def parse(cls, value: BehaviorType | str) -> BehaviorType:
         if isinstance(value, cls):
             return value
-        normalized = str(value).strip().lower().replace("-", "_")
+        normalized = (
+            str(value)
+            .strip()
+            .lower()
+            .replace("-", "_")
+            .replace(" ", "_")
+            .replace("/", "_")
+        )
         aliases = {
             "smoke": cls.SMOKING,
+            "cigarette": cls.SMOKING,
             "eat": cls.EATING,
+            "food": cls.EATING,
             "drink": cls.DRINKING,
+            "call": cls.PHONE,
+            "calling": cls.PHONE,
+            "cell_phone": cls.PHONE,
+            "cellphone": cls.PHONE,
+            "mobile_phone": cls.PHONE,
+            "flame": cls.FIRE,
             "carrying_large_item": cls.CARRYING,
             "large_item_carrying": cls.CARRYING,
         }
