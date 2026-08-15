@@ -9,6 +9,34 @@
     <link rel="stylesheet" href="/styles.css" />
     <script src="/app.js" defer></script>
     <script src="/production.js" defer></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const originalBuildTaskPayload = window.buildTaskPayload;
+        if (typeof originalBuildTaskPayload === "function") {
+          window.buildTaskPayload = async (...args) => {
+            const payload = await originalBuildTaskPayload(...args);
+            if (payload && payload.source_type === "rtsp") {
+              const selected = (id) => {
+                const input = document.getElementById(id);
+                return Boolean(input && input.checked && !input.disabled);
+              };
+              payload.features = {
+                smoking: selected("prodSmoking"),
+                eating: selected("prodEating"),
+                drinking: selected("prodDrinking"),
+              };
+            }
+            return payload;
+          };
+        }
+        window.setTimeout(() => {
+          const hint = document.querySelector("#productionFeaturePanel > .production-hint");
+          if (hint) {
+            hint.innerHTML = "<strong>“开始分析”继续使用 main 已验证的单路 RTSP 实时识别链路，并按下方吸烟/吃东西/喝水开关在启动前加入对应模型。</strong> 物品遗留和下方生产 Session 按钮仍用于多路生产链路独立测试。";
+          }
+        }, 0);
+      });
+    </script>
   </head>
   <body>
     <div class="ambient-grid" aria-hidden="true"></div>
