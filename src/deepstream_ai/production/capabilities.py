@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from deepstream_ai.config import AppConfig, BehaviorModelConfig
@@ -24,6 +25,21 @@ def _model_features(model: BehaviorModelConfig) -> tuple[str, ...]:
     return tuple(features)
 
 
+def _labels_from_report(auxiliary_files: tuple[Path, ...]) -> tuple[str, ...] | None:
+    candidates = [path for path in auxiliary_files if "label" in path.name.lower()]
+    if len(candidates) != 1:
+        return None
+    path = candidates[0]
+    try:
+        return tuple(
+            line.strip()
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    except OSError:
+        return None
+
+
 def _asset_status(config: AppConfig, model: BehaviorModelConfig) -> dict[str, Any]:
     if not model.config_file:
         return {"available": False, "reason": "not_configured", "model": model.name}
@@ -31,6 +47,12 @@ def _asset_status(config: AppConfig, model: BehaviorModelConfig) -> dict[str, An
     missing = list(report.missing)
     if model.model and not config.resolve_path(model.model).is_file():
         missing.append(f"model missing: {config.resolve_path(model.model)}")
+    deployed_labels = _labels_from_report(report.auxiliary_files)
+    if deployed_labels is not None and deployed_labels != model.labels:
+        missing.append(
+            "label order mismatch: "
+            f"config={list(model.labels)!r} deployed={list(deployed_labels)!r}"
+        )
     return {
         "available": not missing,
         "reason": None if not missing else "; ".join(missing),
