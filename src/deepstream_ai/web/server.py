@@ -20,6 +20,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from deepstream_ai.config import AppConfig
 from deepstream_ai.doctor import run_doctor
+from deepstream_ai.face_registration import FaceRegistrationService
+from deepstream_ai.face_registration_factory import build_face_registration_service
 from deepstream_ai.manual_task_service import ManualRecognitionTaskService
 from deepstream_ai.preflight import validate_assets
 from deepstream_ai.task_service import RecognitionTaskService, TaskProcess
@@ -56,8 +58,10 @@ class RecognitionHTTPServer(ThreadingHTTPServer):
         address: tuple[str, int],
         service: RecognitionTaskService,
         static_root: Path,
+        face_registration: FaceRegistrationService,
     ) -> None:
         self.service = service
+        self.face_registration = face_registration
         self.static_root = static_root.resolve()
         super().__init__(address, RecognitionRequestHandler)
 
@@ -114,6 +118,13 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
         if path == "/api/tasks":
             self._send_json({"tasks": self.server.service.list_tasks()})
             return
+        if path == "/api/faces/worker":
+            query = parse_qs(parsed.query)
+            worker_id = str(query.get("worker_id", [""])[0]).strip()
+            if not worker_id:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "worker_id 不能为空")
+            self._send_json(self.server.face_registration.worker_summary(worker_id))
+            return
         match = _TASK_PATH.fullmatch(path)
         if match:
             task = self._task(match.group(1))
@@ -139,7 +150,10 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
         if path in {"/", "/index.html"}:
             self._serve_static("index.html")
             return
-        if path in {"/app.js", "/styles.css"}:
+        if path in {"/register", "/register.html"}:
+            self._serve_static("register.html")
+            return
+        if path in {"/app.js", "/register.js", "/styles.css", "/register.css"}:
             self._serve_static(path.removeprefix("/"))
             return
         raise ApiError(HTTPStatus.NOT_FOUND, "接口不存在")
@@ -147,6 +161,37 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
     def _do_post(self) -> None:
         parsed = urlsplit(self.path)
         path = parsed.path
+        if path == "/api/faces/register":
+            self._require_content_type("image")
+            query = parse_qs(parsed.query)
+            worker_id = str(query.get("worker_id", [""])[0]).strip()
+            mode = str(query.get("mode", ["primary"])[0]).strip()
+            filename = str(query.get("filename", [""])[0]).strip()
+            if not worker_id:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "worker_id 不能为空")
+            length = self._content_length()
+            if length <= 0:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "人脸照片不能为空")
+            if length > self.server.face_registration.policy.max_image_bytes:
+                raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "人脸照片超过 12MB 限制")
+            payload = self.rfile.read(length)
+            self._request_body_consumed = len(payload) >= length
+            if len(payload) != length:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "图片上传提前结束")
+            result = self.server.face_registration.register(
+                worker_id,
+                payload,
+                mode=mode,
+                filename=filename,
+            )
+            if result.get("stored"):
+                status = HTTPStatus.CREATED
+            elif result.get("accepted"):
+                status = HTTPStatus.OK
+            else:
+                status = HTTPStatus.UNPROCESSABLE_ENTITY
+            self._send_json(result, status=status)
+            return
         if path == "/api/uploads":
             self._require_content_type("upload")
             query = parse_qs(parsed.query)
@@ -252,6 +297,16 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
                 HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
                 "上传必须使用 application/octet-stream 或 video/*",
             )
+        if kind == "image" and media_type not in {
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/octet-stream",
+        }:
+            raise ApiError(
+                HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+                "人脸注册仅支持 JPEG、PNG 或 WebP 图片",
+            )
 
     def _require_optional_json_content_type(self) -> None:
         raw_length = self.headers.get("Content-Length")
@@ -351,7 +406,7 @@ class RecognitionRequestHandler(BaseHTTPRequestHandler):
             if static:
                 self.send_header(
                     "Content-Security-Policy",
-                    "default-src 'self'; img-src 'self' data:; style-src 'self'; "
+                    "default-src 'self'; img-src 'self' data: blob:; style-src 'self'; "
                     "script-src 'self'; connect-src 'self'; frame-ancestors 'none'",
                 )
             self.send_header("Content-Length", str(length))
@@ -488,8 +543,9 @@ def run_web_service(
         preview_width=preview_width,
         stop_grace_sec=config.runtime.shutdown_timeout_sec + 65,
     )
+    face_registration = build_face_registration_service(config)
     static_root = Path(__file__).resolve().parent / "static"
-    server = RecognitionHTTPServer((host, port), service, static_root)
+    server = RecognitionHTTPServer((host, port), service, static_root, face_registration)
     health_path = Path(config.runtime.health_file)
     temporary_health = health_path.with_suffix(health_path.suffix + ".tmp")
     health_path.parent.mkdir(parents=True, exist_ok=True)
@@ -508,6 +564,7 @@ def run_web_service(
         previous_handlers[signum] = signal.getsignal(signum)
         signal.signal(signum, request_shutdown)
     LOGGER.info("识别服务已启动: http://%s:%d", host, server.server_port)
+    LOGGER.info("人脸注册页面: http://%s:%d/register", host, server.server_port)
     try:
         server.serve_forever(poll_interval=0.5)
     finally:
