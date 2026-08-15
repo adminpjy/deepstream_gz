@@ -189,7 +189,6 @@ class ProductionRequestHandler(RecognitionRequestHandler):
             "smoking": request.features.smoking,
             "eating": request.features.eating,
             "drinking": request.features.drinking,
-            "phone": request.features.phone,
         }
         for name, enabled in requested.items():
             info = optional.get(name, {})
