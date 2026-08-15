@@ -184,13 +184,27 @@ def _normalize_eat_drink_config(config_path: Path) -> None:
         raise RuntimeError(
             "generated eat/drink config is not using NvDsInferParseCustomYoloEatDrinkCoco"
         )
-    old = "pre-cluster-threshold=0.35"
-    new = "pre-cluster-threshold=0.45"
-    if old in value:
-        value = value.replace(old, new, 1)
-    elif new not in value:
+
+    old_threshold = "pre-cluster-threshold=0.35"
+    new_threshold = "pre-cluster-threshold=0.45"
+    if old_threshold in value:
+        value = value.replace(old_threshold, new_threshold, 1)
+    elif new_threshold not in value:
         raise RuntimeError("generated eat/drink config has no recognized confidence threshold")
-    config_path.write_text(value, encoding="utf-8", newline="\n")
+
+    lines = value.splitlines()
+    labels_rewritten = False
+    for index, line in enumerate(lines):
+        if line.startswith("labelfile-path="):
+            lines[index] = "labelfile-path=eat-drink.labels.txt"
+            labels_rewritten = True
+            break
+    if not labels_rewritten:
+        raise RuntimeError("generated eat/drink config has no labelfile-path")
+
+    business_labels = config_path.with_name("eat-drink.labels.txt")
+    business_labels.write_text("eating\ndrinking\n", encoding="utf-8", newline="\n")
+    config_path.write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
 
 def _write_nvinfer_config(
