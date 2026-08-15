@@ -15,7 +15,6 @@ def test_session_request_parses_production_controls() -> None:
                 "smoking": True,
                 "eating": False,
                 "drinking": True,
-                "phone": True,
                 "leftObject": True,
                 "largeObjectMoving": False,
             },
@@ -28,7 +27,6 @@ def test_session_request_parses_production_controls() -> None:
         smoking=True,
         eating=False,
         drinking=True,
-        phone=True,
         left_object=True,
         large_object_moving=False,
     )
@@ -36,16 +34,16 @@ def test_session_request_parses_production_controls() -> None:
     assert "secret" not in request.as_dict(redact_url=True)["streamUrl"]
 
 
-def test_phone_call_alias_is_supported() -> None:
+def test_removed_phone_payload_is_ignored() -> None:
     request = SessionRequest.from_mapping(
         {
             "cameraId": "room-a-01",
             "streamUrl": "rtsp://10.0.0.8/live",
-            "features": {"phoneCall": True},
+            "features": {"phone": True, "phoneCall": True},
         }
     )
-    assert request.features.phone is True
-    assert request.as_dict()["features"]["phone"] is True
+    assert not hasattr(request.features, "phone")
+    assert "phone" not in request.as_dict()["features"]
 
 
 def test_core_recognition_cannot_be_disabled_through_feature_payload() -> None:
