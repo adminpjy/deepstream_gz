@@ -132,17 +132,12 @@ services:
     environment:
       NVIDIA_VISIBLE_DEVICES: ${MODEL_CONVERTER_GPU:-0}
       NVIDIA_DRIVER_CAPABILITIES: ${NVIDIA_DRIVER_CAPABILITIES:-compute,utility,video}
+      MODEL_CONVERTER_DEVICE: "0"
+      MODEL_CONVERTER_PRECISION: ${MODEL_CONVERTER_PRECISION:-fp16}
       PYTHONPATH: /workspace/src
     command:
-      - python3
-      - /workspace/scripts/prepare-local-behavior-models.py
-      - --model-root
-      - /workspace/models
-      - --config-root
-      - /workspace/configs/nvinfer
-      - --device
-      - "0"
-      - --force
+      - /bin/bash
+      - /workspace/scripts/convert-local-models.sh
     volumes:
       - ./configs:/workspace/configs
       - ./models:/workspace/models
