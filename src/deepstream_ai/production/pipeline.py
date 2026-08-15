@@ -11,10 +11,11 @@ from __future__ import annotations
 import hashlib
 import logging
 import threading
+from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from deepstream_ai.config import AppConfig, BehaviorModelConfig, InferComponentConfig, SourceConfig
 from deepstream_ai.errors import PipelineError
