@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#071116" />
+    <title>OpsVision · 人脸注册</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/register.js" defer></script>
+  </head>
+  <body>
+    <div class="ambient-grid" aria-hidden="true"></div>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="返回 OpsVision 首页">
+          <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="brand-copy"><strong>OPSVISION</strong><small>FACE ENROLLMENT</small></span>
+        </a>
+        <div class="topbar-actions">
+          <a class="button button-ghost button-compact" href="/">← 返回分析控制台</a>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="registerTitle">
+          <div>
+            <p class="eyebrow">QUALITY-GATED FACE ENROLLMENT</p>
+            <h1 id="registerTitle">人员人脸注册</h1>
+            <p class="hero-copy">上传照片后先进行 SCRFD 人脸检测、尺寸/清晰度/角度/光照质量检查。只有合格照片才会生成 AdaFace 特征并写入人脸库；不合格照片不会污染注册库。</p>
+          </div>
+          <div class="engine-badges" aria-label="注册链路">
+            <span><i aria-hidden="true"></i>SCRFD</span><span><i aria-hidden="true"></i>AdaFace</span><span><i aria-hidden="true"></i>pgvector</span>
+          </div>
+        </section>
+
+        <section class="alert-banner" id="registerError" role="alert" hidden>
+          <span class="alert-symbol" aria-hidden="true">!</span>
+          <div><strong>注册未完成</strong><p id="registerErrorText"></p></div>
+          <button id="dismissRegisterError" type="button" aria-label="关闭错误提示">×</button>
+        </section>
+
+        <div class="workspace-grid registration-grid">
+          <section class="panel launch-panel" aria-labelledby="enrollFormTitle">
+            <div class="panel-heading">
+              <div><p class="section-index">01 / ENROLL</p><h2 id="enrollFormTitle">提交注册照片</h2></div>
+              <span class="panel-chip">最多 12 个模板 / 人</span>
+            </div>
+
+            <form id="faceRegisterForm" novalidate>
+              <label class="field">
+                <span>Work ID</span>
+                <input id="workerId" type="text" maxlength="64" autocomplete="off" spellcheck="false" placeholder="例如 100086" required />
+                <small id="workerHint">输入后会显示该人员已有模板数量。</small>
+              </label>
+
+              <label class="field">
+                <span>注册类型</span>
+                <select id="registerMode">
+                  <option value="primary">首次/主照片（要求清晰正脸）</option>
+                  <option value="supplement">补充角度（用于侧脸等识别增强）</option>
+                </select>
+                <small id="modeHint">首次注册请使用无遮挡正脸。已有主照片后，可补充左/右约 15°~35° 的清晰照片。</small>
+              </label>
+
+              <label class="drop-zone face-drop-zone" id="faceDropZone" for="faceFile">
+                <input id="faceFile" type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" />
+                <span class="drop-zone-icon" aria-hidden="true">＋</span>
+                <strong id="faceFilePrompt">选择或拖入人脸照片</strong>
+                <span>仅上传一人。优先使用相机原图，不要使用聊天软件缩略图或二次放大的截图。</span>
+              </label>
+
+              <div class="face-preview-card" id="facePreviewCard" hidden>
+                <img id="facePreview" alt="待注册人脸预览" />
+                <div><strong id="facePreviewName"></strong><span id="facePreviewMeta"></span></div>
+                <button id="clearFaceFile" type="button" aria-label="移除图片">×</button>
+              </div>
+
+              <button class="button button-primary button-wide" id="registerButton" type="submit">
+                <span class="button-icon" aria-hidden="true">◎</span><span id="registerButtonText">检测质量并注册</span>
+              </button>
+              <p class="submission-status" id="registerStatus" aria-live="polite"></p>
+            </form>
+          </section>
+
+          <section class="panel preview-panel" aria-labelledby="qualityTitle">
+            <div class="panel-heading">
+              <div><p class="section-index">02 / QUALITY</p><h2 id="qualityTitle">注册质量标准</h2></div>
+              <span class="panel-chip">先质检 · 后入库</span>
+            </div>
+            <div class="quality-guide">
+              <article><strong>单人且完整</strong><p>照片只能有一张人脸，头部不能紧贴边缘，避免手、口罩、墨镜遮挡关键五官。</p></article>
+              <article><strong>人脸足够大</strong><p>有效人脸边长至少约 112px，推荐 160px 以上。尺寸越小，放大到 AdaFace 112×112 后丢失的真实细节越多。</p></article>
+              <article><strong>清晰且光照均匀</strong><p>避免运动模糊、过度压缩、逆光、过曝和一侧脸过暗。系统会给出清晰度与亮度评分。</p></article>
+              <article><strong>角度分层补充</strong><p>主照片必须正脸。需要增强侧脸时，先补 15°~30°，再补更大角度；不要直接用接近纯侧脸的低质量照片污染模板库。</p></article>
+            </div>
+          </section>
+        </div>
+
+        <section class="panel tasks-panel registration-result-panel" id="registrationResultPanel" hidden aria-labelledby="resultTitle">
+          <div class="panel-heading tasks-heading">
+            <div><p class="section-index">03 / RESULT</p><h2 id="resultTitle">质量检查结果</h2></div>
+            <span class="service-pill" id="qualityPill" data-state="loading"><span class="status-dot"></span><span id="qualityPillText">等待检测</span></span>
+          </div>
+          <div class="registration-result-body">
+            <div class="quality-metrics" id="qualityMetrics"></div>
+            <div class="quality-message-block" id="qualityIssuesBlock" hidden><h3>必须修正</h3><ul id="qualityIssues"></ul></div>
+            <div class="quality-message-block quality-warning-block" id="qualityWarningsBlock" hidden><h3>优化建议</h3><ul id="qualityWarnings"></ul></div>
+            <div class="quality-success" id="qualitySuccess" hidden></div>
+          </div>
+        </section>
+      </main>
+
+      <footer><span>OpsVision Face Enrollment</span><span>注册照片仅用于本地质量检测与人脸特征生成</span></footer>
+    </div>
+  </body>
+</html>
