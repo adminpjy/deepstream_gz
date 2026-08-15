@@ -13,18 +13,32 @@ from pathlib import Path
 
 import numpy as np
 
-from deepstream_ai.domain import BoundingBox
+from deepstream_ai.domain import BehaviorType, BoundingBox
 from deepstream_ai.pipeline.metadata import FramePacket
 from deepstream_ai.pipeline.shadow_tracking import current_shadow_tracks
 
 LOGGER = logging.getLogger(__name__)
 _STOP = object()
+_BEHAVIOR_LABELS = {
+    BehaviorType.SMOKING: "SMOKING",
+    BehaviorType.EATING: "EATING",
+    BehaviorType.DRINKING: "DRINKING",
+    BehaviorType.FIRE: "FIRE",
+    BehaviorType.CARRYING: "CARRYING",
+}
 
 
 @dataclass(slots=True)
 class _SecondaryBoxHold:
     bbox: BoundingBox
     parent_bbox: BoundingBox
+    updated_at: float
+
+
+@dataclass(slots=True)
+class _BehaviorHold:
+    behavior: BehaviorType
+    confidence: float
     updated_at: float
 
 
@@ -65,6 +79,7 @@ class PreviewWriter:
         self._frames_dropped = 0
         self._errors = 0
         self._secondary_holds: dict[tuple[str, int | str], _SecondaryBoxHold] = {}
+        self._behavior_holds: dict[tuple[str, int | str, BehaviorType], _BehaviorHold] = {}
 
     def start(self) -> None:
         if self._thread is not None:
@@ -119,6 +134,7 @@ class PreviewWriter:
             LOGGER.warning("实时预览线程未在 %.1f 秒内结束", timeout)
         self._thread = None
         self._secondary_holds.clear()
+        self._behavior_holds.clear()
 
     def stats(self) -> dict[str, int]:
         with self._stats_lock:
@@ -175,6 +191,19 @@ class PreviewWriter:
             if current is None or item.score > current.score:
                 secondary_by_track[key] = item
 
+        behavior_by_key = {}
+        for item in packet.behaviors:
+            key = (item.camera_id, item.track_id, item.behavior)
+            current = behavior_by_key.get(key)
+            if current is None or item.confidence > current.confidence:
+                behavior_by_key[key] = item
+        for key, item in behavior_by_key.items():
+            self._behavior_holds[key] = _BehaviorHold(
+                behavior=item.behavior,
+                confidence=item.confidence,
+                updated_at=now,
+            )
+
         active_keys: set[tuple[str, int | str]] = set()
         secondary_boxes: list[BoundingBox] = []
         for track in packet.tracks:
@@ -187,6 +216,15 @@ class PreviewWriter:
             identity = self.identity_label(track.camera_id, track.track_id)
             if identity:
                 label = f"{label} {identity}"
+            behavior_labels = [
+                _format_behavior_label(hold.behavior, hold.confidence)
+                for behavior_key, hold in self._behavior_holds.items()
+                if behavior_key[0] == track.camera_id
+                and behavior_key[1] == track.track_id
+                and now - hold.updated_at <= self.secondary_hold_sec
+            ]
+            if behavior_labels:
+                label = f"{label} {' '.join(sorted(behavior_labels))}"
             cv2.putText(
                 image,
                 label,
@@ -250,9 +288,32 @@ class PreviewWriter:
         for key in stale_keys:
             self._secondary_holds.pop(key, None)
 
+        stale_behavior_keys = [
+            key
+            for key, hold in self._behavior_holds.items()
+            if now - hold.updated_at > self.secondary_hold_sec
+        ]
+        for key in stale_behavior_keys:
+            self._behavior_holds.pop(key, None)
+
         for box in secondary_boxes:
             x1, y1, x2, y2 = (round(value * scale) for value in box.as_tuple())
             cv2.rectangle(image, (x1, y1), (x2, y2), (92, 224, 122), thickness)
+
+        behavior_color = (0, 165, 255)
+        for item in behavior_by_key.values():
+            x1, y1, x2, y2 = (round(value * scale) for value in item.bbox.as_tuple())
+            cv2.rectangle(image, (x1, y1), (x2, y2), behavior_color, thickness)
+            cv2.putText(
+                image,
+                _format_behavior_label(item.behavior, item.confidence),
+                (max(0, x1), max(18, y1 - 8)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                font_scale,
+                behavior_color,
+                thickness,
+                cv2.LINE_AA,
+            )
 
         cv2.putText(
             image,
@@ -280,6 +341,10 @@ class PreviewWriter:
             os.replace(temporary, self.destination)
         finally:
             temporary.unlink(missing_ok=True)
+
+
+def _format_behavior_label(behavior: BehaviorType, confidence: float) -> str:
+    return f"{_BEHAVIOR_LABELS.get(behavior, behavior.value.upper())} {confidence:.2f}"
 
 
 def _project_box(
