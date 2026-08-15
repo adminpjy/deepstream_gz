@@ -16,7 +16,6 @@ import signal
 import socket
 import threading
 import time
-from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,12 +29,11 @@ from deepstream_ai.production.capabilities import warmable_behavior_names
 from deepstream_ai.production.consumer import MultiSessionConsumer
 from deepstream_ai.production.contracts import SessionRequest, SessionState, utc_now
 from deepstream_ai.production.feature_gate import FeatureRegistry
-from deepstream_ai.production.pipeline import (
-    DynamicPipelineRunner,
-    DynamicSourceController,
-    WarmDynamicPipelineBuilder,
-    build_warm_config,
+from deepstream_ai.production.multiuri_pipeline import (
+    MultiUriPipelineBuilder,
+    MultiUriSourceController,
 )
+from deepstream_ai.production.pipeline import DynamicPipelineRunner, build_warm_config
 from deepstream_ai.production.publishers import AlarmResultAdapter, build_result_publisher
 from deepstream_ai.provisional_analytics import ProvisionalAwareAnalyticsDispatcher
 
@@ -120,10 +118,10 @@ class ProductionGpuWorker:
         self.dispatcher: ProvisionalAwareAnalyticsDispatcher | None = None
         self.consumer: MultiSessionConsumer | None = None
         self.feature_registry = FeatureRegistry()
-        self.builder: WarmDynamicPipelineBuilder | None = None
+        self.builder: MultiUriPipelineBuilder | None = None
         self.graph: Any | None = None
         self.runner: DynamicPipelineRunner | None = None
-        self.controller: DynamicSourceController | None = None
+        self.controller: MultiUriSourceController | None = None
         self.pipeline_thread: threading.Thread | None = None
         self._sessions: dict[str, WorkerSession] = {}
         self._camera_to_session: dict[str, str] = {}
@@ -176,7 +174,7 @@ class ProductionGpuWorker:
             preview_width=self.preview_width,
         )
         consumer_holder["consumer"] = self.consumer
-        self.builder = WarmDynamicPipelineBuilder(
+        self.builder = MultiUriPipelineBuilder(
             self.runtime,
             self.config,
             self.consumer,
@@ -206,7 +204,7 @@ class ProductionGpuWorker:
             on_started=on_started,
         )
         runner_holder["runner"] = self.runner
-        self.controller = DynamicSourceController(
+        self.controller = MultiUriSourceController(
             self.runtime,
             self.config,
             self.graph,
@@ -263,28 +261,6 @@ class ProductionGpuWorker:
                 "sessions": sessions,
             },
         )
-
-    def _glib_call(self, callback: Callable[[], Any], *, timeout: float = 15.0) -> Any:
-        if not self._ready.is_set() or self.runtime is None:
-            raise RuntimeError("GPU worker is not ready")
-        done = threading.Event()
-        result: dict[str, Any] = {}
-
-        def invoke() -> bool:
-            try:
-                result["value"] = callback()
-            except BaseException as exc:
-                result["error"] = exc
-            finally:
-                done.set()
-            return False
-
-        self.runtime.GLib.idle_add(invoke)
-        if not done.wait(timeout):
-            raise TimeoutError("GPU worker GLib operation timed out")
-        if "error" in result:
-            raise result["error"]
-        return result.get("value")
 
     def start_session(
         self,
@@ -343,7 +319,10 @@ class ProductionGpuWorker:
                 latency_ms=int(request.context.get("rtspLatencyMs", 200)),
                 reconnect_interval_sec=int(request.context.get("reconnectIntervalSec", 10)),
             )
-            slot = int(self._glib_call(lambda: self.controller.add(source, request.features)))
+            # nvmultiurisrcbin owns its GStreamer mutation behind an internal
+            # REST server. Do not call that REST endpoint from the GLib main
+            # loop thread; the plugin's server thread performs source lifecycle.
+            slot = int(self.controller.add(source, request.features))
             with self._lock:
                 session.slot = slot
                 session.state = SessionState.ACTIVE
@@ -438,7 +417,7 @@ class ProductionGpuWorker:
                 session_id,
                 run_absent_hooks=run_absent_hooks,
             )
-            self._glib_call(lambda: self.controller.remove(session.request.camera_id))
+            self.controller.remove(session.request.camera_id)
             with self._lock:
                 session.state = SessionState.COMPLETED if run_absent_hooks else SessionState.STOPPED
                 session.updated_at = utc_now().isoformat()
