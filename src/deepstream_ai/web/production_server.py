@@ -26,11 +26,8 @@ from deepstream_ai.production.manager import (
     ProductionRecognitionService,
     ProductionServiceError,
 )
-from deepstream_ai.web.server import (
-    ApiError,
-    RecognitionHTTPServer as LegacyRecognitionHTTPServer,
-    RecognitionRequestHandler,
-)
+from deepstream_ai.web.server import ApiError, RecognitionRequestHandler
+from deepstream_ai.web.server import RecognitionHTTPServer as LegacyRecognitionHTTPServer
 
 LOGGER = logging.getLogger(__name__)
 _SESSION_PATH = re.compile(r"^/api/v1/recognition/sessions/([a-f0-9]{16})(?:/(.*))?$")
