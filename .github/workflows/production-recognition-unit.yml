@@ -8,6 +8,9 @@ on:
     paths:
       - "src/deepstream_ai/production/**"
       - "src/deepstream_ai/domain.py"
+      - "src/deepstream_ai/task_behavior.py"
+      - "src/deepstream_ai/task_worker.py"
+      - "src/deepstream_ai/manual_task_service.py"
       - "src/deepstream_ai/web/production_server.py"
       - "src/deepstream_ai/web/static/app.js"
       - "src/deepstream_ai/web/static/index.html"
@@ -25,6 +28,7 @@ on:
       - "docker/Dockerfile.sdk"
       - "pyproject.toml"
       - "tests/test_production_*.py"
+      - "tests/test_task_behavior.py"
       - ".github/workflows/production-recognition-unit.yml"
 
 permissions:
@@ -47,6 +51,9 @@ jobs:
           python -m compileall -q
           src/deepstream_ai/production
           src/deepstream_ai/domain.py
+          src/deepstream_ai/task_behavior.py
+          src/deepstream_ai/task_worker.py
+          src/deepstream_ai/manual_task_service.py
           src/deepstream_ai/web/production_server.py
           scripts/prepare-local-behavior-models.py
           scripts/prepare-local-behavior-models-dynamic.py
@@ -55,6 +62,9 @@ jobs:
           ruff check
           src/deepstream_ai/production
           src/deepstream_ai/domain.py
+          src/deepstream_ai/task_behavior.py
+          src/deepstream_ai/task_worker.py
+          src/deepstream_ai/manual_task_service.py
           src/deepstream_ai/web/production_server.py
           scripts/prepare-local-behavior-models.py
           scripts/prepare-local-behavior-models-dynamic.py
@@ -63,6 +73,7 @@ jobs:
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+          tests/test_task_behavior.py
       - name: JavaScript syntax
         run: >-
           node --check src/deepstream_ai/web/static/app.js &&
@@ -77,3 +88,4 @@ jobs:
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+          tests/test_task_behavior.py
