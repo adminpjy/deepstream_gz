@@ -56,6 +56,14 @@ services:
       PYTHONFAULTHANDLER: "1"
       SERVICE_UPLOADS_ROOT: ${SERVICE_UPLOADS_ROOT:-/workspace/uploads}
       SERVICE_TASKS_ROOT: ${SERVICE_TASKS_ROOT:-/workspace/output/tasks}
+      SERVICE_GPU_IDS: ${SERVICE_GPU_IDS:-}
+      SERVICE_SESSIONS_PER_GPU: ${SERVICE_SESSIONS_PER_GPU:-16}
+      PRODUCTION_OUTPUT_ROOT: ${PRODUCTION_OUTPUT_ROOT:-/workspace/output/production}
+      RESULT_PUBLISH_URL: ${RESULT_PUBLISH_URL:-}
+      RESULT_PUBLISH_TOKEN: ${RESULT_PUBLISH_TOKEN:-}
+      RESULT_PUBLISH_TIMEOUT_SEC: ${RESULT_PUBLISH_TIMEOUT_SEC:-3}
+      RESULT_PUBLISH_MAX_ATTEMPTS: ${RESULT_PUBLISH_MAX_ATTEMPTS:-3}
+      RESULT_PUBLISH_QUEUE_SIZE: ${RESULT_PUBLISH_QUEUE_SIZE:-1024}
     command:
       - python3
       - -m
@@ -98,8 +106,8 @@ services:
       interval: 20s
       timeout: 5s
       retries: 5
-      # First boot may spend several minutes building the person and face
-      # TensorRT engines; keep this aligned with runtime.startup_timeout_sec.
+      # First boot warms every configured GPU worker and loads the production
+      # model set before readiness is published.
       start_period: 600s
     deploy:
       resources:
