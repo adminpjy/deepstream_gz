@@ -30,6 +30,7 @@ services:
     build:
       context: .
       dockerfile: ${APP_DOCKERFILE:-docker/Dockerfile}
+      target: final
       args:
         DEEPSTREAM_IMAGE: ${DEEPSTREAM_IMAGE:-nvcr.io/nvidia/deepstream:9.0-triton-multiarch}
         CUDA_IMAGE: ${CUDA_IMAGE:-nvidia/cuda:13.0.2-base-ubuntu24.04}
@@ -117,6 +118,43 @@ services:
               count: all
               capabilities: [gpu]
     restart: ${APP_RESTART_POLICY:-no}
+
+  model-converter:
+    profiles: ["tools"]
+    image: ${MODEL_CONVERTER_IMAGE:-deepstream-ai-model-converter:dev}
+    build:
+      context: .
+      dockerfile: ${APP_DOCKERFILE:-docker/Dockerfile}
+      target: model-converter
+      args:
+        DEEPSTREAM_IMAGE: ${DEEPSTREAM_IMAGE:-nvcr.io/nvidia/deepstream:9.0-triton-multiarch}
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+    environment:
+      NVIDIA_VISIBLE_DEVICES: ${MODEL_CONVERTER_GPU:-0}
+      NVIDIA_DRIVER_CAPABILITIES: ${NVIDIA_DRIVER_CAPABILITIES:-compute,utility,video}
+      PYTHONPATH: /workspace/src
+    command:
+      - python3
+      - /workspace/scripts/prepare-local-behavior-models.py
+      - --model-root
+      - /workspace/models
+      - --config-root
+      - /workspace/configs/nvinfer
+      - --device
+      - "0"
+      - --force
+    volumes:
+      - ./configs:/workspace/configs
+      - ./models:/workspace/models
+      - ./scripts:/workspace/scripts:ro
+      - ./src:/workspace/src:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
 volumes:
   postgres-data:
