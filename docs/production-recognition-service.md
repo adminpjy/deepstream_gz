@@ -82,6 +82,13 @@ assets are available. Once loaded, they stay resident in every GPU worker. A
 per-source inference gate prevents disabled cameras from entering that SGIE, so
 "model resident" does not mean "every camera executes every model".
 
+The repository intentionally does not invent behavior model configs: the base
+configuration references `smoking.txt`, `eating.txt`, and `drinking.txt`, while
+the reviewed conversion workflow is responsible for generating those production
+SGIE configs together with matching engines/labels. Until the real assets are
+present, `/api/v1/recognition/capabilities` reports the feature unavailable and
+the Web switch is disabled instead of pretending the model can run.
+
 Each scene has an independent processor. Processors only consume the normalized
 frame/track contract and publish `RecognitionEvent`; they do not call each
 other.
@@ -212,10 +219,12 @@ core/scenario recognition
  local JSONL  HTTP adapter
 ```
 
-Local events are always journaled under:
+Each GPU process has its own append-only local journal and dead-letter file, so
+multiple GPU workers never contend for one result file:
 
 ```text
-${PRODUCTION_OUTPUT_ROOT}/recognition-events.jsonl
+${PRODUCTION_OUTPUT_ROOT}/gpu-<id>/recognition-events.jsonl
+${PRODUCTION_OUTPUT_ROOT}/gpu-<id>/result-dead-letter.jsonl
 ```
 
 Set these variables to enable the generic REST publisher:
@@ -233,9 +242,10 @@ or a replacement `ResultPublisher`. Scenario code, person/face recognition and
 session management must not contain formal-system URLs, auth headers or DTO
 fields.
 
-HTTP publishing is queued and bounded so a slow formal endpoint does not block
-the DeepStream streaming thread. Failed final deliveries are written to the
-dead-letter JSONL file.
+HTTP publishing is queued and bounded so a slow or unavailable formal endpoint
+cannot block or raise back into DeepStream, AdaFace, alarm lifecycle, or scene
+processors. Queue saturation and final delivery failures fall back to the local
+dead-letter file.
 
 ## 6. Multi-GPU configuration
 
@@ -260,6 +270,11 @@ with the real camera codec/resolution, PeopleNet/NvDCF/face workload and enabled
 optional models. A capacity change creates a different production PGIE engine
 cache and therefore takes effect on the next worker restart.
 
+Unexpected worker exit marks that GPU's active sessions failed and automatically
+restarts/warmups the worker for future sessions. Existing session Track state is
+not migrated between GPUs because cross-GPU Track migration would risk identity
+continuity correctness.
+
 ## 7. Test Web page
 
 The existing local-file test flow remains on `/api/tasks` unchanged. When the
@@ -280,6 +295,8 @@ ${PRODUCTION_OUTPUT_ROOT}/
   gpu-0/
     worker.log
     worker-status.json
+    recognition-events.jsonl
+    result-dead-letter.jsonl
     .engines/               isolated production PGIE cache
     .runtime/nvinfer/
   gpu-1/
@@ -293,11 +310,23 @@ ${PRODUCTION_OUTPUT_ROOT}/
       after.jpg
       diff.jpg
   alarm-evidence/
-  recognition-events.jsonl
-  result-dead-letter.jsonl
 ```
 
-## 9. Required acceptance checks on the GPU host
+## 9. Automated branch checks
+
+The branch contains `.github/workflows/production-recognition-unit.yml`, which
+runs on branch pushes and validates:
+
+- Python compile of production modules
+- Ruff checks on production code and tests
+- production REST contract tests
+- per-source feature-gate tests
+- left-object scene-difference tests
+- result-publisher/backpressure tests
+
+These checks do not claim to validate DeepStream/TensorRT runtime behavior.
+
+## 10. Required acceptance checks on the GPU host
 
 Before merging this branch to the production line, run on the actual target GPU
 server:
@@ -310,13 +339,13 @@ server:
 4. Stop and restart the same camera repeatedly without worker/model restart.
 5. Verify core person tracking, face extraction and AdaFace results against the
    current tuned baseline.
-6. Enable only smoking and verify eating/drinking SGIE gates do not infer for the
-   source; repeat for each optional feature.
+6. Deploy the reviewed smoking/eating/drinking assets and enable one feature at
+   a time; verify disabled SGIE gates do not infer for that source.
 7. Upload a baseline, leave an object, wait for person absence, and verify
    `LEFT_OBJECT` plus before/after/diff evidence before automatic detach.
 8. Verify unchanged lighting/scene does not create a left-object event.
 9. Make the external result endpoint unavailable and verify recognition remains
-   live while events go to dead-letter output.
+   live while events go to per-GPU dead-letter output.
 10. Load-test the intended `SERVICE_SESSIONS_PER_GPU` using real stream codecs,
     resolution and GOP settings; record attach-to-first-result P50/P95.
 
