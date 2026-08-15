@@ -1,0 +1,333 @@
+2026-08-15 08:32:46 | INFO     | __main__ | [GPU_WORKER_START] physical_gpu=0 logical_gpu=0 capacity=16 warm_behaviors=['smoking', 'phone']
+2026-08-15 08:32:47 | INFO     | __main__ | [GPU_WORKER_PREFLIGHT] physical_gpu=0 engines=['/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine', '/workspace/models/face.engine', '/workspace/models/smoking.engine', '/workspace/models/phone.engine']
+2026-08-15 08:32:47 | INFO     | __main__ | [GPU_WORKER_RUNTIME] physical_gpu=0 versions={'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-15 08:32:48.016469487 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-15 08:32:49 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=5 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/person-detector.txt
+2026-08-15 08:32:49 | INFO     | deepstream_ai.production.pipeline | [PRODUCTION_ENGINE] component=person-detector batch=16 isolated_engine=/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine legacy_engine_untouched=true
+2026-08-15 08:32:49 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=6 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/face-detector.txt
+2026-08-15 08:32:49 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=behavior-smoking unique_id=12 target_fps=1.00 secondary-reinfer-interval=30 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-smoking.txt
+2026-08-15 08:32:49 | INFO     | deepstream_ai.production.feature_gate | [OPTIONAL_GATE] features=['smoking'] person_uid=1 mask_uid=1000012
+2026-08-15 08:32:49 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=behavior-phone unique_id=13 target_fps=1.00 secondary-reinfer-interval=30 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-phone.txt
+2026-08-15 08:32:49 | INFO     | deepstream_ai.production.feature_gate | [OPTIONAL_GATE] features=['phone'] person_uid=1 mask_uid=1000013
+2026-08-15 08:32:50 | INFO     | deepstream_ai.pipeline.peoplenet_pretracker_guard | [PRETRACKER_GUARD] enabled=True pgie_uid=1 person_classes=[0] max_conf=0.550 left<=0.030 top<=0.020 width=[0.400,0.500] height>=0.930 right<=0.520 frame=1920x1080
+2026-08-15 08:32:50 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW] preview bridge enabled max_age=1.50s
+0:00:02.312174466 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-phone>[00m NvDsInferContext[UID 13]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 13]: deserialized trt engine from :/workspace/models/phone.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT images          3x640x640       min: 1x3x640x640     opt: 8x3x640x640     Max: 16x3x640x640    
+1   OUTPUT kFLOAT output0         5x8400          min: 0               opt: 0               Max: 0               
+
+0:00:02.314335325 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-phone>[00m NvDsInferContext[UID 13]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 13]: Use deserialized engine model: /workspace/models/phone.engine
+0:00:02.326588799 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<behavior-phone>[00m [UID 13]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-phone.txt sucessfully
+0:00:02.442512844 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-smoking>[00m NvDsInferContext[UID 12]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 12]: deserialized trt engine from :/workspace/models/smoking.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT images          3x640x640       min: 1x3x640x640     opt: 8x3x640x640     Max: 16x3x640x640    
+1   OUTPUT kFLOAT output0         5x8400          min: 0               opt: 0               Max: 0               
+
+0:00:02.445806933 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-smoking>[00m NvDsInferContext[UID 12]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 12]: Use deserialized engine model: /workspace/models/smoking.engine
+0:00:02.457981247 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<behavior-smoking>[00m [UID 12]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-smoking.txt sucessfully
+0:00:02.544592391 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:02.546894194 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:02.557840078 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+WARNING: ../nvdsinfer/nvdsinfer_model_builder.cpp:1318 Deserialize engine failed because file path: /workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine open error
+0:00:05.560535290 [35m   58[00m 0x7f4218336720 [33;01mWARN   [00m [00m             nvinfer gstnvinfer.cpp:722:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2171> [UID = 1]: deserialize engine from file :/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine failed
+0:00:05.563389602 [35m   58[00m 0x7f4218336720 [33;01mWARN   [00m [00m             nvinfer gstnvinfer.cpp:722:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2276> [UID = 1]: deserialize backend context from engine from file :/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine failed, try rebuild
+0:00:05.564795981 [35m   58[00m 0x7f4218336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:2197> [UID = 1]: Trying to create engine from model files
+2026-08-15 08:33:41 | INFO     | __main__ | [GPU_WORKER_START] physical_gpu=0 logical_gpu=0 capacity=16 warm_behaviors=['smoking', 'phone']
+2026-08-15 08:33:42 | INFO     | __main__ | [GPU_WORKER_PREFLIGHT] physical_gpu=0 engines=['/workspace/models/peoplenet/resnet34_peoplenet.onnx_b1_gpu0_fp16.engine', '/workspace/models/face.engine', '/workspace/models/smoking.engine', '/workspace/models/phone.engine']
+2026-08-15 08:33:42 | INFO     | __main__ | [GPU_WORKER_RUNTIME] physical_gpu=0 versions={'gstreamer': '1.24.2.0', 'pyds': '1.2.3'}
+[0;93m2026-08-15 08:33:42.735151993 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under "/sys/class/drm/card0": device_discovery.cc:94 ReadFileContents Failed to open file: "/sys/class/drm/card0/device/vendor"[m
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=person-detector unique_id=1 target_fps=5.00 interval=5 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/person-detector.txt
+2026-08-15 08:33:44 | INFO     | deepstream_ai.production.pipeline | [PRODUCTION_ENGINE] component=person-detector batch=16 isolated_engine=/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine legacy_engine_untouched=true
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=face-detector unique_id=2 target_fps=5.00 secondary-reinfer-interval=6 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/face-detector.txt
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=behavior-smoking unique_id=12 target_fps=1.00 secondary-reinfer-interval=30 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-smoking.txt
+2026-08-15 08:33:44 | INFO     | deepstream_ai.production.feature_gate | [OPTIONAL_GATE] features=['smoking'] person_uid=1 mask_uid=1000012
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.builder | 配置推理组件 name=behavior-phone unique_id=13 target_fps=1.00 secondary-reinfer-interval=30 runtime_config=/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-phone.txt
+2026-08-15 08:33:44 | INFO     | deepstream_ai.production.feature_gate | [OPTIONAL_GATE] features=['phone'] person_uid=1 mask_uid=1000013
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.peoplenet_pretracker_guard | [PRETRACKER_GUARD] enabled=True pgie_uid=1 person_classes=[0] max_conf=0.550 left<=0.030 top<=0.020 width=[0.400,0.500] height>=0.930 right<=0.520 frame=1920x1080
+2026-08-15 08:33:44 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW] preview bridge enabled max_age=1.50s
+0:00:02.194945661 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-phone>[00m NvDsInferContext[UID 13]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 13]: deserialized trt engine from :/workspace/models/phone.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT images          3x640x640       min: 1x3x640x640     opt: 8x3x640x640     Max: 16x3x640x640    
+1   OUTPUT kFLOAT output0         5x8400          min: 0               opt: 0               Max: 0               
+
+0:00:02.198172934 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-phone>[00m NvDsInferContext[UID 13]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 13]: Use deserialized engine model: /workspace/models/phone.engine
+0:00:02.209470226 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<behavior-phone>[00m [UID 13]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-phone.txt sucessfully
+0:00:02.299188774 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-smoking>[00m NvDsInferContext[UID 12]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 12]: deserialized trt engine from :/workspace/models/smoking.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 2
+0   INPUT  kFLOAT images          3x640x640       min: 1x3x640x640     opt: 8x3x640x640     Max: 16x3x640x640    
+1   OUTPUT kFLOAT output0         5x8400          min: 0               opt: 0               Max: 0               
+
+0:00:02.301303548 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<behavior-smoking>[00m NvDsInferContext[UID 12]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 12]: Use deserialized engine model: /workspace/models/smoking.engine
+0:00:02.311131504 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<behavior-smoking>[00m [UID 12]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/behavior-smoking.txt sucessfully
+0:00:02.370233273 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2183> [UID = 2]: deserialized trt engine from :/workspace/models/face.engine
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [Implicit Engine Info]: layers num: 0
+
+0:00:02.370728777 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<face-detector>[00m NvDsInferContext[UID 2]: Info from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2286> [UID = 2]: Use deserialized engine model: /workspace/models/face.engine
+0:00:02.377376360 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<face-detector>[00m [UID 2]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/face-detector.txt sucessfully
+gstnvtracker: Loading low-level lib at /opt/nvidia/deepstream/deepstream/lib/libnvds_nvmultiobjecttracker.so
+[NvMultiObjectTracker] Loading TRT Engine for model: /workspace/models/tracker/resnet50_market1501_aicity156.onnx_b16_gpu0_fp16.engine
+[NvMultiObjectTracker] Loading Complete!
+[NvMultiObjectTracker] Initialized
+WARNING: ../nvdsinfer/nvdsinfer_model_builder.cpp:1318 Deserialize engine failed because file path: /workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine open error
+0:00:05.579984811 [35m   58[00m 0x7f1158336720 [33;01mWARN   [00m [00m             nvinfer gstnvinfer.cpp:722:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::deserializeEngineAndBackend() <nvdsinfer_context_impl.cpp:2171> [UID = 1]: deserialize engine from file :/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine failed
+0:00:05.581918644 [35m   58[00m 0x7f1158336720 [33;01mWARN   [00m [00m             nvinfer gstnvinfer.cpp:722:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Warning from NvDsInferContextImpl::generateBackendContext() <nvdsinfer_context_impl.cpp:2276> [UID = 1]: deserialize backend context from engine from file :/workspace/output/production/gpu-0/.engines/person-detector-b16-b493c79d4996.engine failed, try rebuild
+0:00:05.584065652 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:2197> [UID = 1]: Trying to create engine from model files
+0:01:01.565522418 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer.cpp:725:gst_nvinfer_logger:<person-detector>[00m NvDsInferContext[UID 1]: Info from NvDsInferContextImpl::buildModel() <nvdsinfer_context_impl.cpp:2229> [UID = 1]: serialize cuda engine to file: /workspace/models/peoplenet/resnet34_peoplenet.onnx_b16_gpu0_fp16.engine successfully
+INFO: ../nvdsinfer/nvdsinfer_model_builder.cpp:376 [FullDims Engine Info]: layers num: 3
+0   INPUT  kFLOAT input_1:0       3x544x960       min: 1x3x544x960     opt: 16x3x544x960    Max: 16x3x544x960    
+1   OUTPUT kFLOAT output_cov/Sigmoid:0 3x34x60         min: 0               opt: 0               Max: 0               
+2   OUTPUT kFLOAT output_bbox/BiasAdd:0 12x34x60        min: 0               opt: 0               Max: 0               
+
+0:01:01.647301507 [35m   58[00m 0x7f1158336720 [36mINFO   [00m [00m             nvinfer gstnvinfer_impl.cpp:343:notifyLoadModelStatus:<person-detector>[00m [UID 1]: Load new model:/workspace/output/production/gpu-0/.runtime/nvinfer/person-detector.txt sucessfully
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已启动，sources=16
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE] component=person target=5.00 floor=5.00 actual≈5.00 interval=5 reason=source_profile
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE_STATIC] component=face target=5.00 actual≈5.00 reinfer=6 reason=config_startup runtime_update=unsupported
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE_STATIC] component=behavior:smoking target=1.00 actual≈1.00 reinfer=30 reason=config_startup runtime_update=unsupported
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE_STATIC] component=behavior:phone target=1.00 actual≈1.00 reinfer=30 reason=config_startup runtime_update=unsupported
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=14.0% mem=2.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:44 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE] enabled profile=normal sample=2.0s window=10.0s
+2026-08-15 08:34:44 | INFO     | __main__ | [GPU_WORKER_READY] physical_gpu=0 capacity=16 warm_behaviors=['smoking', 'phone']
+2026-08-15 08:34:46 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=10.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:48 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=2.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:50 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=3.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:52 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=3.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:54 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=3.0% mem=2.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:56 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=0.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:34:58 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=normal source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:00 | INFO     | deepstream_ai.pipeline.adaptive_realtime | [ADAPTIVE_RATE] component=person target=8.00 floor=5.00 actual≈7.50 interval=3 reason=stable_headroom
+2026-08-15 08:35:00 | WARNING  | deepstream_ai.pipeline.adaptive | [ADAPTIVE_PROFILE] normal -> boost reason=stable_headroom source_fps=30.000
+2026-08-15 08:35:00 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=3.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:02 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=3.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:04 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=2.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:06 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=3.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:08 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=34.0% mem=4.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:10 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=3.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:12 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=3.0% mem=3.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:14 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:16 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:18 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:20 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=34.0% mem=4.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:22 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=1.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:24 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:26 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:28 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:30 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=2.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:32 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=1.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:34 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=2.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:36 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:38 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:40 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:42 | INFO     | deepstream_ai.pipeline.source | RTSP 实时模式: camera_id=camera-01 transport=tcp latency_ms=200 drop_on_latency=true reconnect_interval_sec=10
+2026-08-15 08:35:42 | WARNING  | deepstream_ai.stream_epoch | [SOURCE_GENERATION] camera=camera-01 generation=1 reason=production_session_attach
+Protocol set: 0x4
+2026-08-15 08:35:42 | INFO     | deepstream_ai.production.pipeline | [SESSION_ATTACH] camera=camera-01 slot=0 active=1 features={'smoking': True, 'eating': False, 'drinking': False, 'phone': True, 'leftObject': False, 'largeObjectMoving': False}
+2026-08-15 08:35:42 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:43 | INFO     | deepstream_ai.pipeline.source | 视频源已连接: camera_id=camera-01 uri=vsrc_0
+2026-08-15 08:35:43 | INFO     | deepstream_ai.pipeline.source | [NVDEC] camera_id=camera-01 decoder=nvv4l2decoder0 cudadec_memtype=device
+Opening in BLOCKING MODE 
+0:02:00.551945398 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.552449799 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MJPG
+0:02:00.552870717 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.553255699 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MJPG
+0:02:00.553644117 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.554025573 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat AV10
+0:02:00.554422663 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.554836418 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat AV10
+0:02:00.556113209 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.556833644 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX5
+0:02:00.557385591 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.557989481 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX5
+0:02:00.558962459 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.559604480 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat DVX4
+0:02:00.560170605 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.560527964 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat DVX4
+0:02:00.560945058 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.561235299 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG4
+0:02:00.561892500 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.562201526 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG4
+0:02:00.562611473 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.563038433 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat MPG2
+0:02:00.563453640 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.564217764 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat MPG2
+0:02:00.564739352 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.565469866 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H265
+0:02:00.566536621 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.567265993 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H265
+0:02:00.567610182 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.567876153 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP90
+0:02:00.568299990 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.569025362 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP90
+0:02:00.569992831 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.570463017 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat VP80
+0:02:00.570882294 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.571113523 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat VP80
+0:02:00.571468142 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.571998479 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe minimum capture size for pixelformat H264
+0:02:00.572265300 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:sink>[00m Unable to try format: Unknown error -1
+0:02:00.572483404 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:sink>[00m Could not probe maximum capture size for pixelformat H264
+0:02:00.572954940 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.573186416 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat Y444
+0:02:00.573659449 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.573882684 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat Y444
+0:02:00.574068310 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.574255436 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P216
+0:02:00.574708554 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.575112089 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P216
+0:02:00.575515330 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.576288966 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM16
+0:02:00.577087881 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.577505495 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM16
+0:02:00.578298584 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.578983796 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P412
+0:02:00.579741556 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.580485682 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P412
+0:02:00.581237444 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.581923834 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat P410
+0:02:00.582652174 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.583104675 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat P410
+0:02:00.583561046 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.584047936 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat PM10
+0:02:00.584521579 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.585187841 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat PM10
+0:02:00.585705036 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.586295315 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3008:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe minimum capture size for pixelformat NM12
+0:02:00.586854901 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3123:gst_v4l2_object_get_nearest_size:<nvv4l2decoder0:src>[00m Unable to try format: Unknown error -1
+0:02:00.587314650 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m                v4l2 gstv4l2object.c:3014:gst_v4l2_object_probe_caps_for_format:<nvv4l2decoder0:src>[00m Could not probe maximum capture size for pixelformat NM12
+0:02:00.733752012 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m        v4l2videodec gstv4l2videodec.c:2357:gst_v4l2_video_dec_decide_allocation:<nvv4l2decoder0>[00m Duration invalid, not setting latency
+0:02:00.739649551 [35m   58[00m 0x7f0d44001520 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1127:gst_v4l2_buffer_pool_start:<nvv4l2decoder0:pool:src>[00m Uncertain or not enough buffers, enabling copy threshold
+0:02:01.320361803 [35m   58[00m 0x7f0d440024e0 [33;01mWARN   [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1611:gst_v4l2_buffer_pool_dqbuf:<nvv4l2decoder0:pool:src>[00m Driver should never set v4l2_buffer.field to ANY
+2026-08-15 08:35:44 | INFO     | deepstream_ai.pipeline.adaptive | [SOURCE_PROFILE] camera=camera-01 fps=30.000 resolution=1280x720 source=negotiated_caps
+2026-08-15 08:35:44 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=3.0% nvdec=2.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:46 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:48 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:50 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:52 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:35:54 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:12.510141099 [35m   58[00m 0x7f1158336720 [33;01mWARN   [00m [00m         nvurisrcbin gstdsnvurisrcbin.cpp:1710:watch_source_status:<uri-source-00>[00m warning: No data from source since last 10 sec. Trying reconnection
+2026-08-15 08:36:27 | WARNING  | deepstream_ai.pipeline.shadow_tracking | [TRACK_SHADOW_UNAVAILABLE] pinned PyDS does not expose shadow-list metadata
+Resetting source -1, attempts: 1
+
+(python3:58): GStreamer-WARNING **: 08:36:27.452: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<src_cap_filter_nvvidconv:sink> Got data flow before segment event
+2026-08-15 08:36:27 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=uri-source-00: gst-stream-error-quark: No data from source since last 10 sec. Trying reconnection (1); debug=gstdsnvurisrcbin.cpp(1710): watch_source_status (): /GstPipeline:deepstream-ai-production-worker/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00
+2026-08-15 08:36:27 | WARNING  | deepstream_ai.stream_epoch | [SOURCE_GENERATION] camera=camera-01 generation=2 reason=rtsp_reconnect:uri-source-00
+
+(python3:58): GStreamer-WARNING **: 08:36:27.455: ../gst/gstpad.c:4736:gst_pad_push_data:<src_cap_filter_nvvidconv:src> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.457: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<vsrc_0:proxypad7> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.457: ../gst/gstpad.c:4736:gst_pad_push_data:<uri-source-00:vsrc_0> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.458: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<src:proxypad0> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.459: ../gst/gstpad.c:4736:gst_pad_push_data:<source-bin-00:src> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.459: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<stream-muxer:sink_0> Got data flow before segment event
+0:02:44.946668956 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 5: Bad file descriptor
+0:02:44.947588586 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 5
+0:02:44.988450683 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 6: Bad file descriptor
+0:02:44.989258254 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 6
+2026-08-15 08:36:27 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=33.0% mem=4.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:45.030374730 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 0: Bad file descriptor
+0:02:45.030724957 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 0
+0:02:45.071372640 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 1: Bad file descriptor
+0:02:45.072493533 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 1
+
+(python3:58): GStreamer-WARNING **: 08:36:27.603: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<src_cap_filter_nvvidconv:sink> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.603: ../gst/gstpad.c:4736:gst_pad_push_data:<src_cap_filter_nvvidconv:src> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.604: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<vsrc_0:proxypad7> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.604: ../gst/gstpad.c:4736:gst_pad_push_data:<uri-source-00:vsrc_0> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.605: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<src:proxypad0> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.606: ../gst/gstpad.c:4736:gst_pad_push_data:<source-bin-00:src> Got data flow before segment event
+
+(python3:58): GStreamer-WARNING **: 08:36:27.606: ../gst/gstpad.c:4463:gst_pad_chain_data_unchecked:<stream-muxer:sink_0> Got data flow before segment event
+0:02:45.113300802 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 2: Bad file descriptor
+0:02:45.114289996 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 2
+2026-08-15 08:36:27 | INFO     | deepstream_ai.provisional_track_guard | [PERSON_PROVISIONAL] camera=camera-01 track=epoch-2:0 raw=0 conf=0.947 alias=True
+0:02:45.155048037 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 3: Bad file descriptor
+0:02:45.155829782 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 3
+2026-08-15 08:36:27 | INFO     | deepstream_ai.snapshot.rolling_manager | [TRACK_CREATE] camera=camera-01 track=epoch-2:0 person_conf=0.947 quality=0.709
+0:02:45.197007879 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m       v4l2allocator gstv4l2allocator.c:1398:gst_v4l2_allocator_qbuf:<nvv4l2decoder0:pool:src:allocator>[00m failed queueing buffer 4: Bad file descriptor
+0:02:45.198288800 [35m   58[00m 0x7f0d440020f0 [31;01mERROR  [00m [00m      v4l2bufferpool gstv4l2bufferpool.c:1502:gst_v4l2_buffer_pool_qbuf:<nvv4l2decoder0:pool:src>[00m could not queue a buffer 4
+0:02:45.199392447 [35m   58[00m 0x7f0d440020f0 [33;01mWARN   [00m [00m       v4l2allocator gstv4l2allocator.c:840:gst_v4l2_allocator_stop:<nvv4l2decoder0:pool:src:allocator>[00m error releasing buffers buffers: Bad file descriptor
+2026-08-15 08:36:27 | INFO     | deepstream_ai.snapshot.rolling_manager | [PERSON_EVIDENCE_UPDATE] camera=camera-01 track=epoch-2:0 source=person_fallback quality=0.709
+2026-08-15 08:36:27 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_FALLBACK] camera=camera-01 track=epoch-2:0 face_conf=0.785 quality=0.743 frontal=0.940 blur=0.322 size=1.000 raw_face=205x266 person_display=977x720 face_display=551x587
+2026-08-15 08:36:27 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=epoch-2:0 source=face_fallback quality=0.743 frontal=0.940 blur=0.322 evidence=(593.553150177002, 373.9395751953125, 1551.7142295837402, 1080.0)
+2026-08-15 08:36:28 | INFO     | deepstream_ai.face.service | [FACE_IDENTITY] camera=camera-01 track=epoch-2:0 reason=high_quality candidate_known=True candidate_similarity=0.701 retained_known=True retained_similarity=0.701 samples=1 best_quality=0.743
+2026-08-15 08:36:28 | INFO     | deepstream_ai.snapshot.alarm_manager | [BEST_FACE_UPDATE] camera=camera-01 track=epoch-2:0 reason=quality_upgrade old_quality=0.743 new_quality=0.751 new_frontal=0.931 new_blur=0.347 new_size=1.000 new_detector=0.794 stable=0 raw_face=204x270 person_display=970x720 face_display=550x589
+2026-08-15 08:36:28 | INFO     | deepstream_ai.snapshot.alarm_manager | [FACE_EVIDENCE_UPDATE] camera=camera-01 track=epoch-2:0 source=best_face quality=0.751 frontal=0.931 blur=0.347 evidence=(594.745140838623, 370.5740661621094, 1550.6544715881348, 1080.0)
+2026-08-15 08:36:29 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:48.373678111 [35m   58[00m 0x7f0d34066120 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+2026-08-15 08:36:31 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:36:33 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=3.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:36:35 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=1.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:54.058144783 [35m   58[00m 0x7f0d34066120 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+2026-08-15 08:36:37 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=1.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:56.004318391 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+0:02:56.005503384 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6874:gst_rtspsrc_try_send:<src>[00m error: Could not send message. (Received end-of-file)
+0:02:56.006362735 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:9345:gst_rtspsrc_pause:<src>[00m error: Could not send message. (Received end-of-file)
+0:02:56.104372119 [35m   58[00m 0x7f1158336720 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6455:gst_rtspsrc_loop_send_cmd_and_wait:<src>[00m Timed out waiting for TEARDOWN to be processed.
+0:02:56.104918199 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6793:gst_rtsp_src_receive_response:<src>[00m receive interrupted
+0:02:56.105233973 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6891:gst_rtspsrc_try_send:<src>[00m receive interrupted
+0:02:56.105508233 [35m   58[00m 0x7f0d44001130 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:8660:gst_rtspsrc_close:<src>[00m TEARDOWN interrupted
+Resetting source -1, attempts: 1
+2026-08-15 08:36:38 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(6874): gst_rtspsrc_try_send (): /GstPipeline:deepstream-ai-production-worker/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+2026-08-15 08:36:38 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(9345): gst_rtspsrc_pause (): /GstPipeline:deepstream-ai-production-worker/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+2026-08-15 08:36:39 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=1.0% mem=1.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:36:41 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=7.0% mem=2.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:02:59.969417876 [35m   58[00m 0x7f0d480d3a90 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+2026-08-15 08:36:43 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:36:45 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+2026-08-15 08:36:47 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:03:05.230584208 [35m   58[00m 0x7f0d480d3a90 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+2026-08-15 08:36:49 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:03:07.013653961 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+0:03:07.014442346 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6874:gst_rtspsrc_try_send:<src>[00m error: Could not send message. (Received end-of-file)
+0:03:07.015009827 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:9345:gst_rtspsrc_pause:<src>[00m error: Could not send message. (Received end-of-file)
+0:03:07.113704837 [35m   58[00m 0x7f1158336720 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6455:gst_rtspsrc_loop_send_cmd_and_wait:<src>[00m Timed out waiting for TEARDOWN to be processed.
+0:03:07.114749434 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6793:gst_rtsp_src_receive_response:<src>[00m receive interrupted
+0:03:07.115414616 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:6891:gst_rtspsrc_try_send:<src>[00m receive interrupted
+0:03:07.116013001 [35m   58[00m 0x7f0d44000d80 [33;01mWARN   [00m [00m             rtspsrc gstrtspsrc.c:8660:gst_rtspsrc_close:<src>[00m TEARDOWN interrupted
+Resetting source -1, attempts: 1
+2026-08-15 08:36:49 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(6874): gst_rtspsrc_try_send (): /GstPipeline:deepstream-ai-production-worker/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+2026-08-15 08:36:49 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=src: gst-resource-error-quark: Could not write to resource. (10); debug=../gst/rtsp/gstrtspsrc.c(9345): gst_rtspsrc_pause (): /GstPipeline:deepstream-ai-production-worker/GstBin:source-bin-00/GstDsNvUriSrcBin:uri-source-00/GstRTSPSrc:src:
+Could not send message. (Received end-of-file)
+2026-08-15 08:36:51 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+0:03:09.462237045 [35m   58[00m 0x7f0d34066120 [33;01mWARN   [00m [00;04m             default gstrtspconnection.c:1553:writev_bytes:[00m Operation was cancelled
+2026-08-15 08:36:53 | INFO     | deepstream_ai.pipeline.adaptive | [ADAPTIVE_LOAD] profile=boost source_fps=30.00 gpu=0.0% mem=0.0% nvdec=0.0% queue=0.0% drops_delta=0
+gstnvtracker: Successfully removed stream from low level tracker with Id 0.
+gstnvtracker: Successfully removed stream 0.
+0:03:11.094573994 [35m   58[00m 0x7f0d440020f0 [33;01mWARN   [00m [00m         nvstreammux gstnvstreammux.cpp:4140:gst_nvstreammux_src_push_loop:<stream-muxer>[00m warning: No Sources found at the input of muxer. Waiting for sources.
+2026-08-15 08:36:53 | WARNING  | deepstream_ai.stream_epoch | [SOURCE_GENERATION] camera=camera-01 generation=3 reason=production_session_detach
+2026-08-15 08:36:53 | INFO     | deepstream_ai.production.pipeline | [SESSION_DETACH] camera=camera-01 slot=0 active=0
+2026-08-15 08:36:53 | WARNING  | deepstream_ai.pipeline.runner | GStreamer 警告 source=stream-muxer: gst-resource-error-quark: No Sources found at the input of muxer. Waiting for sources. (3); debug=gstnvstreammux.cpp(4140): gst_nvstreammux_src_push_loop (): /GstPipeline:deepstream-ai-production-worker/GstNvStreamMux:stream-muxer
+0:03:12.096885907 [35m   58[00m 0x7f0d440020f0 [33;01mWARN   [00m [00m         nvstreammux gstnvstreammux.cpp:4140:gst_nvstreammux_src_push_loop:<stream-muxer>[00m warning: No Sources found at the input of muxer. Waiting for sources.
+2026-08-15 08:36:54 | INFO     | deepstream_ai.pipeline.runner | 所有文件源处理完成 (EOS)
+2026-08-15 08:36:54 | INFO     | deepstream_ai.pipeline.metadata | 
+========== Probe Performance ==========
+Probe Callbacks:              13
+Probe Frames:                 12
+Probe Queue Drops:            0
+Probe Errors:                 0
+Average Probe Time (ms):      3.599
+P95 Probe Time (ms):          11.000
+Max Probe Time (ms):          10.253
+Tracker ReID Vectors:         2
+Tracker ReID Missing:         6
+=======================================
+2026-08-15 08:36:54 | INFO     | deepstream_ai.pipeline.runner | [TRACK_SHADOW_SUMMARY] frames=0 objects=0 hidden_by_age=0 errors=0
+2026-08-15 08:36:54 | INFO     | deepstream_ai.pipeline.runner | [PRETRACKER_GUARD_SUMMARY] frames=12 verified_people=3 suppressed=0 errors=0
+2026-08-15 08:36:54 | INFO     | deepstream_ai.pipeline.runner | DeepStream Pipeline 已停止

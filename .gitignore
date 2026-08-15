@@ -20,6 +20,7 @@ docker/cache/
 
 # User-supplied/copyrighted and machine-specific model artifacts.
 models/*
+output/production/control/*.sock
 !models/README.md
 !models/person.labels.txt
 !models/face.labels.txt
