@@ -1,4 +1,5 @@
 # Generated from the existing COCO YOLO11n detector for production eat/drink proxy evidence.
+# Business rule is aligned with opsvision: prop confidence >= 0.45 and prop center in person top 40%.
 [property]
 gpu-id=0
 net-scale-factor=0.00392156862745098
@@ -26,5 +27,5 @@ custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvdsinfer_custom_yolo_d
 
 [class-attrs-all]
 nms-iou-threshold=0.65
-pre-cluster-threshold=0.35
+pre-cluster-threshold=0.45
 topk=100
