@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import mimetypes
 import os
 import re
 import signal
@@ -183,6 +182,7 @@ class ProductionRequestHandler(RecognitionRequestHandler):
                 "GPU_WORKER_START_FAILED": HTTPStatus.SERVICE_UNAVAILABLE,
                 "GPU_WORKER_STOP_FAILED": HTTPStatus.CONFLICT,
                 "GPU_WORKER_UNAVAILABLE": HTTPStatus.SERVICE_UNAVAILABLE,
+                "SERVICE_STOPPING": HTTPStatus.SERVICE_UNAVAILABLE,
             }
             self._discard_small_request_body()
             self.close_connection = True
