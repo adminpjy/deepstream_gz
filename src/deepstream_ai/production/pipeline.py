@@ -150,11 +150,7 @@ class WarmDynamicPipelineBuilder(DeepStreamPipelineBuilder):
         capacity = len(self.config.enabled_sources)
         worker_root = self.config.resolve_path(self.config.output.path).parent
         fingerprint = self._primary_engine_fingerprint(config)
-        engine_path = (
-            worker_root
-            / ".engines"
-            / f"{name}-b{capacity}-{fingerprint}.engine"
-        )
+        engine_path = worker_root / ".engines" / f"{name}-b{capacity}-{fingerprint}.engine"
         engine_path.parent.mkdir(parents=True, exist_ok=True)
         runtime_path = worker_root / ".runtime" / "nvinfer" / f"{name}.txt"
         skip_interval = self.config.interval_for(target_fps)
@@ -361,6 +357,44 @@ class DynamicSourceController:
                     return slot
         raise RuntimeError("GPU worker session capacity reached")
 
+    def _refresh_graph_sources(self) -> None:
+        self.graph.source_bins = tuple(self._sources[index] for index in sorted(self._sources))
+
+    def _clear_slot_registration(self, slot: int, camera_id: str) -> None:
+        self.feature_registry.unregister(slot)
+        self.graph.metadata_probe.camera_by_pad.pop(slot, None)
+        shadow = self.shadow_registry_getter() if self.shadow_registry_getter else None
+        if shadow is not None:
+            shadow.camera_by_pad.pop(slot, None)
+        with self._lock:
+            self._sources.pop(slot, None)
+            self._sink_pads.pop(slot, None)
+            if self._camera_to_slot.get(camera_id) == slot:
+                self._camera_to_slot.pop(camera_id, None)
+            self._refresh_graph_sources()
+
+    def _purge_orphan_bin(self, slot: int) -> None:
+        """Remove a stale source bin left by an interrupted/failed previous attach."""
+
+        with self._lock:
+            if slot in self._sources:
+                return
+        pipeline = self.graph.pipeline
+        name = f"source-bin-{slot:02d}"
+        orphan = pipeline.get_by_name(name)
+        if orphan is None:
+            return
+        Gst = self.runtime.Gst
+        LOGGER.warning("[SESSION_ORPHAN_CLEANUP] slot=%d bin=%s", slot, name)
+        try:
+            orphan.set_state(Gst.State.NULL)
+            pipeline.remove(orphan)
+        except Exception as exc:
+            raise PipelineError(f"无法清理残留动态视频源 Bin: {name}: {exc}") from exc
+        if pipeline.get_by_name(name) is not None:
+            raise PipelineError(f"残留动态视频源 Bin 清理后仍存在: {name}")
+        LOGGER.info("[SESSION_ORPHAN_CLEANED] slot=%d bin=%s", slot, name)
+
     def add(self, source: SourceConfig, features: FeatureSet) -> int:
         if source.type != "rtsp":
             raise ValueError("production dynamic worker only accepts RTSP")
@@ -371,11 +405,16 @@ class DynamicSourceController:
         Gst = self.runtime.Gst
         pipeline = self.graph.pipeline
         streammux = self._streammux()
+        self._purge_orphan_bin(slot)
         source_bin = SourceBin(self.runtime, self.config, source, slot)
-        if not pipeline.add(source_bin.bin):
-            raise PipelineError(f"无法把视频源加入生产 Pipeline: {source.camera_id}")
         sink_pad = None
+        added = False
+        registered = False
         try:
+            # PyGObject's Gst.Bin.add override raises Gst.AddError on failure and
+            # returns None on success. Never treat the return value as a boolean.
+            pipeline.add(source_bin.bin)
+            added = True
             request_name = f"sink_{slot}"
             if hasattr(streammux, "request_pad_simple"):
                 sink_pad = streammux.request_pad_simple(request_name)
@@ -399,9 +438,8 @@ class DynamicSourceController:
                 self._sources[slot] = source_bin
                 self._sink_pads[slot] = sink_pad
                 self._camera_to_slot[source.camera_id] = slot
-                self.graph.source_bins = tuple(
-                    self._sources[index] for index in sorted(self._sources)
-                )
+                self._refresh_graph_sources()
+            registered = True
             bump_stream_generation(source.camera_id, reason="production_session_attach")
             if not source_bin.bin.sync_state_with_parent():
                 raise PipelineError(f"视频源 {source.camera_id} 无法同步到 PLAYING")
@@ -414,15 +452,32 @@ class DynamicSourceController:
             )
             return slot
         except Exception:
-            self.feature_registry.unregister(slot)
-            self.graph.metadata_probe.camera_by_pad.pop(slot, None)
+            if registered:
+                self._clear_slot_registration(slot, source.camera_id)
+            else:
+                self.feature_registry.unregister(slot)
+                self.graph.metadata_probe.camera_by_pad.pop(slot, None)
+                shadow = self.shadow_registry_getter() if self.shadow_registry_getter else None
+                if shadow is not None:
+                    shadow.camera_by_pad.pop(slot, None)
+            src_pad = source_bin.bin.get_static_pad("src")
+            if src_pad is not None and sink_pad is not None:
+                with suppress(Exception):
+                    src_pad.unlink(sink_pad)
             if sink_pad is not None:
                 with suppress(Exception):
                     streammux.release_request_pad(sink_pad)
             with suppress(Exception):
                 source_bin.bin.set_state(Gst.State.NULL)
-            with suppress(Exception):
-                pipeline.remove(source_bin.bin)
+            if added:
+                try:
+                    pipeline.remove(source_bin.bin)
+                except Exception:
+                    LOGGER.exception(
+                        "[SESSION_ATTACH_ROLLBACK_ORPHAN] camera=%s slot=%d",
+                        source.camera_id,
+                        slot,
+                    )
             raise
 
     def remove(self, camera_id: str) -> bool:
@@ -443,20 +498,16 @@ class DynamicSourceController:
         if sink_pad is not None:
             with suppress(Exception):
                 streammux.release_request_pad(sink_pad)
-        if not pipeline.remove(source_bin.bin):
-            LOGGER.warning("动态视频源已置 NULL 但从 Pipeline 移除失败 camera=%s", camera_id)
-        self.feature_registry.unregister(slot)
-        self.graph.metadata_probe.camera_by_pad.pop(slot, None)
-        shadow = self.shadow_registry_getter() if self.shadow_registry_getter else None
-        if shadow is not None:
-            shadow.camera_by_pad.pop(slot, None)
-        with self._lock:
-            self._sources.pop(slot, None)
-            self._sink_pads.pop(slot, None)
-            self._camera_to_slot.pop(camera_id, None)
-            self.graph.source_bins = tuple(
-                self._sources[index] for index in sorted(self._sources)
-            )
+        try:
+            # Gst.Bin.remove follows the same PyGObject override contract as add:
+            # failure is an exception; success does not provide a truthy boolean.
+            pipeline.remove(source_bin.bin)
+        except Exception as exc:
+            LOGGER.exception("动态视频源从 Pipeline 移除失败 camera=%s slot=%d", camera_id, slot)
+            raise PipelineError(
+                f"动态视频源从 Pipeline 移除失败 camera={camera_id} slot={slot}: {exc}"
+            ) from exc
+        self._clear_slot_registration(slot, camera_id)
         bump_stream_generation(camera_id, reason="production_session_detach")
         LOGGER.info(
             "[SESSION_DETACH] camera=%s slot=%d active=%d",
