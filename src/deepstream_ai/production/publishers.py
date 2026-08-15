@@ -114,6 +114,8 @@ class HttpResultPublisher:
 
     @staticmethod
     def to_external_payload(event: RecognitionEvent) -> dict[str, object]:
+        """Formal-system field mapping is intentionally isolated in this adapter."""
+
         return event.as_dict()
 
     def close(self) -> None:
@@ -121,6 +123,8 @@ class HttpResultPublisher:
 
 
 class CompositeResultPublisher:
+    """Publish to every destination while preserving each destination's failure."""
+
     def __init__(self, *publishers: ResultPublisher) -> None:
         self.publishers = tuple(publishers)
 
@@ -136,8 +140,12 @@ class CompositeResultPublisher:
                     type(publisher).__name__,
                     event.event_id,
                 )
-        if errors and len(errors) == len(self.publishers):
-            raise RuntimeError("all result publishers failed") from errors[0]
+        # The queued boundary catches this and writes one dead-letter record.
+        # Raising here is deliberate even when the local journal succeeded: it
+        # lets operations distinguish "event persisted" from "formal endpoint
+        # delivered" without ever propagating transport failure to recognition.
+        if errors:
+            raise RuntimeError("one or more result publishers failed") from errors[0]
 
     def close(self) -> None:
         for publisher in reversed(self.publishers):
@@ -148,7 +156,13 @@ class CompositeResultPublisher:
 
 
 class QueuedResultPublisher:
-    """Keep HTTP/file I/O away from DeepStream and scenario threads."""
+    """Keep all result I/O and backpressure away from recognition threads.
+
+    Recognition correctness has higher priority than downstream transport.  A
+    saturated or unavailable formal endpoint therefore degrades to local
+    dead-letter persistence; publish() never raises transport/backpressure
+    errors into DeepStream, AdaFace, alarm lifecycle or scenario processors.
+    """
 
     def __init__(
         self,
@@ -170,17 +184,42 @@ class QueuedResultPublisher:
             daemon=True,
         )
         self._closed = threading.Event()
+        self._stats_lock = threading.RLock()
+        self._queued = 0
+        self._delivered = 0
+        self._dead_lettered = 0
+        self._queue_full = 0
         self._thread.start()
 
     def publish(self, event: RecognitionEvent) -> None:
         if self._closed.is_set():
-            raise RuntimeError("result publisher is closed")
+            LOGGER.warning("结果 Publisher 已关闭，丢弃迟到事件 event=%s", event.event_id)
+            return
         try:
             self._queue.put_nowait(event)
-        except queue.Full as exc:
-            if self._dead_letter is not None:
-                self._dead_letter.publish(event)
-            raise RuntimeError("result publisher queue is full") from exc
+            with self._stats_lock:
+                self._queued += 1
+        except queue.Full:
+            with self._stats_lock:
+                self._queue_full += 1
+            LOGGER.error(
+                "结果队列已满，事件转入死信但不影响识别 event=%s",
+                event.event_id,
+            )
+            self._write_dead_letter(event)
+
+    def _write_dead_letter(self, event: RecognitionEvent) -> None:
+        if self._dead_letter is None:
+            LOGGER.error("结果事件无法投递且未配置死信文件 event=%s", event.event_id)
+            return
+        try:
+            self._dead_letter.publish(event)
+            with self._stats_lock:
+                self._dead_lettered += 1
+        except Exception:
+            # Even disk failure must not escape into recognition. It is logged
+            # loudly so the host's log/health monitoring can alert operations.
+            LOGGER.exception("写入结果死信失败 event=%s", event.event_id)
 
     def _run(self) -> None:
         while True:
@@ -191,10 +230,35 @@ class QueuedResultPublisher:
                 assert isinstance(item, RecognitionEvent)
                 try:
                     self.delegate.publish(item)
+                    with self._stats_lock:
+                        self._delivered += 1
                 except Exception:
                     LOGGER.exception("结果推送最终失败 event=%s", item.event_id)
-                    if self._dead_letter is not None:
-                        self._dead_letter.publish(item)
+                    self._write_dead_letter(item)
+            finally:
+                self._queue.task_done()
+
+    def stats(self) -> dict[str, int]:
+        with self._stats_lock:
+            return {
+                "queued": self._queued,
+                "delivered": self._delivered,
+                "dead_lettered": self._dead_lettered,
+                "queue_full": self._queue_full,
+                "pending": self._queue.qsize(),
+            }
+
+    def _spill_pending_to_dead_letter(self) -> None:
+        """Bound shutdown time even when an external endpoint is unavailable."""
+
+        while True:
+            try:
+                item = self._queue.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                if isinstance(item, RecognitionEvent):
+                    self._write_dead_letter(item)
             finally:
                 self._queue.task_done()
 
@@ -202,10 +266,18 @@ class QueuedResultPublisher:
         if self._closed.is_set():
             return
         self._closed.set()
-        self._queue.put(_STOP)
+        # Do not wait for a potentially long HTTP retry backlog during service
+        # shutdown. Persist queued items locally, then stop the delivery thread.
+        self._spill_pending_to_dead_letter()
+        try:
+            self._queue.put_nowait(_STOP)
+        except queue.Full:
+            # A delivery may have raced with the spill; free one slot safely.
+            self._spill_pending_to_dead_letter()
+            self._queue.put_nowait(_STOP)
         self._thread.join(10.0)
         if self._thread.is_alive():
-            raise TimeoutError("result publisher did not stop")
+            LOGGER.error("结果 Publisher 未在 10 秒内退出；守护线程将在进程退出时结束")
         self.delegate.close()
         if self._dead_letter is not None:
             self._dead_letter.close()
