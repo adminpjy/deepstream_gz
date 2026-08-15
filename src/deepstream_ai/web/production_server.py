@@ -7,6 +7,7 @@ import os
 import re
 import signal
 import threading
+import time
 from contextlib import suppress
 from dataclasses import replace
 from http import HTTPStatus
@@ -33,6 +34,7 @@ LOGGER = logging.getLogger(__name__)
 _SESSION_PATH = re.compile(r"^/api/v1/recognition/sessions/([a-f0-9]{16})(?:/(.*))?$")
 _CAMERA_BASELINE_PATH = re.compile(r"^/api/v1/recognition/cameras/([^/]+)/baseline$")
 _CAMERA_STOP_PATH = re.compile(r"^/api/v1/recognition/cameras/([^/]+)/stop$")
+_PRODUCTION_TERMINAL_STATES = {"completed", "stopped", "failed"}
 
 
 class ProductionHTTPServer(LegacyRecognitionHTTPServer):
@@ -93,6 +95,9 @@ class ProductionRequestHandler(RecognitionRequestHandler):
             if suffix is None:
                 self._send_json(self.server.production_service.session(session_id))
                 return
+            if suffix == "stream.mjpg":
+                self._stream_production_mjpeg(session_id)
+                return
             if suffix == "preview.jpg":
                 self._serve_file(
                     self.server.production_service.preview_path(session_id),
@@ -112,6 +117,59 @@ class ProductionRequestHandler(RecognitionRequestHandler):
             self._serve_static("production.js")
             return
         super()._do_get()
+
+    def _stream_production_mjpeg(self, session_id: str) -> None:
+        """Stream the per-session preview JPEG without opening another RTSP source."""
+
+        # Resolve once before sending HTTP headers so an unknown session can
+        # still return a normal JSON/404 response rather than a half-open MJPEG stream.
+        self.server.production_service.session(session_id)
+        preview = self.server.production_service.preview_path(session_id)
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "multipart/x-mixed-replace; boundary=frame")
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Connection", "close")
+        self.end_headers()
+        last_mtime = -1
+        terminal_since: float | None = None
+        next_state_check = 0.0
+        terminal = False
+        try:
+            while True:
+                try:
+                    stat = preview.stat()
+                    if stat.st_mtime_ns != last_mtime:
+                        payload = preview.read_bytes()
+                        if payload:
+                            last_mtime = stat.st_mtime_ns
+                            self.wfile.write(b"--frame\r\n")
+                            self.wfile.write(b"Content-Type: image/jpeg\r\n")
+                            self.wfile.write(
+                                f"Content-Length: {len(payload)}\r\n\r\n".encode("ascii")
+                            )
+                            self.wfile.write(payload)
+                            self.wfile.write(b"\r\n")
+                            self.wfile.flush()
+                except FileNotFoundError:
+                    pass
+
+                now = time.monotonic()
+                if now >= next_state_check:
+                    next_state_check = now + 1.0
+                    try:
+                        snapshot = self.server.production_service.session(session_id)
+                        terminal = str(snapshot.get("state", "")) in _PRODUCTION_TERMINAL_STATES
+                    except KeyError:
+                        terminal = True
+                if terminal:
+                    terminal_since = terminal_since or now
+                    if now - terminal_since >= 1.0:
+                        return
+                else:
+                    terminal_since = None
+                threading.Event().wait(0.1)
+        except (BrokenPipeError, ConnectionResetError, TimeoutError, OSError):
+            return
 
     def _validate_optional_model_availability(self, request: SessionRequest) -> None:
         optional = self.server.production_service.capabilities.get("optional", {})
