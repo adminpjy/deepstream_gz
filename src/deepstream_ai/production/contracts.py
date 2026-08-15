@@ -1,6 +1,6 @@
 """Production recognition-session contracts.
 
-This module intentionally contains no DeepStream/GStreamer/CUDA types.  The
+This module intentionally contains no DeepStream/GStreamer/CUDA types. The
 REST API, GPU supervisor, scenario processors and result publishers share
 these immutable contracts so transport/runtime changes cannot leak into the
 already tuned person/face recognition core.
@@ -9,10 +9,11 @@ already tuned person/face recognition core.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Mapping
+from typing import Any
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -43,7 +44,7 @@ class FeatureSet:
     large_object_moving: bool = False
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any] | None) -> "FeatureSet":
+    def from_mapping(cls, value: Mapping[str, Any] | None) -> FeatureSet:
         data = dict(value or {})
         return cls(
             smoking=bool(data.get("smoking", False)),
@@ -80,7 +81,7 @@ class ExitPolicy:
     person_absent_seconds: float = 30.0
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any] | None) -> "ExitPolicy":
+    def from_mapping(cls, value: Mapping[str, Any] | None) -> ExitPolicy:
         data = dict(value or {})
         seconds = float(
             data.get("personAbsentSeconds", data.get("person_absent_seconds", 30.0))
@@ -102,7 +103,7 @@ class LeftObjectPolicy:
     max_recent_frames: int = 8
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any] | None) -> "LeftObjectPolicy":
+    def from_mapping(cls, value: Mapping[str, Any] | None) -> LeftObjectPolicy:
         data = dict(value or {})
         result = cls(
             pixel_threshold=int(
@@ -161,7 +162,7 @@ class SessionRequest:
     context: Mapping[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_mapping(cls, value: Mapping[str, Any]) -> "SessionRequest":
+    def from_mapping(cls, value: Mapping[str, Any]) -> SessionRequest:
         data = dict(value)
         camera_id = str(data.get("cameraId", data.get("camera_id", ""))).strip()
         if not _CAMERA_ID.fullmatch(camera_id):
@@ -237,7 +238,7 @@ class RecognitionEvent:
         snapshot: str | None = None,
         video_clip: str | None = None,
         extra: Mapping[str, Any] | None = None,
-    ) -> "RecognitionEvent":
+    ) -> RecognitionEvent:
         if confidence is not None and not 0 <= float(confidence) <= 1:
             raise ValueError("confidence must be between 0 and 1")
         return cls(
