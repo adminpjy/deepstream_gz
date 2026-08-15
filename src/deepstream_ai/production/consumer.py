@@ -24,10 +24,29 @@ class VisibleSessionSink:
     def __init__(self, preview: PreviewWriter, scenarios: ScenarioManager) -> None:
         self.preview = preview
         self.scenarios = scenarios
+        self._person_count = 0
+        self._last_timestamp: str | None = None
+        self._last_person_seen_at: str | None = None
+        self._lock = threading.RLock()
 
     def submit(self, packet: FramePacket) -> None:
+        count = len(packet.tracks)
+        timestamp = packet.timestamp.isoformat()
+        with self._lock:
+            self._person_count = count
+            self._last_timestamp = timestamp
+            if count:
+                self._last_person_seen_at = timestamp
         self.preview.submit(packet)
         self.scenarios.process(packet)
+
+    def snapshot(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "personCount": self._person_count,
+                "lastFrameAt": self._last_timestamp,
+                "lastPersonSeenAt": self._last_person_seen_at,
+            }
 
 
 @dataclass(slots=True)
@@ -38,6 +57,7 @@ class SessionConsumer:
     activity: PersonActivityTracker
     preview: PreviewWriter
     scenarios: ScenarioManager
+    visible: VisibleSessionSink
     wrapper: ActivityAwareConsumer
     stop_event: threading.Event
     idle_thread: threading.Thread
@@ -49,7 +69,6 @@ class SessionConsumer:
             "cameraId": self.request.camera_id,
             "features": self.request.features.as_dict(),
             "exitPolicy": self.request.exit_policy.as_dict(),
-            "personCountHint": 0 if activity.idle_seconds > 0 else None,
             "frames": activity.frames,
             "personFrames": activity.person_frames,
             "personDetections": activity.person_detections,
@@ -57,6 +76,7 @@ class SessionConsumer:
             "idleSeconds": activity.idle_seconds,
             "idleTriggered": activity.idle_triggered,
             "previewPath": str(self.output_dir / "preview.jpg"),
+            **self.visible.snapshot(),
         }
 
 
@@ -133,6 +153,7 @@ class MultiSessionConsumer:
             activity=activity,
             preview=preview,
             scenarios=scenarios,
+            visible=visible,
             wrapper=wrapper,
             stop_event=stop_event,
             idle_thread=idle_thread,
