@@ -147,6 +147,18 @@ async function handleTaskSubmit(event) {
   }
 }
 
+function buildStableBehaviorFeatures() {
+  const selected = (id) => {
+    const input = document.getElementById(id);
+    return Boolean(input && input.checked && !input.disabled);
+  };
+  return {
+    smoking: selected("prodSmoking"),
+    eating: selected("prodEating"),
+    drinking: selected("prodDrinking"),
+  };
+}
+
 async function buildTaskPayload() {
   const cameraId = elements.cameraId.value.trim();
   const idleTimeout = parseBoundedNumber(elements.idleTimeout.value, "空闲超时", 1, 86400);
@@ -169,6 +181,7 @@ async function buildTaskPayload() {
     camera_id: cameraId,
     nominal_fps: parseBoundedNumber(elements.nominalFps.value, "标称帧率", 0.1, 240),
     idle_timeout_sec: idleTimeout,
+    features: buildStableBehaviorFeatures(),
   };
 }
 
