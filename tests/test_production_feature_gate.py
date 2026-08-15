@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+import deepstream_ai.production.pipeline as production_pipeline
 from deepstream_ai.config import SourceConfig
 from deepstream_ai.production.contracts import FeatureSet
 from deepstream_ai.production.feature_gate import FeatureRegistry
 from deepstream_ai.production.pipeline import DynamicSourceController
-import deepstream_ai.production.pipeline as production_pipeline
 
 
 def test_feature_registry_is_per_source_and_independent() -> None:
