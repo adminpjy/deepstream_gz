@@ -16,6 +16,7 @@
     pollTimer: null,
     previewNodes: new Map(),
     legacyPreviewObserver: null,
+    sourceModeObserver: null,
   };
 
   document.addEventListener("DOMContentLoaded", initializeProductionUi);
@@ -29,7 +30,7 @@
     installStyles();
     injectFeatureControls(form);
     installLiveWallBridge();
-    form.addEventListener("submit", handleProductionSubmit, true);
+    installSourceModeBridge(rtspPanel);
     void refreshCapabilities();
     void refreshProductionSessions();
     state.pollTimer = window.setInterval(() => {
@@ -38,6 +39,7 @@
     window.addEventListener("pagehide", () => {
       if (state.pollTimer !== null) window.clearInterval(state.pollTimer);
       if (state.legacyPreviewObserver) state.legacyPreviewObserver.disconnect();
+      if (state.sourceModeObserver) state.sourceModeObserver.disconnect();
       for (const entry of state.previewNodes.values()) disconnectProductionPreview(entry);
     });
   }
@@ -54,6 +56,7 @@
       .production-baseline{display:grid;gap:7px;margin-top:10px;padding-top:12px;border-top:1px solid rgba(116,229,255,.12)}
       .production-baseline input[type=file]{width:100%;font-size:12px}
       .production-hint{margin:0;color:var(--muted,#8aa4ad);font-size:12px;line-height:1.5}
+      .production-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid rgba(116,229,255,.12)}
       .production-live-meta{display:flex;flex-wrap:wrap;gap:6px;padding:8px 2px 2px;color:var(--muted,#9db2ba);font-size:11px}
       .production-live-meta span{border:1px solid rgba(116,229,255,.15);border-radius:999px;padding:3px 7px}
       #productionPreviewGridBody:empty{display:none}
@@ -69,8 +72,8 @@
     panel.id = "productionFeaturePanel";
     panel.className = "production-feature-panel";
     panel.innerHTML = `
-      <h3>生产识别能力（RTSP）</h3>
-      <p class="production-hint">基础识别固定启用，不能关闭；场景识别按本次启动参数独立启用。</p>
+      <h3>生产识别能力（RTSP 独立测试）</h3>
+      <p class="production-hint"><strong>“开始分析”继续使用 main 已验证的单路 RTSP 实时识别链路。</strong> 下方场景开关只作用于“启动生产 Session 测试”，避免生产多路开发影响稳定实时预览。</p>
       <div class="production-core-grid" aria-label="固定基础识别">
         ${fixedCheck("人形检测", "prodCorePerson")}
         ${fixedCheck("人员跟踪", "prodCoreTrack")}
@@ -96,15 +99,33 @@
           <label class="field"><span>最小变化比例</span><input id="prodMinAreaRatio" type="number" min="0.0001" max="0.5" step="0.0001" value="0.0015" /></label>
         </div>
       </div>
+      <div class="production-actions">
+        <button type="button" class="button button-secondary" id="startProductionSessionButton">启动生产 Session 测试</button>
+        <span class="production-hint">仅此按钮使用 /api/v1/recognition/sessions/start。</span>
+      </div>
     `;
     submitButton.parentNode.insertBefore(panel, submitButton);
     document.getElementById("prodLeftObject").addEventListener("change", (event) => {
       document.getElementById("prodBaselineArea").hidden = !event.target.checked;
     });
+    document.getElementById("startProductionSessionButton").addEventListener("click", () => {
+      void handleProductionStart();
+    });
     const idle = document.getElementById("idleTimeout");
     const label = idle && idle.closest("label");
     const labelText = label && label.querySelector(":scope > span:first-child");
     if (labelText) labelText.textContent = "人员消失自动退出";
+  }
+
+  function installSourceModeBridge(rtspPanel) {
+    const panel = document.getElementById("productionFeaturePanel");
+    if (!panel) return;
+    const sync = () => {
+      panel.hidden = Boolean(rtspPanel.hidden);
+    };
+    sync();
+    state.sourceModeObserver = new MutationObserver(sync);
+    state.sourceModeObserver.observe(rtspPanel, {attributes: true, attributeFilter: ["hidden"]});
   }
 
   function fixedCheck(label, id) {
@@ -152,19 +173,18 @@
     }
   }
 
-  async function handleProductionSubmit(event) {
+  async function handleProductionStart() {
     const rtspPanel = document.getElementById("rtspSourcePanel");
-    if (!rtspPanel || rtspPanel.hidden) return; // local-file tests remain on legacy API
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    if (!rtspPanel || rtspPanel.hidden) return;
     if (state.submitting) return;
     state.submitting = true;
-    const button = document.getElementById("startTaskButton");
-    const buttonText = document.getElementById("startTaskButtonText");
+    const button = document.getElementById("startProductionSessionButton");
     const status = document.getElementById("submissionStatus");
-    if (button) button.disabled = true;
-    if (buttonText) buttonText.textContent = "正在启动生产识别…";
-    if (status) status.textContent = "正在分配 GPU 并动态接入视频流…";
+    if (button) {
+      button.disabled = true;
+      button.textContent = "正在启动生产 Session…";
+    }
+    if (status) status.textContent = "正在分配 GPU 并启动生产 Session…";
     try {
       const payload = buildProductionPayload();
       if (payload.features.leftObject) {
@@ -177,8 +197,8 @@
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify(payload),
       });
-      if (status) status.textContent = `已启动：GPU ${created.gpuId} · Session ${created.sessionId}`;
-      showProductionToast(`生产识别已启动 · GPU ${created.gpuId}`);
+      if (status) status.textContent = `生产 Session 已启动：GPU ${created.gpuId} · ${created.sessionId}`;
+      showProductionToast(`生产 Session 已启动 · GPU ${created.gpuId}`);
       incrementCameraId();
       await refreshProductionSessions(true);
     } catch (error) {
@@ -187,8 +207,10 @@
       showProductionError(message);
     } finally {
       state.submitting = false;
-      if (button) button.disabled = false;
-      if (buttonText) buttonText.textContent = "开始分析";
+      if (button) {
+        button.disabled = false;
+        button.textContent = "启动生产 Session 测试";
+      }
     }
   }
 
