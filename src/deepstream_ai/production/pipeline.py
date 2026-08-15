@@ -182,6 +182,18 @@ class WarmDynamicPipelineBuilder(DeepStreamPipelineBuilder):
         streammux = make_element(Gst, "nvstreammux", "stream-muxer")
         capacity = len(self.config.enabled_sources)
         self._configure_streammux(streammux, capacity)
+        # Production workers intentionally enter PLAYING with zero real sources
+        # and later add/remove RTSP sink pads at runtime. Keep EOS from an empty
+        # mux (or from removing the last source) inside the mux so downstream
+        # inference remains reusable for the next dynamically attached source.
+        # This is production-only; the validated legacy pipeline is unchanged.
+        set_if_supported(streammux, "drop-pipeline-eos", True)
+        LOGGER.info(
+            "[PRODUCTION_STREAMMUX] capacity=%d live_source=true "
+            "drop_pipeline_eos=true batch_timeout_us=%d",
+            capacity,
+            self.config.pipeline.streammux.batch_timeout_us,
+        )
         add_many(pipeline, [streammux])
 
         pgie = self._infer_element(
