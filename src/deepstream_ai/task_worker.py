@@ -23,6 +23,11 @@ from deepstream_ai.pipeline.runtime import load_runtime, runtime_versions
 from deepstream_ai.preflight import validate_assets
 from deepstream_ai.preview import PreviewWriter
 from deepstream_ai.provisional_analytics import ProvisionalAwareAnalyticsDispatcher
+from deepstream_ai.task_behavior import (
+    TaskBehaviorFilter,
+    behavior_model_enabled,
+    normalize_task_behavior_features,
+)
 
 LOGGER = logging.getLogger(__name__)
 _TASK_ID = re.compile(r"^[a-f0-9]{12,32}$")
@@ -58,6 +63,18 @@ class TaskStatusWriter:
             return dict(self._document)
 
 
+def _behavior_features_from_spec(spec: dict[str, Any]) -> dict[str, bool] | None:
+    source_raw = spec.get("source")
+    if not isinstance(source_raw, dict):
+        return None
+    raw = source_raw.get("behavior_features")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict):
+        raise ValueError("task source.behavior_features must be an object")
+    return normalize_task_behavior_features(raw)
+
+
 def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
     task_id = str(spec.get("task_id", ""))
     if not _TASK_ID.fullmatch(task_id):
@@ -69,6 +86,17 @@ def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
     output_dir = Path(str(spec["output_dir"])).resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     snapshot = replace(base.output.snapshot, root=str(output_dir / "snapshot"))
+
+    behavior_features = _behavior_features_from_spec(spec)
+    behavior = base.behavior
+    if behavior_features is not None:
+        behavior = tuple(
+            replace(
+                model,
+                enabled=behavior_model_enabled(model.name, behavior_features),
+            )
+            for model in base.behavior
+        )
 
     # Test tasks keep an encoded, OSD-annotated replay artifact beside their
     # logs/snapshots. RTSP is already wall-clock paced by the live source, while
@@ -88,7 +116,7 @@ def build_task_config(base: AppConfig, spec: dict[str, Any]) -> AppConfig:
         base.runtime,
         health_file=str(output_dir / "pipeline.ready"),
     )
-    return replace(base, sources=(source,), output=output, runtime=runtime)
+    return replace(base, sources=(source,), behavior=behavior, output=output, runtime=runtime)
 
 
 def _log_contract(config: AppConfig) -> None:
@@ -100,6 +128,10 @@ def _log_contract(config: AppConfig) -> None:
     LOGGER.info(
         "[PEOPLENET_CLASSES] %s",
         ", ".join(f"{name}={class_id}" for name, class_id in config.pipeline.person.people_classes),
+    )
+    LOGGER.info(
+        "[TASK_BEHAVIOR_MODELS] %s",
+        ",".join(model.name for model in config.behavior if model.enabled) or "none",
     )
     LOGGER.info(
         "[TASK_RECORDING] enabled=%s path=%s sync=%s",
@@ -122,6 +154,7 @@ def run_task(spec_path: Path) -> int:
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     task_id = str(spec.get("task_id", ""))
     output_dir = Path(str(spec["output_dir"])).resolve()
+    behavior_features = _behavior_features_from_spec(spec)
     status = TaskStatusWriter(
         output_dir / "status.json",
         {
@@ -134,6 +167,7 @@ def run_task(spec_path: Path) -> int:
             "error": None,
             "source_type": spec.get("source", {}).get("type"),
             "camera_id": spec.get("source", {}).get("camera_id"),
+            "behavior_features": behavior_features,
             "record_video": bool(spec.get("record_video", True)),
             "result_file": "result.mp4",
         },
@@ -161,6 +195,7 @@ def run_task(spec_path: Path) -> int:
                 report.engine_path,
                 [str(path) for path in report.source_models],
             )
+        LOGGER.info("[TASK_BEHAVIOR_FEATURES] %s", behavior_features or {})
         _log_contract(config)
         runtime = load_runtime()
         LOGGER.info("DeepStream Python runtime 已加载: %s", runtime_versions(runtime))
@@ -176,7 +211,12 @@ def run_task(spec_path: Path) -> int:
             max_width=preview_width,
         )
         preview.start()
-        consumer = ActivityAwareConsumer(dispatcher, activity, preview)
+        activity_consumer = ActivityAwareConsumer(dispatcher, activity, preview)
+        consumer = (
+            TaskBehaviorFilter(activity_consumer, behavior_features)
+            if behavior_features is not None
+            else activity_consumer
+        )
         graph = DeepStreamPipelineBuilder(runtime, config, consumer).build()
 
         def on_started() -> None:
