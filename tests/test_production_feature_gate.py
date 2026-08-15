@@ -6,6 +6,7 @@ import deepstream_ai.production.pipeline as production_pipeline
 from deepstream_ai.config import SourceConfig
 from deepstream_ai.production.contracts import FeatureSet
 from deepstream_ai.production.feature_gate import FeatureRegistry
+from deepstream_ai.production.multiuri_pipeline import MultiUriSourceController
 from deepstream_ai.production.pipeline import DynamicSourceController
 
 
@@ -175,3 +176,64 @@ def test_dynamic_source_accepts_none_return_and_recovers_orphan(monkeypatch) -> 
     assert controller.add(_source("camera-b"), FeatureSet(phone=True)) == 0
     assert controller.slot_for_camera("camera-b") == 0
     assert registry.enabled(0, "phone") is True
+
+
+def test_multiuri_source_uses_official_rest_lifecycle_and_metrics_mapping(monkeypatch) -> None:
+    graph = SimpleNamespace(
+        metadata_probe=SimpleNamespace(camera_by_pad={}),
+    )
+    registry = FeatureRegistry()
+    controller = MultiUriSourceController(
+        SimpleNamespace(),
+        SimpleNamespace(),
+        graph,
+        registry,
+        capacity=4,
+    )
+    calls: list[tuple[str, str, dict | None]] = []
+
+    def request_json(method, path, payload=None, **_kwargs):
+        calls.append((method, path, payload))
+        if method == "GET" and path == "/metrics":
+            return {
+                "status": "HTTP/1.1 200 OK",
+                "reason": "GET_METRICS_INFO_SUCCESS",
+                "metrics-info": {
+                    "stream-count": 1,
+                    "stream-stats": [
+                        {
+                            "sensor_id": "camera-prod",
+                            "source_id": 3,
+                            "fps": 30.0,
+                            "frame_number": 2,
+                        }
+                    ],
+                },
+            }
+        return {"status": "HTTP/1.1 200 OK", "reason": "STREAM_ADD_SUCCESS"}
+
+    monkeypatch.setattr(controller, "_request_json", request_json)
+
+    source = _source("camera-prod")
+    assert controller.add(source, FeatureSet(smoking=True, phone=True)) == 3
+    assert controller.active_count() == 1
+    assert controller.slot_for_camera("camera-prod") == 3
+    assert graph.metadata_probe.camera_by_pad == {3: "camera-prod"}
+    assert registry.enabled(3, "smoking") is True
+    assert registry.enabled(3, "phone") is True
+
+    add_call = calls[0]
+    assert add_call[0:2] == ("POST", "/stream/add")
+    assert add_call[2]["value"]["camera_id"] == "camera-prod"
+    assert add_call[2]["value"]["camera_url"] == source.url
+    assert add_call[2]["value"]["change"] == "camera_add"
+
+    assert controller.remove("camera-prod") is True
+    assert controller.active_count() == 0
+    assert graph.metadata_probe.camera_by_pad == {}
+    assert registry.binding(3) is None
+
+    remove_call = calls[-1]
+    assert remove_call[0:2] == ("POST", "/stream/remove")
+    assert remove_call[2]["value"]["camera_id"] == "camera-prod"
+    assert remove_call[2]["value"]["change"] == "camera_remove"
