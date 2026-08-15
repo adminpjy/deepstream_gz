@@ -17,4 +17,4 @@ if [[ ! -s "${HEALTH_FILE}" ]]; then
   exit 1
 fi
 
-python3 -c 'import json, urllib.request; response = urllib.request.urlopen("http://127.0.0.1:8080/health/ready", timeout=3); document = json.load(response); assert document.get("status") == "ready"'
+python3 -c 'import json, urllib.request; response = urllib.request.urlopen("http://127.0.0.1:8080/health/ready", timeout=3); document = json.load(response); assert document.get("status") in {"ready", "degraded"}; assert (document.get("legacy") or {}).get("status") == "ready"'
