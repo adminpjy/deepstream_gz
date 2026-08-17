@@ -76,6 +76,7 @@ jobs:
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+          tests/test_production_session_reconcile.py
           tests/test_task_behavior.py
       - name: JavaScript syntax
         run: >-
@@ -91,4 +92,5 @@ jobs:
           tests/test_production_feature_gate.py
           tests/test_production_left_object.py
           tests/test_production_publishers.py
+          tests/test_production_session_reconcile.py
           tests/test_task_behavior.py
