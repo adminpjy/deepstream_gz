@@ -10,6 +10,7 @@ from deepstream_ai.domain import BehaviorDetection, BehaviorType, BoundingBox, F
 from deepstream_ai.pipeline.metadata import FramePacket
 from deepstream_ai.production.contracts import RecognitionEvent
 from deepstream_ai.production.session_reconcile import SessionFinalReconciler
+from deepstream_ai.provisional_track_guard import BUSINESS_PROVISIONAL_KEY
 
 
 def _frame(
@@ -98,7 +99,10 @@ def test_person_is_pushed_once_and_better_evidence_replaces_files(tmp_path):
     assert (event_dir / "detail.jpg").is_file()
     assert person[0]["revision"] >= 1
     pushes = (root / "push-events.jsonl").read_text(encoding="utf-8").splitlines()
-    assert sum('"eventType":"PERSON_APPEARED"' in line and '"action":"CREATE"' in line for line in pushes) == 1
+    assert sum(
+        '"eventType":"PERSON_APPEARED"' in line and '"action":"CREATE"' in line
+        for line in pushes
+    ) == 1
 
 
 def test_face_and_employee_are_added_without_repeating_person(tmp_path):
@@ -119,12 +123,15 @@ def test_face_and_employee_are_added_without_repeating_person(tmp_path):
     reconciler.finalize()
 
     documents = _event_documents(tmp_path / "mock" / "session-employee")
-    counts = {name: sum(item["eventType"] == name for item in documents) for name in {
-        "PERSON_APPEARED",
-        "FACE_APPEARED",
-        "EMPLOYEE_WORKING",
-        "STRANGER",
-    }}
+    counts = {
+        name: sum(item["eventType"] == name for item in documents)
+        for name in {
+            "PERSON_APPEARED",
+            "FACE_APPEARED",
+            "EMPLOYEE_WORKING",
+            "STRANGER",
+        }
+    }
     assert counts == {
         "PERSON_APPEARED": 1,
         "FACE_APPEARED": 1,
@@ -155,7 +162,10 @@ def test_stranger_is_one_alarm_for_one_track(tmp_path):
     documents = _event_documents(root)
     assert sum(item["eventType"] == "STRANGER" for item in documents) == 1
     pushes = (root / "push-events.jsonl").read_text(encoding="utf-8").splitlines()
-    assert sum('"eventType":"STRANGER"' in line and '"action":"CREATE"' in line for line in pushes) == 1
+    assert sum(
+        '"eventType":"STRANGER"' in line and '"action":"CREATE"' in line
+        for line in pushes
+    ) == 1
 
 
 def test_behavior_is_deduplicated_for_the_track(tmp_path):
@@ -187,7 +197,10 @@ def test_behavior_is_deduplicated_for_the_track(tmp_path):
     documents = _event_documents(root)
     assert sum(item["eventType"] == "SMOKING" for item in documents) == 1
     pushes = (root / "push-events.jsonl").read_text(encoding="utf-8").splitlines()
-    assert sum('"eventType":"SMOKING"' in line and '"action":"CREATE"' in line for line in pushes) == 1
+    assert sum(
+        '"eventType":"SMOKING"' in line and '"action":"CREATE"' in line
+        for line in pushes
+    ) == 1
 
 
 def test_no_person_session_keeps_bounded_recovery_candidates(tmp_path):
@@ -207,7 +220,41 @@ def test_no_person_session_keeps_bounded_recovery_candidates(tmp_path):
     assert result["noPersonDetected"] is True
     assert result["preRollRequiredForMissedPersonRecovery"] is True
     assert len(result["recoveryCandidateImages"]) == 3
-    assert all((tmp_path / "mock" / "session-empty" / "reconcile-candidates" / f"scene-{index:02d}.jpg").is_file() for index in range(1, 4))
+    candidate_root = tmp_path / "mock" / "session-empty" / "reconcile-candidates"
+    assert all((candidate_root / f"scene-{index:02d}.jpg").is_file() for index in range(1, 4))
+
+
+def test_provisional_fast_person_can_be_recovered_only_at_finalize(tmp_path):
+    now = datetime(2026, 8, 17, 2, 45, tzinfo=UTC)
+    reconciler = SessionFinalReconciler(
+        session_id="session-recovery",
+        camera_id="camera-01",
+        mock_root=tmp_path / "mock",
+        identity_label=lambda _camera, _track: None,
+    )
+    for index in range(2):
+        timestamp = now + timedelta(seconds=index * 0.2)
+        provisional = Track(
+            camera_id="camera-01",
+            track_id=99,
+            timestamp=timestamp,
+            bbox=BoundingBox(170, 55, 450, 460),
+            confidence=0.72,
+            metadata={
+                BUSINESS_PROVISIONAL_KEY: True,
+                "detector_confidence": 0.72,
+            },
+        )
+        reconciler.observe_analysis(_frame(timestamp, track=provisional, sharp=True))
+
+    root = tmp_path / "mock" / "session-recovery"
+    assert _event_documents(root) == []
+    result = reconciler.finalize()
+    assert result["recoveredPersonTrackCount"] == 1
+    assert result["noPersonDetected"] is False
+    documents = _event_documents(root)
+    person = next(item for item in documents if item["eventType"] == "PERSON_APPEARED")
+    assert person["source"] == "FINAL_RECOVERY"
 
 
 def test_left_object_scenario_is_mirrored_to_mock_push(tmp_path):
