@@ -8,6 +8,7 @@ import numpy as np
 
 from deepstream_ai.domain import BehaviorDetection, BehaviorType, BoundingBox, FaceDetection, Track
 from deepstream_ai.pipeline.metadata import FramePacket
+from deepstream_ai.production.consumer import _mock_person_id
 from deepstream_ai.production.contracts import RecognitionEvent
 from deepstream_ai.production.session_reconcile import SessionFinalReconciler
 from deepstream_ai.provisional_track_guard import BUSINESS_PROVISIONAL_KEY
@@ -63,6 +64,25 @@ def _face(timestamp: datetime, *, track_id: int = 7) -> FaceDetection:
 
 def _event_documents(root):
     return [json.loads(path.read_text(encoding="utf-8")) for path in root.glob("*/*/event.json")]
+
+
+def test_mock_person_id_accepts_verified_label_and_rejects_unknown():
+    assert (
+        _mock_person_id(
+            lambda _camera, _track: "id=worker001 sim=0.873",
+            "camera-01",
+            7,
+        )
+        == "worker001"
+    )
+    assert (
+        _mock_person_id(
+            lambda _camera, _track: "unknown sim=0.432",
+            "camera-01",
+            7,
+        )
+        is None
+    )
 
 
 def test_person_is_pushed_once_and_better_evidence_replaces_files(tmp_path):
