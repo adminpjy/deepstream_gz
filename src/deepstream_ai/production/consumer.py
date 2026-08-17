@@ -15,6 +15,7 @@ from deepstream_ai.preview import PreviewWriter
 from deepstream_ai.production.contracts import SessionRequest
 from deepstream_ai.production.publishers import ResultPublisher
 from deepstream_ai.production.scenarios import ScenarioManager
+from deepstream_ai.production.session_reconcile import SessionFinalReconciler
 
 LOGGER = logging.getLogger(__name__)
 
@@ -22,9 +23,15 @@ LOGGER = logging.getLogger(__name__)
 class VisibleSessionSink:
     """Receive only business-visible tracks after continuity/provisional guards."""
 
-    def __init__(self, preview: PreviewWriter, scenarios: ScenarioManager) -> None:
+    def __init__(
+        self,
+        preview: PreviewWriter,
+        scenarios: ScenarioManager,
+        reconciler: SessionFinalReconciler,
+    ) -> None:
         self.preview = preview
         self.scenarios = scenarios
+        self.reconciler = reconciler
         self._person_count = 0
         self._last_timestamp: str | None = None
         self._last_person_seen_at: str | None = None
@@ -40,6 +47,17 @@ class VisibleSessionSink:
                 self._last_person_seen_at = timestamp
         self.preview.submit(packet)
         self.scenarios.process(packet)
+        # Final-reconcile evidence collection is intentionally best-effort and
+        # downstream of every existing live consumer.  A mock-push/evidence
+        # failure must never interrupt the tuned recognition path.
+        try:
+            self.reconciler.observe(packet)
+        except Exception:
+            LOGGER.exception(
+                "Session 补偿证据收集失败 camera=%s frame=%s",
+                packet.camera_id,
+                packet.frame_number,
+            )
 
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
@@ -58,6 +76,7 @@ class SessionConsumer:
     activity: PersonActivityTracker
     preview: PreviewWriter
     scenarios: ScenarioManager
+    reconciler: SessionFinalReconciler
     visible: VisibleSessionSink
     wrapper: ActivityAwareConsumer
     stop_event: threading.Event
@@ -78,6 +97,7 @@ class SessionConsumer:
             "idleTriggered": activity.idle_triggered,
             "previewPath": str(self.output_dir / "preview.jpg"),
             **self.visible.snapshot(),
+            **self.reconciler.snapshot(),
         }
 
 
@@ -125,16 +145,25 @@ class MultiSessionConsumer:
             max_fps=self.preview_fps,
             max_width=self.preview_width,
         )
+        # output_dir = <production>/sessions/<session-id>; keep the simulation
+        # completely separate from current session/status/result files.
+        mock_root = output_dir.parent.parent / "mock-push"
+        reconciler = SessionFinalReconciler(
+            session_id=session_id,
+            camera_id=request.camera_id,
+            mock_root=mock_root,
+            identity_label=self.core_dispatcher.identity_label,
+        )
         scenarios = ScenarioManager(
             session_id=session_id,
             camera_id=request.camera_id,
             features=request.features,
-            publisher=self.publisher,
+            publisher=reconciler.scenario_publisher(self.publisher),
             output_dir=output_dir,
             left_object_policy=request.left_object,
             baseline_path=baseline_path,
         )
-        visible = VisibleSessionSink(preview, scenarios)
+        visible = VisibleSessionSink(preview, scenarios, reconciler)
         wrapper = ActivityAwareConsumer(
             self.core_dispatcher,
             activity,
@@ -154,6 +183,7 @@ class MultiSessionConsumer:
             activity=activity,
             preview=preview,
             scenarios=scenarios,
+            reconciler=reconciler,
             visible=visible,
             wrapper=wrapper,
             stop_event=stop_event,
@@ -200,9 +230,21 @@ class MultiSessionConsumer:
             self._by_camera.pop(session.request.camera_id, None)
         session.stop_event.set()
         if run_absent_hooks:
+            # Preserve the existing order: LEFT_OBJECT first consumes the recent
+            # no-person frames; Final Reconcile then sees that scenario result
+            # through its passive publisher tap and chooses/finalizes evidence.
             session.scenarios.on_person_absent()
+            try:
+                session.reconciler.finalize()
+            except Exception:
+                LOGGER.exception(
+                    "Session 结束补偿失败 session=%s camera=%s；继续正常释放摄像头",
+                    session.session_id,
+                    session.request.camera_id,
+                )
         session.preview.close()
         session.scenarios.close()
+        session.reconciler.close()
         if session.idle_thread is not threading.current_thread():
             session.idle_thread.join(1.0)
         return session
