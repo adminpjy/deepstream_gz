@@ -23,6 +23,31 @@ from deepstream_ai.production.session_reconcile import (
 LOGGER = logging.getLogger(__name__)
 
 
+def _mock_person_id(identity_label: Callable[[str, int | str], str | None], camera_id: str, track_id: int | str) -> str | None:
+    """Extract only a verified worker id from the existing presentation label.
+
+    ``AnalyticsDispatcher.identity_label`` intentionally formats UI text as
+    ``id=<worker> sim=<score>`` or ``unknown sim=<score>``.  The mock production
+    event layer must never treat the latter non-empty display string as a known
+    employee.  Pure IDs remain accepted for compatible/test dispatchers.
+    """
+
+    value = identity_label(camera_id, track_id)
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    lowered = text.lower()
+    if lowered.startswith("unknown"):
+        return None
+    if lowered.startswith("id="):
+        worker_id = text[3:].split(" sim=", 1)[0].strip()
+        return worker_id or None
+    # Compatibility boundary for delegates that already return a raw worker id.
+    return text if " " not in text else None
+
+
 class VisibleSessionSink:
     """Receive only business-visible tracks after continuity/provisional guards."""
 
@@ -155,7 +180,11 @@ class MultiSessionConsumer:
             session_id=session_id,
             camera_id=request.camera_id,
             mock_root=mock_root,
-            identity_label=self.core_dispatcher.identity_label,
+            identity_label=lambda camera_id, track_id: _mock_person_id(
+                self.core_dispatcher.identity_label,
+                camera_id,
+                track_id,
+            ),
         )
         scenarios = ScenarioManager(
             session_id=session_id,
@@ -310,4 +339,9 @@ class MultiSessionConsumer:
                 LOGGER.exception("关闭 Session Consumer 失败 session=%s", session_id)
 
 
-__all__ = ["MultiSessionConsumer", "SessionConsumer", "VisibleSessionSink"]
+__all__ = [
+    "MultiSessionConsumer",
+    "SessionConsumer",
+    "VisibleSessionSink",
+    "_mock_person_id",
+]
