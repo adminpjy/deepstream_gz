@@ -1,20 +1,19 @@
 """Session-scoped business event aggregation and final reconciliation.
 
-This module is deliberately downstream of the tuned DeepStream recognition
-chain.  It consumes normalized ``FramePacket`` objects and scenario
-``RecognitionEvent`` objects, but never mutates detector/tracker/face metadata,
-model configuration, or the live result publisher.
+Everything in this module is downstream of the tuned DeepStream recognition
+chain.  It observes normalized packets and scenario events but never changes
+PeopleNet/NvDCF/SCRFD/AdaFace/behavior inference, thresholds, or metadata.
 
-The goals are:
-- produce a production-shaped mock push folder without changing the existing
-  recognition-events journal;
-- deduplicate person/face/identity/behavior events at business-event level;
-- retain the best evidence seen during the session and replace only when the
-  evidence is materially better;
-- perform a bounded final reconciliation before an idle-ended session is
-  detached;
-- retain a few no-person scene candidates so a future CPU pre-roll replay can
-  plug into the same final-reconcile boundary without changing the live chain.
+The final reconcile has two bounded recovery sources:
+1. business-visible observations collected during the live session, used to
+   select clearer evidence and upgrade person -> face -> identity/behavior;
+2. provisional observations already retained by the existing weak-track guard
+   for analytics.  These are never pushed live by this module.  Only at session
+   end, and only under stricter recovery evidence, can they fill a short-person
+   gap.  This does not relax the current real-time visibility guard.
+
+If neither source ever saw a person, a few JPEG candidates are retained for the
+future CPU pre-roll integration.  No second detector/model is loaded here.
 """
 
 from __future__ import annotations
@@ -25,19 +24,21 @@ import math
 import os
 import threading
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from uuid import uuid4
 
 import numpy as np
 
 from deepstream_ai.domain import BehaviorType, BoundingBox, FaceDetection, Track, TrackId
-from deepstream_ai.pipeline.metadata import FramePacket
+from deepstream_ai.pipeline.metadata import FramePacket, FramePacketConsumer
 from deepstream_ai.production.contracts import RecognitionEvent
 from deepstream_ai.production.publishers import ResultPublisher
+from deepstream_ai.provisional_track_guard import BUSINESS_PROVISIONAL_KEY
 
 LOGGER = logging.getLogger(__name__)
 
@@ -78,8 +79,8 @@ _EVENT_LABEL = {
     MockBusinessEventType.LARGE_OBJECT_MOVING: "LARGE OBJECT MOVING",
 }
 
-# BGR colors.  The evidence files intentionally use ASCII labels because
-# OpenCV's built-in font does not render Chinese reliably.
+# BGR.  Evidence labels stay ASCII because OpenCV's built-in font does not
+# render Chinese reliably.
 _EVENT_COLOR = {
     MockBusinessEventType.PERSON_APPEARED: (0, 215, 255),
     MockBusinessEventType.FACE_APPEARED: (255, 255, 0),
@@ -110,12 +111,12 @@ def _cv2():
 
 def _atomic_json(path: Path, document: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    temp = path.with_suffix(path.suffix + ".tmp")
-    temp.write_text(
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
         json.dumps(document, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
-    os.replace(temp, path)
+    os.replace(temporary, path)
 
 
 def _to_bgr(image: np.ndarray) -> np.ndarray:
@@ -130,12 +131,6 @@ def _to_bgr(image: np.ndarray) -> np.ndarray:
     return np.ascontiguousarray(array[:, :, :3])
 
 
-def _safe_box(box: BoundingBox | None, width: int, height: int) -> BoundingBox | None:
-    if box is None:
-        return None
-    return box.clipped(width, height)
-
-
 def _expanded_detail_box(
     box: BoundingBox,
     width: int,
@@ -143,7 +138,7 @@ def _expanded_detail_box(
     *,
     minimum_width: int = 480,
 ) -> BoundingBox | None:
-    """Keep the whole person/object plus useful surrounding context."""
+    """Keep a whole person/object and enough surrounding context."""
 
     clipped = box.clipped(width, height)
     if clipped is None:
@@ -170,9 +165,12 @@ def _expanded_detail_box(
     x1 = max(0.0, x1)
     y1 = max(0.0, y1)
     try:
-        return BoundingBox(x1, y1, max(x1 + 1.0, x2), max(y1 + 1.0, y2)).clipped(
-            width, height
-        )
+        return BoundingBox(
+            x1,
+            y1,
+            max(x1 + 1.0, x2),
+            max(y1 + 1.0, y2),
+        ).clipped(width, height)
     except ValueError:
         return clipped
 
@@ -183,8 +181,6 @@ def _sharpness_score(image: np.ndarray) -> float:
         return 0.0
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if image.ndim == 3 else image
     variance = float(cv2.Laplacian(gray, cv2.CV_64F).var())
-    # 0..400 is a useful practical range for surveillance crops.  Saturating
-    # avoids one noisy frame dominating all other quality dimensions.
     return min(1.0, max(0.0, variance / 400.0))
 
 
@@ -204,7 +200,6 @@ def _person_quality(frame: np.ndarray, track: Track) -> float:
     rows, cols = clipped.integer_slices(width, height)
     crop = image[rows, cols]
     area_ratio = clipped.area / float(max(1, width * height))
-    # 12% of the frame is already a large, highly useful person observation.
     size_score = min(1.0, math.sqrt(max(0.0, area_ratio) / 0.12))
     completeness = 1.0
     if (
@@ -244,6 +239,17 @@ def _face_quality(frame: np.ndarray, face: FaceDetection, track: Track) -> float
     )
 
 
+def _detector_confidence(track: Track) -> float | None:
+    value = track.metadata.get("detector_confidence")
+    if value is None:
+        return None
+    try:
+        result = float(value)
+    except (TypeError, ValueError):
+        return None
+    return result if math.isfinite(result) and 0.0 <= result <= 1.0 else None
+
+
 @dataclass(slots=True)
 class EvidenceFrame:
     timestamp: datetime
@@ -251,6 +257,7 @@ class EvidenceFrame:
     person_box: BoundingBox | None
     primary_box: BoundingBox | None
     face_box: BoundingBox | None = None
+    extra_boxes: tuple[BoundingBox, ...] = ()
     confidence: float | None = None
     quality: float = 0.0
     source: str = "LIVE"
@@ -287,10 +294,7 @@ class MockEventRecord:
             "source": self.source,
             "status": self.status,
             "revision": self.revision,
-            "evidence": {
-                "overview": "overview.jpg",
-                "detail": "detail.jpg",
-            },
+            "evidence": {"overview": "overview.jpg", "detail": "detail.jpg"},
         }
 
 
@@ -426,9 +430,17 @@ class MockPushStore:
         if evidence.person_box is not None:
             _draw_box(annotated, evidence.person_box, color, label)
         if evidence.face_box is not None:
-            _draw_box(annotated, evidence.face_box, _EVENT_COLOR[MockBusinessEventType.FACE_APPEARED], "FACE")
+            _draw_box(
+                annotated,
+                evidence.face_box,
+                _EVENT_COLOR[MockBusinessEventType.FACE_APPEARED],
+                "FACE",
+            )
         if evidence.primary_box is not None and evidence.primary_box != evidence.person_box:
             _draw_box(annotated, evidence.primary_box, color, label)
+        for extra_box in evidence.extra_boxes:
+            if extra_box != evidence.primary_box:
+                _draw_box(annotated, extra_box, color, label)
         cv2.imwrite(str(directory / "overview.jpg"), annotated)
 
         anchor = evidence.person_box or evidence.primary_box
@@ -478,11 +490,10 @@ def _draw_box(image: np.ndarray, box: BoundingBox, color: tuple[int, int, int], 
         return
     x1, y1, x2, y2 = [int(round(value)) for value in clipped.as_tuple()]
     cv2.rectangle(image, (x1, y1), (x2, y2), color, 3)
-    text_y = max(24, y1 - 8)
     cv2.putText(
         image,
         label,
-        (x1, text_y),
+        (x1, max(24, y1 - 8)),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.75,
         color,
@@ -506,11 +517,26 @@ class _TrackEvidence:
     stranger_event: str | None = None
     employee_event: str | None = None
     behavior_events: dict[BehaviorType, str] = field(default_factory=dict)
+    last_person_quality_sample: datetime | None = None
+    last_face_quality_sample: datetime | None = None
+    last_behavior_quality_sample: dict[BehaviorType, datetime] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class _RecoveryTrack:
+    track_id: TrackId
+    first_seen: datetime
+    last_seen: datetime
+    observations: int = 0
+    detector_observations: int = 0
+    max_detector_confidence: float = 0.0
+    best_person: EvidenceFrame | None = None
+    best_face: EvidenceFrame | None = None
     last_quality_sample: datetime | None = None
 
 
 class _ScenarioTapPublisher:
-    """Forward unchanged result events, then observe them without owning delegate."""
+    """Forward current scenario events unchanged, then observe best-effort."""
 
     def __init__(self, delegate: ResultPublisher, observer: Callable[[RecognitionEvent], None]) -> None:
         self.delegate = delegate
@@ -524,13 +550,35 @@ class _ScenarioTapPublisher:
             LOGGER.exception("模拟业务事件观察失败 event=%s", event.event_id)
 
     def close(self) -> None:
-        # The delegate is process-scoped and is closed by the GPU worker, not by
-        # a per-session scenario manager.
+        # Delegate is process-scoped and remains owned by the GPU worker.
         return
 
 
+class ReconcileAnalysisDelegate:
+    """Pass analysis packets through unchanged while retaining provisional evidence."""
+
+    def __init__(self, delegate: FramePacketConsumer, reconciler: SessionFinalReconciler) -> None:
+        self.delegate = delegate
+        self.reconciler = reconciler
+        self.config = getattr(delegate, "config", None)
+
+    def submit(self, packet: FramePacket) -> bool:
+        try:
+            self.reconciler.observe_analysis(packet)
+        except Exception:
+            LOGGER.exception(
+                "Session provisional 补偿证据收集失败 camera=%s frame=%s",
+                packet.camera_id,
+                packet.frame_number,
+            )
+        return bool(self.delegate.submit(packet))
+
+    def identity_label(self, camera_id: str, track_id: TrackId) -> str | None:
+        return self.delegate.identity_label(camera_id, track_id)
+
+
 class SessionFinalReconciler:
-    """Bounded session evidence collector plus final business reconciliation."""
+    """Bounded evidence collector and idle-exit business reconciliation."""
 
     def __init__(
         self,
@@ -550,6 +598,8 @@ class SessionFinalReconciler:
         self.quality_sample_sec = float(quality_sample_sec)
         self.store = MockPushStore(mock_root, session_id=session_id, camera_id=camera_id)
         self._tracks: dict[TrackId, _TrackEvidence] = {}
+        self._recovery_tracks: dict[TrackId, _RecoveryTrack] = {}
+        self._recovered_track_count = 0
         self._no_person_candidates: deque[tuple[datetime, bytes]] = deque(
             maxlen=max(1, int(max_no_person_candidates))
         )
@@ -568,16 +618,10 @@ class SessionFinalReconciler:
             self._sample_no_person_candidate(packet)
             return
 
-        faces: dict[TrackId, FaceDetection] = {}
-        for face in packet.faces:
-            previous = faces.get(face.track_id)
-            if previous is None or face.score > previous.score:
-                faces[face.track_id] = face
+        faces = self._best_faces(packet)
         tracks = {track.track_id: track for track in packet.tracks}
-
         for track in packet.tracks:
             self._observe_track(packet, track, faces.get(track.track_id))
-
         for detection in packet.behaviors:
             track = tracks.get(detection.track_id)
             if track is None:
@@ -588,19 +632,30 @@ class SessionFinalReconciler:
             state = self._tracks.get(track.track_id)
             if state is None:
                 continue
-            evidence = EvidenceFrame(
-                timestamp=packet.timestamp,
-                image=np.array(packet.image, copy=True),
-                person_box=track.bbox,
-                primary_box=detection.bbox,
-                face_box=faces.get(track.track_id).bbox if track.track_id in faces else None,
-                confidence=detection.confidence,
-                quality=max(_person_quality(packet.image, track), detection.confidence),
-            )
             best = state.best_behavior.get(detection.behavior)
-            if best is None or evidence.quality > best.quality:
-                state.best_behavior[detection.behavior] = evidence
+            last_sample = state.last_behavior_quality_sample.get(detection.behavior)
+            should_sample = best is None or last_sample is None or (
+                packet.timestamp - last_sample
+            ).total_seconds() >= self.quality_sample_sec
+            if should_sample:
+                quality = max(_person_quality(packet.image, track), detection.confidence)
+                evidence = EvidenceFrame(
+                    timestamp=packet.timestamp,
+                    image=np.array(packet.image, copy=True),
+                    person_box=track.bbox,
+                    primary_box=detection.bbox,
+                    face_box=faces.get(track.track_id).bbox if track.track_id in faces else None,
+                    confidence=detection.confidence,
+                    quality=quality,
+                )
+                state.last_behavior_quality_sample[detection.behavior] = packet.timestamp
+                if best is None or evidence.quality > best.quality:
+                    state.best_behavior[detection.behavior] = evidence
+                    best = evidence
             if detection.behavior not in state.behavior_events:
+                evidence = best
+                if evidence is None:
+                    continue
                 record = self.store.create(
                     event_type,
                     evidence,
@@ -609,6 +664,76 @@ class SessionFinalReconciler:
                     confidence=detection.confidence,
                 )
                 state.behavior_events[detection.behavior] = record.event_id
+
+    def observe_analysis(self, packet: FramePacket) -> None:
+        """Retain only provisional tracks; visible tracks are handled by ``observe``."""
+
+        with self._lock:
+            if self._finalized:
+                return
+        faces = self._best_faces(packet)
+        for track in packet.tracks:
+            if not bool(track.metadata.get(BUSINESS_PROVISIONAL_KEY, False)):
+                continue
+            state = self._recovery_tracks.get(track.track_id)
+            if state is None:
+                state = _RecoveryTrack(
+                    track_id=track.track_id,
+                    first_seen=track.timestamp,
+                    last_seen=track.timestamp,
+                )
+                self._recovery_tracks[track.track_id] = state
+            state.last_seen = track.timestamp
+            state.observations += 1
+            detector_confidence = _detector_confidence(track)
+            if detector_confidence is not None:
+                state.detector_observations += 1
+                state.max_detector_confidence = max(
+                    state.max_detector_confidence,
+                    detector_confidence,
+                )
+            should_sample = state.last_quality_sample is None or (
+                packet.timestamp - state.last_quality_sample
+            ).total_seconds() >= self.quality_sample_sec
+            face = faces.get(track.track_id)
+            if state.best_person is None or should_sample:
+                quality = _person_quality(packet.image, track)
+                state.last_quality_sample = packet.timestamp
+                evidence = EvidenceFrame(
+                    timestamp=packet.timestamp,
+                    image=np.array(packet.image, copy=True),
+                    person_box=track.bbox,
+                    primary_box=track.bbox,
+                    face_box=face.bbox if face is not None else None,
+                    confidence=detector_confidence or track.confidence,
+                    quality=quality,
+                    source="FINAL_RECOVERY",
+                )
+                if state.best_person is None or quality > state.best_person.quality:
+                    state.best_person = evidence
+            if face is not None:
+                quality = _face_quality(packet.image, face, track)
+                evidence = EvidenceFrame(
+                    timestamp=packet.timestamp,
+                    image=np.array(packet.image, copy=True),
+                    person_box=track.bbox,
+                    primary_box=track.bbox,
+                    face_box=face.bbox,
+                    confidence=face.score,
+                    quality=quality,
+                    source="FINAL_RECOVERY",
+                )
+                if state.best_face is None or quality > state.best_face.quality:
+                    state.best_face = evidence
+
+    @staticmethod
+    def _best_faces(packet: FramePacket) -> dict[TrackId, FaceDetection]:
+        faces: dict[TrackId, FaceDetection] = {}
+        for face in packet.faces:
+            previous = faces.get(face.track_id)
+            if previous is None or face.score > previous.score:
+                faces[face.track_id] = face
+        return faces
 
     def _observe_track(
         self,
@@ -632,7 +757,7 @@ class SessionFinalReconciler:
                 first_seen=packet.timestamp,
                 last_seen=packet.timestamp,
                 best_person=evidence,
-                last_quality_sample=packet.timestamp,
+                last_person_quality_sample=packet.timestamp,
             )
             self._tracks[track.track_id] = state
             state.person_event = self.store.create(
@@ -643,9 +768,9 @@ class SessionFinalReconciler:
             ).event_id
         else:
             state.last_seen = packet.timestamp
-            if self._should_sample_quality(state, packet.timestamp):
+            if self._elapsed(state.last_person_quality_sample, packet.timestamp):
                 quality = _person_quality(packet.image, track)
-                state.last_quality_sample = packet.timestamp
+                state.last_person_quality_sample = packet.timestamp
                 if state.best_person is None or quality > state.best_person.quality:
                     state.best_person = EvidenceFrame(
                         timestamp=packet.timestamp,
@@ -657,10 +782,13 @@ class SessionFinalReconciler:
                         quality=quality,
                     )
 
-        if face is not None:
+        if face is not None and (
+            state.best_face is None or self._elapsed(state.last_face_quality_sample, packet.timestamp)
+        ):
             if state.first_face_at is None:
                 state.first_face_at = face.timestamp
             face_quality = _face_quality(packet.image, face, track)
+            state.last_face_quality_sample = packet.timestamp
             evidence = EvidenceFrame(
                 timestamp=packet.timestamp,
                 image=np.array(packet.image, copy=True),
@@ -689,9 +817,8 @@ class SessionFinalReconciler:
         ):
             self._ensure_stranger(state, packet.timestamp)
 
-    def _should_sample_quality(self, state: _TrackEvidence, timestamp: datetime) -> bool:
-        previous = state.last_quality_sample
-        return previous is None or (timestamp - previous).total_seconds() >= self.quality_sample_sec
+    def _elapsed(self, previous: datetime | None, current: datetime) -> bool:
+        return previous is None or (current - previous).total_seconds() >= self.quality_sample_sec
 
     def _safe_identity(self, track_id: TrackId) -> str | None:
         try:
@@ -727,16 +854,13 @@ class SessionFinalReconciler:
             ).event_id
 
     def _ensure_stranger(self, state: _TrackEvidence, timestamp: datetime) -> None:
-        if state.person_id is not None or state.stranger_event is not None:
-            return
-        evidence = state.best_face or state.best_person
-        if evidence is None or state.best_face is None:
+        if state.person_id is not None or state.stranger_event is not None or state.best_face is None:
             return
         state.stranger_event = self.store.create(
             MockBusinessEventType.STRANGER,
-            evidence,
+            state.best_face,
             track_id=state.track_id,
-            confidence=evidence.confidence,
+            confidence=state.best_face.confidence,
         ).event_id
 
     def _sample_no_person_candidate(self, packet: FramePacket) -> None:
@@ -754,12 +878,10 @@ class SessionFinalReconciler:
             LOGGER.debug("保存无人 Session 补偿候选帧失败", exc_info=True)
 
     def observe_result(self, event: RecognitionEvent) -> None:
-        normalized = str(event.event_type).strip().upper()
-        mapping = {
+        event_type = {
             "LEFT_OBJECT": MockBusinessEventType.LEFT_OBJECT,
             "LARGE_OBJECT_MOVING": MockBusinessEventType.LARGE_OBJECT_MOVING,
-        }
-        event_type = mapping.get(normalized)
+        }.get(str(event.event_type).strip().upper())
         if event_type is None or not event.snapshot:
             return
         cv2 = _cv2()
@@ -767,12 +889,12 @@ class SessionFinalReconciler:
         if image is None or image.size == 0:
             return
         boxes = self._scenario_boxes(event, image)
-        primary = boxes[0] if boxes else None
         evidence = EvidenceFrame(
             timestamp=event.timestamp,
             image=image,
             person_box=None,
-            primary_box=primary,
+            primary_box=boxes[0] if boxes else None,
+            extra_boxes=tuple(boxes),
             confidence=event.confidence,
             quality=float(event.confidence or 0.75),
             source="FINAL_RECONCILE",
@@ -806,12 +928,12 @@ class SessionFinalReconciler:
             if not isinstance(values, (list, tuple)) or len(values) != 4:
                 continue
             try:
-                x, y, w, h = [float(item) for item in values]
+                x, y, box_width, box_height = [float(item) for item in values]
                 box = BoundingBox(
                     x * scale_x,
                     y * scale_y,
-                    (x + w) * scale_x,
-                    (y + h) * scale_y,
+                    (x + box_width) * scale_x,
+                    (y + box_height) * scale_y,
                 ).clipped(width, height)
             except (TypeError, ValueError):
                 continue
@@ -825,6 +947,7 @@ class SessionFinalReconciler:
                 return self.snapshot()
             self._finalized = True
 
+        recovered = self._promote_provisional_recovery()
         for state in tuple(self._tracks.values()):
             identity = self._safe_identity(state.track_id)
             if identity:
@@ -841,6 +964,7 @@ class SessionFinalReconciler:
             "finalizedAt": datetime.now().astimezone().isoformat(),
             "mode": "metadata_evidence_reconcile",
             "personTrackCount": len(self._tracks),
+            "recoveredPersonTrackCount": recovered,
             "noPersonDetected": no_person,
             "preRollRequiredForMissedPersonRecovery": no_person,
             "recoveryCandidateImages": candidates,
@@ -848,14 +972,80 @@ class SessionFinalReconciler:
         }
         _atomic_json(self.store.root / "final-reconcile.json", document)
         LOGGER.info(
-            "[SESSION_FINAL_RECONCILE] session=%s camera=%s tracks=%d no_person=%s mock_events=%d",
+            "[SESSION_FINAL_RECONCILE] session=%s camera=%s tracks=%d recovered=%d no_person=%s mock_events=%d",
             self.session_id,
             self.camera_id,
             len(self._tracks),
+            recovered,
             str(no_person).lower(),
             self.store.snapshot()["eventCount"],
         )
         return document
+
+    def _promote_provisional_recovery(self) -> int:
+        recovered = 0
+        for candidate in tuple(self._recovery_tracks.values()):
+            if candidate.track_id in self._tracks or candidate.best_person is None:
+                continue
+            has_face = candidate.best_face is not None
+            strong_multi = (
+                candidate.detector_observations >= 2
+                and candidate.max_detector_confidence >= 0.35
+                and candidate.best_person.quality >= 0.45
+            )
+            very_strong_single = (
+                candidate.detector_observations >= 1
+                and candidate.max_detector_confidence >= 0.60
+                and candidate.best_person.quality >= 0.58
+            )
+            if not (has_face or strong_multi or very_strong_single):
+                continue
+            state = _TrackEvidence(
+                track_id=candidate.track_id,
+                first_seen=candidate.first_seen,
+                last_seen=candidate.last_seen,
+                first_face_at=(
+                    candidate.best_face.timestamp if candidate.best_face is not None else None
+                ),
+                best_person=candidate.best_person,
+                best_face=candidate.best_face,
+            )
+            self._tracks[candidate.track_id] = state
+            state.person_event = self.store.create(
+                MockBusinessEventType.PERSON_APPEARED,
+                candidate.best_person,
+                track_id=candidate.track_id,
+                confidence=(
+                    candidate.max_detector_confidence
+                    if candidate.max_detector_confidence > 0
+                    else candidate.best_person.confidence
+                ),
+            ).event_id
+            if candidate.best_face is not None:
+                state.face_event = self.store.create(
+                    MockBusinessEventType.FACE_APPEARED,
+                    candidate.best_face,
+                    track_id=candidate.track_id,
+                    confidence=candidate.best_face.confidence,
+                ).event_id
+            identity = self._safe_identity(candidate.track_id)
+            if identity:
+                self._ensure_employee(state, identity, candidate.last_seen)
+            elif candidate.best_face is not None:
+                self._ensure_stranger(state, candidate.last_seen)
+            recovered += 1
+            LOGGER.warning(
+                "[PERSON_FINAL_RECOVERY] session=%s camera=%s track=%s detector_obs=%d max_conf=%.3f face=%s quality=%.3f",
+                self.session_id,
+                self.camera_id,
+                candidate.track_id,
+                candidate.detector_observations,
+                candidate.max_detector_confidence,
+                str(has_face).lower(),
+                candidate.best_person.quality,
+            )
+        self._recovered_track_count += recovered
+        return recovered
 
     def _improve_track_events(self, state: _TrackEvidence) -> None:
         if state.person_event and state.best_person is not None:
@@ -917,15 +1107,19 @@ class SessionFinalReconciler:
             "mockPush": self.store.snapshot(),
             "reconcileFinalized": self._finalized,
             "reconcileTrackCount": len(self._tracks),
+            "reconcileRecoveryCandidateCount": len(self._recovery_tracks),
+            "reconcileRecoveredTrackCount": self._recovered_track_count,
         }
 
     def close(self) -> None:
         self._no_person_candidates.clear()
+        self._recovery_tracks.clear()
 
 
 __all__ = [
     "EvidenceFrame",
     "MockBusinessEventType",
     "MockPushStore",
+    "ReconcileAnalysisDelegate",
     "SessionFinalReconciler",
 ]
