@@ -15,7 +15,10 @@ from deepstream_ai.preview import PreviewWriter
 from deepstream_ai.production.contracts import SessionRequest
 from deepstream_ai.production.publishers import ResultPublisher
 from deepstream_ai.production.scenarios import ScenarioManager
-from deepstream_ai.production.session_reconcile import SessionFinalReconciler
+from deepstream_ai.production.session_reconcile import (
+    ReconcileAnalysisDelegate,
+    SessionFinalReconciler,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -145,8 +148,8 @@ class MultiSessionConsumer:
             max_fps=self.preview_fps,
             max_width=self.preview_width,
         )
-        # output_dir = <production>/sessions/<session-id>; keep the simulation
-        # completely separate from current session/status/result files.
+        # output_dir = <production>/sessions/<session-id>; keep simulation output
+        # separate from current session/status/result files.
         mock_root = output_dir.parent.parent / "mock-push"
         reconciler = SessionFinalReconciler(
             session_id=session_id,
@@ -164,8 +167,13 @@ class MultiSessionConsumer:
             baseline_path=baseline_path,
         )
         visible = VisibleSessionSink(preview, scenarios, reconciler)
+        # The existing weak-track guard intentionally sends provisional tracks
+        # to analytics but hides them from business preview/events.  This thin
+        # pass-through only retains those already-produced observations for a
+        # strict end-of-session recovery check; it never makes them live-visible.
+        analysis_delegate = ReconcileAnalysisDelegate(self.core_dispatcher, reconciler)
         wrapper = ActivityAwareConsumer(
-            self.core_dispatcher,
+            analysis_delegate,
             activity,
             preview=visible,
         )
